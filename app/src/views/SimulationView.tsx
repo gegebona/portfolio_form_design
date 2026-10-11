@@ -148,7 +148,9 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const conflict = (r: SimRow) => excluded(r) && !r.kept
   const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0)))
     .slice()
-    .sort((a, b) => (cur ? 0 : Number(b.id === task?.rowId) - Number(a.id === task?.rowId) || Number(conflict(b)) - Number(conflict(a))))
+    // Cash first (set apart visually), then every other position by descending weight. The order uses the current
+    // weight so rows do not jump while a new weight is being typed; new positions (no current weight) follow by new weight.
+    .sort((a, b) => Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
   // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
   const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
   const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
@@ -197,7 +199,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method) : null
           return (
             <Fragment key={r.id}>
-            <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : 'hover:*:bg-surface-subtle')}>
+            <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>
                 {t && <span className="mb-0.75 block w-fit bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
                 {r.cls}
