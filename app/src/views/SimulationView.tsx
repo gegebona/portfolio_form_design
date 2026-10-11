@@ -352,6 +352,7 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
           {hide !== 'ccy' && <th className={th}>Currency</th>}
           <th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
+          <th className={cn(th, 'text-right')}>ESG</th>
         </tr>
       </thead>
       <tbody>
@@ -374,6 +375,8 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
                 </td>
                 {num(f2(w), true)}
                 {!cur && <>{num(f2(nw), true)}{num(change(nw - w))}</>}
+                {/* No group score: only supplied instrument scores are shown, nothing is averaged. */}
+                <td className={td} />
               </tr>
               {open && list.map((r) => (
                 <tr key={r.id} className="hover:*:bg-surface-subtle">
@@ -383,12 +386,13 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
                   {hide !== 'ccy' && <td className={td}>{r.ccy}</td>}
                   {num(f2(r.w))}
                   {!cur && <>{num(f2(r.nw), Math.abs(r.nw - r.w) >= 0.005)}{num(change(r.nw - r.w))}</>}
+                  {num(r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg)}
                 </tr>
               ))}
             </Fragment>
           )
         })}
-        {!keys.length && <tr><td colSpan={7} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
+        {!keys.length && <tr><td colSpan={8} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
   )
