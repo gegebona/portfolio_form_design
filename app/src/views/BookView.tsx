@@ -24,6 +24,12 @@ const TYPE_TAG: Record<BookEntry['type'], string> = {
   Multi: 'bg-surface-inverse text-fg-inverse',
   Customized: 'border border-control',
 }
+/** Status tags: green = Published, yellow = Draft, outline = Archived. The label is always printed. */
+const STATUS_TAG: Record<BookStatus, string> = {
+  Published: 'bg-status-published text-fg',
+  Draft: 'bg-status-draft text-fg',
+  Archived: 'border border-line-strong text-fg-muted',
+}
 const TYPES: BookEntry['type'][] = ['Standard', 'Multi', 'Customized']
 
 type SortKey = 'id' | 'name' | 'type' | 'area' | 'benchmark' | 'perf1y' | 'creator' | 'status' | 'modified'
@@ -241,7 +247,7 @@ export function BookView() {
                   <td className={cn(td, 'text-right tabular-nums', e.perf1y < 0 && 'text-error')}>{e.perf1y < 0 ? '−' : ''}{Math.abs(e.perf1y).toFixed(2)}</td>
                   <td className={cn(td, 'whitespace-nowrap')}>{e.creator}</td>
                   <td className={td}>
-                    {e.status === 'Published' ? e.status : e.status === 'Archived' ? <span className="text-fg-subtle">{e.status}</span> : <span className={cn(tagBase, 'border border-line-strong text-fg-muted')}>{e.status}</span>}
+                    <span className={cn(tagBase, STATUS_TAG[e.status])}>{e.status}</span>
                   </td>
                   <td className={cn(td, 'whitespace-nowrap tabular-nums')}>{e.modified}<span className="text-fg-muted"> · {e.editedBy}</span></td>
                   <td className={cn(td, 'pr-6 text-right')}>

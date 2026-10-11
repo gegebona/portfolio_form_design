@@ -50,7 +50,9 @@
 
   /* Background · tags */
   --color-ubs-background-tags-01: #F4F3EE;
+  --color-ubs-background-tags-06: #BDE5CD;
   --color-ubs-background-tags-07: #F79CA2;
+  --color-ubs-background-tags-10: #FFE094;
   --color-ubs-background-tags-21: #FED2D4;
   --color-ubs-background-tags-22: #E0DFD7;
 
@@ -121,6 +123,10 @@
   --color-excluded-subtle: var(--color-red-50);                   /* edge case: Tailwind */
   --color-suggested: var(--color-ubs-background-tags-01);
   --color-suggested-border: var(--color-ubs-border-illustrative);
+
+  /* Domain: model portfolio status tags (the label always carries the meaning; colour only speeds up scanning) */
+  --color-status-published: var(--color-ubs-background-tags-06);  /* green tag */
+  --color-status-draft: var(--color-ubs-background-tags-10);      /* yellow tag */
 
   /* Charts: UBS chart colours in a fixed order, validated for colour-blind separation; legends always print values */
   --color-chart-1: var(--color-ubs-chart-02);   /* Equity */

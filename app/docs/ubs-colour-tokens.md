@@ -42,11 +42,11 @@ To use another one, copy its line into theme.css as `--color-ubs-<name>` and poi
 | `--col-background-tags-03` | `#EBD698` |  |
 | `--col-background-tags-04` | `#F3E8C3` |  |
 | `--col-background-tags-05` | `#D7D9EE` |  |
-| `--col-background-tags-06` | `#BDE5CD` |  |
+| `--col-background-tags-06` | `#BDE5CD` | ✓ |
 | `--col-background-tags-07` | `#F79CA2` | ✓ |
 | `--col-background-tags-08` | `#B4E0FE` |  |
 | `--col-background-tags-09` | `#B1DFE2` |  |
-| `--col-background-tags-10` | `#FFE094` |  |
+| `--col-background-tags-10` | `#FFE094` | ✓ |
 | `--col-background-tags-11` | `#ECCEF8` |  |
 | `--col-background-tags-12` | `#D2BD9D` |  |
 | `--col-background-tags-13` | `#83C9E2` |  |
