@@ -9,8 +9,8 @@ import { cn } from '../../lib/cn'
 /*
  * Selection controls — Base UI Checkbox / Radio / Switch.
  * Base UI renders a <span> plus a hidden native <input>, and marks state with data attributes,
- * so the whole look is Tailwind variants: data-checked:bg-accent, data-disabled:opacity-…
- * Chosen = accent (red) everywhere; grey never means "chosen".
+ * so the whole look is Tailwind variants: data-checked:bg-selected, data-disabled:opacity-…
+ * Chosen = the selected token (blue) everywhere; grey never means "chosen", and red is kept for problems and exclusions.
  */
 
 type CheckboxProps = Omit<ComponentProps<typeof BaseCheckbox.Root>, 'className'> & { className?: string }
@@ -20,7 +20,7 @@ export function Checkbox({ className, ...props }: CheckboxProps) {
     <BaseCheckbox.Root
       className={cn(
         'flex size-4 shrink-0 cursor-pointer items-center justify-center border border-control bg-surface text-on-accent',
-        'data-checked:border-accent data-checked:bg-accent data-disabled:cursor-default data-disabled:opacity-50',
+        'data-checked:border-selected data-checked:bg-selected data-disabled:cursor-default data-disabled:opacity-50',
         className,
       )}
       {...props}
@@ -43,12 +43,12 @@ export function Radio({ className, ...props }: RadioProps) {
     <BaseRadio.Root
       className={cn(
         'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full border border-control bg-surface',
-        'data-checked:border-accent',
+        'data-checked:border-selected',
         className,
       )}
       {...props}
     >
-      <BaseRadio.Indicator className="size-2 rounded-full bg-accent data-unchecked:hidden" />
+      <BaseRadio.Indicator className="size-2 rounded-full bg-selected data-unchecked:hidden" />
     </BaseRadio.Root>
   )
 }
@@ -59,7 +59,7 @@ export function Switch({ className, ...props }: SwitchProps) {
   return (
     <BaseSwitch.Root
       className={cn(
-        'relative inline-flex h-4 w-7.5 shrink-0 cursor-pointer rounded-full bg-fg-subtle transition-colors duration-150 data-checked:bg-accent',
+        'relative inline-flex h-4 w-7.5 shrink-0 cursor-pointer rounded-full bg-fg-subtle transition-colors duration-150 data-checked:bg-selected',
         className,
       )}
       {...props}

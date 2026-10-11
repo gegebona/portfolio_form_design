@@ -113,7 +113,7 @@
   --color-focus: var(--color-ubs-focus-ring);                     /* keyboard focus ring */
 
   /* Brand & status */
-  --color-accent: var(--color-ubs-background-brand);              /* choices and the one main action */
+  --color-accent: var(--color-ubs-background-brand);              /* the one main action per screen */
   --color-accent-hover: var(--color-ubs-background-brand-hovered);
   --color-on-accent: var(--color-white);
   --color-error: var(--color-ubs-icon-error);
@@ -127,6 +127,7 @@
   --color-suggested-border: var(--color-ubs-border-illustrative);
 
   /* Domain: model portfolio status tags (the label always carries the meaning; colour only speeds up scanning) */
+  --color-selected: var(--color-ubs-focus-ring);                  /* checked boxes, radios, switches, selected cards: blue means chosen / active, red is kept for problems and exclusions */
   --color-tab-active: var(--color-ubs-focus-ring);                /* line under the active tab and nav item (blue; red stays for the main action and problems) */
   --color-status-published: var(--color-ubs-background-tags-06);  /* green tag */
   --color-status-draft: var(--color-ubs-background-tags-10);      /* yellow tag */

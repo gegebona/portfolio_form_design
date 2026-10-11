@@ -95,7 +95,7 @@ function CatalogueCard({ c, expanded, onLearnMore }: { c: Component; expanded: b
   // While expanded, the card's slot stays (keeps the grid still) but is empty and has no names: the expanded card holds them.
   const n = expanded ? undefined : cardNames(c.id)
   const card = (
-    <div id={'card-' + c.id} className={'relative flex h-34 min-w-0 border bg-surface hover:bg-surface-subtle has-[[role=checkbox]:focus-visible]:outline-2 has-[[role=checkbox]:focus-visible]:outline-offset-1 has-[[role=checkbox]:focus-visible]:outline-focus ' + (on ? 'border-accent' : 'border-line-strong')}>
+    <div id={'card-' + c.id} className={'relative flex h-34 min-w-0 border bg-surface hover:bg-surface-subtle has-[[role=checkbox]:focus-visible]:outline-2 has-[[role=checkbox]:focus-visible]:outline-offset-1 has-[[role=checkbox]:focus-visible]:outline-focus ' + (on ? 'border-selected' : 'border-line-strong')}>
       <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 px-4 pt-3.5 pb-10">
         <Checkbox checked={on} onCheckedChange={(v) => toggle(c.id, v)} className="mt-0.5 focus-visible:outline-none" />
         <span className="flex min-w-0 flex-col">
@@ -132,7 +132,7 @@ function LearnMore({ id, onClose, conflicts }: { id: string | null; onClose: (th
       headerExtra={conflicts.length > 0 && <ConflictTag>Conflicts with exclusions: {conflicts.join(', ')}</ConflictTag>}
       footer={
         <>
-          {on && <span className="mr-auto inline-flex items-center gap-1.5 text-xs text-fg-muted"><Check className="size-3 text-accent" strokeWidth={3} />In this portfolio</span>}
+          {on && <span className="mr-auto inline-flex items-center gap-1.5 text-xs text-fg-muted"><Check className="size-3 text-selected" strokeWidth={3} />In this portfolio</span>}
           <Button onClick={() => onClose()}>Close</Button>
           {/* Same transition: the card collapses back and its row slides into (or out of) the sidebar. */}
           <Button variant={on ? 'secondary' : 'primary'} onClick={() => onClose(() => toggle(c.id, !on))}>
@@ -226,7 +226,7 @@ function BasketRow({ label, sub, warn, onRemove }: { label: string; sub?: string
   return (
     <ViewTransition enter="item-in" exit="item-out" update="item-move">
     <div className="flex min-h-7.5 items-center gap-2.5">
-      <Check className="size-3 shrink-0 text-accent" strokeWidth={3} aria-hidden />
+      <Check className="size-3 shrink-0 text-selected" strokeWidth={3} aria-hidden />
       <span className="min-w-0 flex-1">{label}{sub && <span className="ml-1.5 text-xs text-fg-muted">{sub}</span>}</span>
       {warn && <TriangleAlert className="size-3 text-fg-secondary" strokeWidth={1.75} aria-label="Conflicts with exclusions" />}
       {onRemove && <RemoveButton onClick={onRemove} label={'Remove ' + label} className="text-fg-subtle" />}
@@ -258,7 +258,7 @@ function CashRow({ ccy, w }: { ccy: string; w: number }) {
   const change = (v: string) => animate((s) => { const e = s.comps.cash.find((x) => x.ccy === ccy); if (e) e.ccy = v })
   return (
     <div className="flex min-h-7.5 items-center gap-2.5">
-      <Check className="size-3 shrink-0 text-accent" strokeWidth={3} aria-hidden />
+      <Check className="size-3 shrink-0 text-selected" strokeWidth={3} aria-hidden />
       <Select value={ccy} onValueChange={change} items={items} aria-label={`Currency of the ${ccy} cash position`} className="h-7 w-22" />
       <span className="text-xs text-fg-muted">{f2(w)}%</span>
     </div>

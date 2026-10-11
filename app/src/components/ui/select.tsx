@@ -44,7 +44,7 @@ export function Select({
                   value={it.value}
                   className="grid h-8 cursor-pointer grid-cols-[1rem_1fr] items-center gap-2 pr-4 pl-2 text-sm outline-none select-none data-highlighted:bg-surface-muted"
                 >
-                  <BaseSelect.ItemIndicator className="col-start-1 flex text-accent">
+                  <BaseSelect.ItemIndicator className="col-start-1 flex text-selected">
                     <Check className="size-3.5" strokeWidth={2.25} />
                   </BaseSelect.ItemIndicator>
                   <BaseSelect.ItemText className="col-start-2">{it.label}</BaseSelect.ItemText>
