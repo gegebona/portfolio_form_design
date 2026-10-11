@@ -174,24 +174,18 @@ export function exclusionSummary(p: PortfolioState['prefs']) {
   return parts
 }
 
-/** Preferences as label / value rows for summaries: position limits first, then every exclusion ("None" when unset). */
-export function preferenceRows(p: PortfolioState['prefs']): [string, string][] {
-  const list = (cat: CategoryId, noun: string) => {
-    const l = p.sel[cat].map((id) => optionLabel(cat, id))
-    return !l.length ? 'None' : l.length > 3 ? `${l.length} ${noun}` : l.join(', ')
-  }
-  const rating = [p.rating < RATINGS.length ? RATINGS[p.rating] + ' and below' : '', p.unrated ? 'not rated' : ''].filter(Boolean).join(', ')
-  return [
-    ['Min. position', p.minPos ? p.minPos + '%' : 'None'],
-    ['Max. instruments', p.maxInst || 'None'],
-    ['Geography', list('geography', 'regions')],
-    ['Sector', list('sector', 'sectors')],
-    ['Currency', list('currency', 'currencies')],
-    ['Category', list('category', 'categories')],
-    ['Rating', rating || 'None'],
-    ['ESG', p.esg > 0 ? 'Score ' + ESG_SCORES[p.esg - 1] + ' and below' : 'None'],
-    ['Instruments', !p.inst.length ? 'None' : p.inst.length === 1 ? instrumentByIsin(p.inst[0]).name : p.inst.length + ' instruments'],
-  ]
+/** Active exclusions grouped by preference, every excluded value as its own label (for the tag summary in the overview strip). */
+export function exclusionGroups(p: PortfolioState['prefs']): { label: string; values: string[] }[] {
+  const groups: { label: string; values: string[] }[] = []
+  const add = (label: string, values: string[]) => { if (values.length) groups.push({ label, values }) }
+  add('Geography', p.sel.geography.map((id) => optionLabel('geography', id)))
+  add('Sector', p.sel.sector.map((id) => optionLabel('sector', id)))
+  add('Currency', p.sel.currency.map((id) => optionLabel('currency', id)))
+  add('Instrument category', p.sel.category.map((id) => optionLabel('category', id)))
+  add('Credit rating', [...(p.rating < RATINGS.length ? [RATINGS[p.rating] + ' and below'] : []), ...(p.unrated ? ['Not rated'] : [])])
+  add('ESG', p.esg > 0 ? ['Score ' + ESG_SCORES[p.esg - 1] + ' and below'] : [])
+  add('Instruments', p.inst.map((isin) => instrumentByIsin(isin).name))
+  return groups
 }
 
 // ---- Number helpers ----

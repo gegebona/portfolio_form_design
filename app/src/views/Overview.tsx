@@ -1,16 +1,17 @@
-import { Check, TriangleAlert } from 'lucide-react'
+import { Ban, Check, TriangleAlert } from 'lucide-react'
 import { ViewTransition } from 'react'
 import { Button } from '../components/ui/button'
 import { ASSET_CLASSES, CLASS_COLOR, PASS_SCORE, QUALITY_CHECKS } from '../data/data'
 import { cn } from '../lib/cn'
-import { benchmarkById, exclusionSummary, pct, preferenceRows, usePortfolio, type Alloc } from '../state/portfolio'
+import { benchmarkById, exclusionGroups, exclusionSummary, pct, usePortfolio, type Alloc } from '../state/portfolio'
 
 export type AllocRow = { label: string; alloc: Alloc }
 
 /**
  * Overview strip above Component allocation and Simulation: three columns with one row rhythm —
- * Asset allocation | Preferences | Portfolio. Full by default; compact = two lines per column.
- * Preferences sits in the middle because it explains the flags in the tables below: limits and every exclusion at a glance.
+ * Asset allocation | Exclusionary preferences | Portfolio. Full by default; compact = two lines per column.
+ * Exclusions sit in the middle because they explain the flags in the tables below. Each excluded value is a red-tint
+ * tag with the ⊘ mark (the system's sign for "excluded"), so nobody can read the list as things that were chosen.
  */
 type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Show the Quality checks column. Off everywhere for now. */ quality?: boolean }
 
@@ -78,8 +79,8 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
         {quality && <div className={sec}><div className={title}>Quality checks</div><div className="leading-relaxed">{status}</div></div>}
         {!quality && (
           <div className={sec}>
-            <div className={title}><span>Preferences</span>{editExclusions}</div>
-            <div className="truncate leading-relaxed" title={prefLine}>{prefLine}</div>
+            <div className={title}><span>Exclusionary preferences</span>{editExclusions}</div>
+            <div className="truncate leading-relaxed" title={prefLine}>{excl.length ? 'Excluded: ' + prefLine : prefLine}</div>
           </div>
         )}
         <div className={sec}>
@@ -115,16 +116,23 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
       )}
       {!quality && (
         <div className={sec}>
-          <div className={title}><span>Preferences</span>{editExclusions}</div>
-          {/* Three columns of label / value pairs; unset preferences read "None" in a quieter ink so the active ones stand out. */}
-          <dl className="grid grid-cols-3 gap-x-6">
-            {preferenceRows(state.prefs).map(([k, v]) => (
-              <div key={k} className="min-w-0 border-t border-line py-0.75 [&:nth-child(-n+3)]:border-t-0">
-                <dt className="text-fg-muted">{k}</dt>
-                <dd className={cn('truncate', v === 'None' && 'text-fg-subtle')} title={v}>{v}</dd>
-              </div>
-            ))}
-          </dl>
+          <div className={title}><span>Exclusionary preferences</span>{editExclusions}</div>
+          {exclusionGroups(state.prefs).length ? (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              {exclusionGroups(state.prefs).map((g) => (
+                <span key={g.label} className="inline-flex flex-wrap items-center gap-1">
+                  <span className="mr-0.5 text-fg-muted">{g.label}</span>
+                  {g.values.slice(0, 3).map((v) => (
+                    <span key={v} className="inline-flex items-center gap-1 border border-excluded-border bg-excluded px-1.5 text-xs/4.5 whitespace-nowrap">
+                      <Ban className="size-2.5 shrink-0" strokeWidth={2} aria-label="Excluded" />{v}
+                    </span>
+                  ))}
+                  {g.values.length > 3 && <span className="text-fg-muted" title={g.values.slice(3).join(', ')}>+{g.values.length - 3} more</span>}
+                </span>
+              ))}
+            </div>
+          ) : <p className="text-fg-subtle">Nothing excluded</p>}
+          <div className="mt-2 text-fg-muted">Limits: min. position {state.prefs.minPos || '—'}% · max. {state.prefs.maxInst || '—'} instruments</div>
         </div>
       )}
       <div className={sec}>

@@ -7,7 +7,7 @@ import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
 import { BOOK_USER } from './data/data'
 import { getBook, nextBookId, setBook } from './state/book'
-import { benchmarkById, missingData, portfolioAlloc, PortfolioProvider, usePortfolio } from './state/portfolio'
+import { benchmarkById, missingData, near100, portfolioAlloc, PortfolioProvider, usePortfolio } from './state/portfolio'
 import { BookView } from './views/BookView'
 import { DataView } from './views/DataView'
 import { DesignSystemPage } from './design-system/DesignSystemPage'
@@ -18,7 +18,7 @@ import { SimulationView } from './views/SimulationView'
 
 const STEPS = [
   { id: 'data', label: 'Model portfolio data' },
-  { id: 'preferences', label: 'Preferences' },
+  { id: 'preferences', label: 'Model portfolio preferences' },
   { id: 'components', label: 'Component selection' },
   { id: 'allocation', label: 'Component allocation' },
   { id: 'simulation', label: 'Simulation' },
@@ -98,7 +98,10 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
   const blocked = missing.length > 0
   // Simulation's Current version is the published portfolio: read-only, so it can be neither saved as a draft nor published.
   const viewingCurrent = asked === 'simulation' && state.sim.mode === 'current'
-  const step: StepId = blocked ? 'data' : asked
+  // Simulation needs a complete allocation: exactly 100%, never adjusted silently.
+  const alloc = portfolioAlloc(state)
+  const allocOk = near100(alloc.Equity + alloc.Bonds + alloc.Alternatives + alloc.Liquidity)
+  const step: StepId = blocked ? 'data' : asked === 'simulation' && !allocOk ? 'allocation' : asked
   useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
   const i = STEPS.findIndex((s) => s.id === step)
   const prev = STEPS[i - 1]
@@ -140,7 +143,7 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
       <div className="mb-4 flex min-h-0 flex-1 flex-col border border-line-strong bg-surface">
         <Tabs value={step} onValueChange={(v) => onStep(v as StepId)}>
           <TabsList variant="step" className="border-b border-line px-5">
-            {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={blocked && s.id !== 'data'} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : undefined}>{s.label}</Tab>)}
+            {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
             <Tab value="reporting" disabled title="Not available yet">Reporting</Tab>
           </TabsList>
         </Tabs>
@@ -156,10 +159,10 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
 
         <ActionBar
           back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
-          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked } : { label: 'Publish', onClick: () => {}, disabled: viewingCurrent }}
+          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => {}, disabled: viewingCurrent }}
           onSave={viewingCurrent ? undefined : save}
           saveDisabled={blocked}
-          note={blocked ? `Still needed: ${missing.join(', ')}.` : viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.' : undefined}
+          note={blocked ? `Still needed: ${missing.join(', ')}.` : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.' : undefined}
         />
       </div>
     </main>

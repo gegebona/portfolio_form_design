@@ -201,7 +201,7 @@ export function BookView() {
         <Section
           title="Model portfolio book"
           description="All model portfolios and their customized versions."
-          actions={<Button variant="primary" onClick={create}>Create model portfolio</Button>}
+          actions={<Button variant="primary" onClick={create}>Create new model portfolio</Button>}
           className="pb-0"
         >
           <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-2">

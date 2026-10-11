@@ -1,9 +1,8 @@
 import { Info } from 'lucide-react'
 import { useState, ViewTransition } from 'react'
-import { Field, Input, SearchInput } from '../components/ui/input'
+import { Field, Input } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
-import { Radio, RadioGroup } from '../components/ui/selection'
-import { CurrencyTag } from '../components/ui/tag'
+import { Select } from '../components/ui/select'
 import { BENCHMARKS } from '../data/data'
 import { usePortfolio } from '../state/portfolio'
 
@@ -25,55 +24,34 @@ export function DataView() {
           <Field label="Description" description="Optional.">
             <Input value={d.description} onValueChange={(v) => update((s) => { s.data.description = v })} />
           </Field>
-          <Field label="Currency" description="Fixed for all model portfolios.">
-            <Input value="EUR" disabled readOnly />
+          <Field label="Currency" description="EUR is the only currency available.">
+            <Select value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={[{ value: 'EUR', label: 'EUR' }]} />
           </Field>
         </div>
       </Section>
       <Section title="Benchmark" description="Please select the benchmark associated to the model portfolio." className="min-w-0 flex-[1_1_45rem]">
-        <BenchmarkPicker />
+        <BenchmarkPicker showError={touched.code || touched.name} />
       </Section>
     </div>
   )
 }
 
-/** Searchable radio list joined to a details panel: the selected row shares the panel's fill and runs into it. */
-function BenchmarkPicker() {
+/** Benchmark dropdown. Nothing about its composition shows until one is selected; then its name and constituent indices appear, read-only. */
+function BenchmarkPicker({ showError }: { showError?: boolean }) {
   const { state, animate } = usePortfolio()
-  const [q, setQ] = useState('')
   const pccy = state.data.ccy
-  const ql = q.trim().toLowerCase()
-  const list = BENCHMARKS.filter((b) => !ql || b.name.toLowerCase().includes(ql) || b.parts.some(([p]) => p.toLowerCase().includes(ql)))
   const sel = BENCHMARKS.find((b) => b.id === state.data.benchmark)
+  const items = [...(sel ? [] : [{ value: '', label: 'Select a benchmark…' }]), ...BENCHMARKS.map((b) => ({ value: b.id, label: b.name }))]
 
   return (
-    <div className="mt-5 grid grid-cols-[22.5rem_minmax(0,1fr)] grid-rows-[auto_1fr]">
-      <div className="pr-5">
-        <SearchInput value={q} onValueChange={setQ} placeholder="Search benchmarks or indices…" aria-label="Search benchmarks" />
-        <div className="mt-2.5 mb-2 text-xs text-fg-muted">{ql ? `${list.length} of ${BENCHMARKS.length} benchmarks` : `${BENCHMARKS.length} benchmarks`}</div>
-      </div>
-      <div />
-      <RadioGroup aria-label="Benchmark" value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v as string })} className="min-w-0 border-t border-line">
-        {list.map((b) => (
-          <label
-            key={b.id}
-            className="flex cursor-pointer items-start gap-2.5 border-b border-line bg-surface py-2.75 pr-5 pl-3 hover:bg-surface-subtle has-data-checked:bg-surface-muted"
-          >
-            <Radio value={b.id} className="mt-0.5" />
-            <span className="flex min-w-0 flex-1 flex-col gap-px">
-              <span>{b.name}</span>
-              <span className="text-xs text-fg-muted">{b.parts.map(([n, w]) => `${n} ${w}%`).join(' · ')}</span>
-            </span>
-            {b.ccy !== pccy && <CurrencyTag ccy={b.ccy} portfolioCcy={pccy} />}
-          </label>
-        ))}
-        {!list.length && <div className="p-3 text-fg-subtle">No benchmarks match “{q}”</div>}
-      </RadioGroup>
-      <div className="min-w-0 bg-surface-muted px-7 py-5" aria-live="polite">
-        {sel ? (
-          // Same name on the old and new details → the browser cross-fades between them (a “share” transition).
+    <div className="mt-5">
+      <Field label="Benchmark" error={showError && !sel && 'Required'} className="w-90 max-w-full">
+        <Select value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} />
+      </Field>
+      {sel && (
+        <div className="mt-5 bg-surface-muted px-7 py-5" aria-live="polite">
           <ViewTransition key={sel.id} name="bench-detail" share="swap">
-          <div className="sticky top-4">
+          <div>
             <h3 className="text-lg">{sel.name}</h3>
             <div className="mt-0.5 text-xs text-fg-muted">Currency {sel.ccy} · {sel.parts.length} {sel.parts.length === 1 ? 'index' : 'indices'}</div>
             {sel.ccy !== pccy && (
@@ -99,10 +77,8 @@ function BenchmarkPicker() {
             </div>
           </div>
           </ViewTransition>
-        ) : (
-          <p className="text-fg-subtle">Select a benchmark from the list.</p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
