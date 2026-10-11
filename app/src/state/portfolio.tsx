@@ -92,6 +92,27 @@ export function missingData(s: PortfolioState): string[] {
   return [!d.code.trim() && 'code', !d.name.trim() && 'name', !BENCHMARKS.some((b) => b.id === d.benchmark) && 'benchmark'].filter((v): v is string => !!v)
 }
 
+/**
+ * A new model portfolio starts empty: no name, code or benchmark, no preferences or exclusions, no building blocks,
+ * model portfolios or instruments, no weights. The one thing that exists is the default EUR cash position at 0%.
+ */
+export function startNew(s: PortfolioState) {
+  s.data = { code: '', name: '', description: '', ccy: 'EUR', benchmark: '' }
+  s.prefs = { minPos: '', maxInst: '', sel: { geography: [], sector: [], currency: [], category: [] }, rating: RATINGS.length, unrated: false, esg: 0, inst: [] }
+  s.comps = { added: [], inst: [], cash: [{ ccy: 'EUR', w: 0 }] }
+  s.weights = {}
+  s.book = { id: '', task: null }
+  s.sim.mode = 'new'
+}
+/** Opening an existing portfolio from the book shows the illustrative content again (the prototype stores one sample). */
+export function restoreSample(s: PortfolioState) {
+  const fresh = structuredClone(INITIAL)
+  s.data = fresh.data
+  s.prefs = fresh.prefs
+  s.comps = fresh.comps
+  s.weights = fresh.weights
+}
+
 export const componentById = (id: string) => COMPONENTS.find((c) => c.id === id)!
 export const instrumentByIsin = (isin: string) => COMPONENT_INSTRUMENTS.find((x) => x.isin === isin) ?? EXCLUDABLE_INSTRUMENTS.find((x) => x.isin === isin)!
 export const benchmarkById = (id: string) => BENCHMARKS.find((b) => b.id === id)

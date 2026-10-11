@@ -21,9 +21,6 @@ export function DataView() {
           <Field label="Model portfolio name" error={touched.name && !d.name.trim() && 'Required'}>
             <Input aria-invalid={touched.name && !d.name.trim()} onBlur={() => setTouched((t) => ({ ...t, name: true }))} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
           </Field>
-          <Field label="Description" description="Optional.">
-            <Input value={d.description} onValueChange={(v) => update((s) => { s.data.description = v })} />
-          </Field>
           <Field label="Currency">
             <Select value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={PORTFOLIO_CURRENCIES.map((c) => ({ value: c, label: c }))} />
           </Field>
@@ -49,7 +46,7 @@ function BenchmarkPicker({ showError }: { showError?: boolean }) {
         <Select value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} />
       </Field>
       {sel && (
-        <div className="mt-5 bg-surface-muted px-7 py-5" aria-live="polite">
+        <div className="mt-5 rounded-sm border border-selected/25 bg-selected/5 px-7 py-5" aria-live="polite">
           <ViewTransition key={sel.id} name="bench-detail" share="swap">
           <div>
             <h3 className="text-lg">{sel.name}</h3>
