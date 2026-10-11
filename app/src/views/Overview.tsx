@@ -11,7 +11,7 @@ export type AllocRow = { label: string; alloc: Alloc }
  * Overview strip above Component allocation and Simulation: three columns with one row rhythm —
  * Asset allocation | Quality checks | Portfolio. Full by default; compact = two lines per column.
  */
-type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean }
+type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Show the Quality checks column (default true). */ quality?: boolean }
 
 /**
  * The same strip sits on Component allocation and on Simulation. One fixed view-transition name makes it a
@@ -32,7 +32,8 @@ export function Overview(props: OverviewProps) {
   )
 }
 
-function OverviewBody({ rows, focus, showChange, compact }: OverviewProps) {
+function OverviewBody({ rows, focus, showChange, compact, quality = true }: OverviewProps) {
+  const grid = cn('grid shrink-0 border-y border-line text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]')
   const { state } = usePortfolio()
   const failed = QUALITY_CHECKS.filter(([, s]) => s < PASS_SCORE)
   const excl = exclusionSummary(state.prefs)
@@ -53,7 +54,7 @@ function OverviewBody({ rows, focus, showChange, compact }: OverviewProps) {
     const inUse = ASSET_CLASSES.filter((c) => f[c] > 0.004)
     const line = `${state.data.ccy} · Standard · ${bench} · Exclusions: ${excl.length ? excl.join(' · ') : 'none'}`
     return (
-      <div className="grid shrink-0 grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)] border-y border-line text-xs">
+      <div className={grid}>
         <div className={sec}>
           <div className={title}>
             <span>Asset allocation</span>
@@ -72,7 +73,7 @@ function OverviewBody({ rows, focus, showChange, compact }: OverviewProps) {
             })}
           </div>
         </div>
-        <div className={sec}><div className={title}>Quality checks</div><div className="leading-relaxed">{status}</div></div>
+        {quality && <div className={sec}><div className={title}>Quality checks</div><div className="leading-relaxed">{status}</div></div>}
         <div className={sec}>
           <div className={title}><span>Portfolio</span>{editExclusions}</div>
           <div className="truncate leading-relaxed" title={line}>{line}</div>
@@ -82,11 +83,12 @@ function OverviewBody({ rows, focus, showChange, compact }: OverviewProps) {
   }
 
   return (
-    <div className="grid shrink-0 grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)] border-y border-line text-xs">
+    <div className={grid}>
       <div className={sec}>
         <div className={title}>Asset allocation</div>
         <AllocationBlock rows={rows} focus={focus} showChange={showChange} />
       </div>
+      {quality && (
       <div className={sec}>
         <div className={title}><span>Quality checks</span>{status}</div>
         <ul>
@@ -102,6 +104,7 @@ function OverviewBody({ rows, focus, showChange, compact }: OverviewProps) {
           })}
         </ul>
       </div>
+      )}
       <div className={sec}>
         <div className={title}>Portfolio</div>
         <dl>
