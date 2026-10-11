@@ -11,7 +11,8 @@ import { cn } from '../../lib/cn'
  *           link      text actions inside content ("Fill remaining", "Clear all")
  *           ghost     icon-only and quiet actions (row ×, ⋯)
  * tone:     onDark    the same variants on the dark action bar
- * size:     sm 28px · md 32px · lg 36px (Tailwind h-7 / h-8 / h-9)
+ * size:     xs 24px, 12px text: actions inside 12px table rows, so they match the row's own text
+ *           sm 28px · md 32px · lg 36px (Tailwind h-7 / h-8 / h-9)
  */
 export const buttonVariants = cva(
   'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap select-none disabled:cursor-default',
@@ -28,6 +29,7 @@ export const buttonVariants = cva(
         onDark: 'focus-visible:outline-fg-inverse',
       },
       size: {
+        xs: 'h-6 px-2 text-xs',
         sm: 'h-7 px-2.5 text-sm',
         md: 'h-8 px-3.5 text-sm',
         lg: 'h-9 px-4.5 text-sm',

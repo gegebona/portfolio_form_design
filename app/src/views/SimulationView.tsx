@@ -241,15 +241,15 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                   {t ? (
                     <span className="inline-flex gap-1">
                       {(['Accepted', 'Rejected', 'Deferred'] as const).map((st) => (
-                        <Button key={st} size="sm" aria-pressed={t.status === st} className={cn(t.status === st && 'border-control-active bg-surface-strong font-semibold')} onClick={() => decide(st)}>
+                        <Button key={st} size="xs" aria-pressed={t.status === st} className={cn(t.status === st && 'border-control-active bg-surface-strong font-semibold')} onClick={() => decide(st)}>
                           {{ Accepted: 'Accept', Rejected: 'Reject', Deferred: 'Defer' }[st]}
                         </Button>
                       ))}
                     </span>
                   ) : c ? (
                     <span className="inline-flex gap-1">
-                      <Button size="sm" onClick={() => edit(r.id, (x) => { x.kept = true; x.keptOn = new Date().toLocaleDateString('en-GB') })}>Keep</Button>
-                      <Button size="sm" onClick={() => setRemoving({ id: r.id, method: 'proportional' })}>Remove…</Button>
+                      <Button size="xs" onClick={() => edit(r.id, (x) => { x.kept = true; x.keptOn = new Date().toLocaleDateString('en-GB') })}>Keep</Button>
+                      <Button size="xs" onClick={() => setRemoving({ id: r.id, method: 'proportional' })}>Remove…</Button>
                     </span>
                   ) : (
                     <Menu
