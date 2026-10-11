@@ -2,7 +2,7 @@ import { TriangleAlert } from 'lucide-react'
 import { Fragment, useState, type ReactNode } from 'react'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
-import { ASSET_CLASSES, benchFor, componentHoldings, figures, type Component, type Holding } from '../data/data'
+import { ASSET_CLASSES, componentHoldings, type Component, type Holding } from '../data/data'
 import { cn } from '../lib/cn'
 import { f2, pct, usePortfolio, type Alloc } from '../state/portfolio'
 import { Donut, Swatch } from './Overview'
@@ -12,14 +12,12 @@ const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 
 /**
  * Component details, used by the Allocation panel and the Learn more window.
- * Left: the component's asset allocation (the same donut and class colours as the portfolio overview), its benchmark and
- * risk / return. Right: every instrument it holds, in two views that mirror Simulation — a flat Instrument view and an
+ * Left: the component's asset allocation (the same donut and class colours as the portfolio overview). Right: every instrument it holds, in two views that mirror Simulation — a flat Instrument view and an
  * Asset class view with group subtotals. An instrument on the portfolio's excluded list is highlighted as a conflict.
  */
 export function ComponentDetail({ c }: { c: Component }) {
   const { state } = usePortfolio()
   const [view, setView] = useState<'instrument' | 'class'>('instrument')
-  const f = figures(c)
   const list = componentHoldings(c)
   const alloc: Alloc = { Equity: 0, Bonds: 0, Alternatives: 0, Liquidity: 0 }
   list.forEach((h) => { alloc[h.cls] += h.w })
@@ -42,13 +40,8 @@ export function ComponentDetail({ c }: { c: Component }) {
   return (
     <>
       <p className="mt-3 max-w-205 text-fg-secondary">{c.desc} The currency risk is not hedged.</p>
-      <div className="mt-4.5 flex flex-wrap gap-x-12 gap-y-4">
-        <Stat label="Benchmark risk" value={f2(f.r3) + '%'} sub="3 years" />
-        <Stat label="Benchmark return" value={f2(f.y3) + '%'} sub="3 years" />
-        <Stat label="Current investments" value={String(list.length)} sub="Instruments and accounts" />
-      </div>
-      <div className="mt-5.5 grid grid-cols-[repeat(auto-fit,minmax(17.5rem,1fr))] items-start gap-x-7 gap-y-5">
-        <div className="flex min-w-0 flex-col gap-5">
+      <div className="mt-5 flex flex-wrap items-start gap-x-10 gap-y-5">
+        <div className="shrink-0">
           <div>
             <div className="pb-1.5 text-xs text-fg-muted">Asset allocation</div>
             <div className="flex items-center gap-x-6 text-xs">
@@ -65,16 +58,9 @@ export function ComponentDetail({ c }: { c: Component }) {
               </table>
             </div>
           </div>
-          <MiniTable caption="Benchmark" heads={['Index', 'Weight']} numFrom={1} rows={benchFor(c).map(([n, w]) => [n, w + '%'])} />
-          <MiniTable
-            caption="Risk and return"
-            heads={['Period', 'Risk', 'Return']}
-            numFrom={1}
-            rows={[['YTD', '—', f2(f.ytd) + '%'], ['1 year', f2(f.r1) + '%', f2(f.y1) + '%'], ['3 years', f2(f.r3) + '%', f2(f.y3) + '%'], ['5 years', f2(f.r5) + '%', f2(f.y5) + '%']]}
-          />
         </div>
 
-        <div className="min-w-0 text-xs">
+        <div className="min-w-70 flex-[1_1_24rem] text-xs">
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-line">
             <Tabs value={view} onValueChange={(v) => setView(v as 'instrument' | 'class')}>
               <TabsList variant="sub" aria-label="Included instruments view">
@@ -85,7 +71,8 @@ export function ComponentDetail({ c }: { c: Component }) {
             <span role="status" className="inline-flex items-center gap-1.5 pb-1.5">
               {conflicts > 0
                 ? <><TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />{conflicts} {conflicts === 1 ? 'instrument conflicts' : 'instruments conflict'} with exclusions</>
-                : <span className="text-fg-muted">{list.length} included instruments</span>}
+                : null}
+              <span className="text-fg-muted">{conflicts > 0 && '· '}{list.length} included instruments</span>
             </span>
           </div>
           <table className="w-full border-collapse">
