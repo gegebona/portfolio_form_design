@@ -38,12 +38,12 @@ function BenchmarkPicker({ showError }: { showError?: boolean }) {
   const { state, animate } = usePortfolio()
   const pccy = state.data.ccy
   const sel = BENCHMARKS.find((b) => b.id === state.data.benchmark)
-  const items = [...(sel ? [] : [{ value: '', label: 'Select a benchmark…' }]), ...BENCHMARKS.map((b) => ({ value: b.id, label: b.name }))]
+  const items = BENCHMARKS.map((b) => ({ value: b.id, label: b.name }))
 
   return (
     <div className="mt-5">
       <Field label="Benchmark" error={showError && !sel && 'Required'} className="w-90 max-w-full">
-        <Select value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} />
+        <Select value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} placeholder="Select a benchmark…" />
       </Field>
       {sel && (
         <div className="mt-5 rounded-sm border border-selected/25 bg-selected/5 px-7 py-5" aria-live="polite">

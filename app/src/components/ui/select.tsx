@@ -10,8 +10,10 @@ type Item = { value: string; label: string }
  * (alignItemWithTrigger), like a native select, and is keyboard- and screen-reader-complete.
  */
 export function Select({
-  value, onValueChange, items, className, 'aria-label': ariaLabel, id,
+  value, onValueChange, items, className, placeholder, 'aria-label': ariaLabel, id,
 }: {
+  /** Shown in a quieter ink while the value matches no item (nothing chosen yet). */
+  placeholder?: string
   value: string
   onValueChange: (v: string) => void
   items: Item[]
@@ -29,7 +31,9 @@ export function Select({
           className,
         )}
       >
-        <BaseSelect.Value className="truncate" />
+        <BaseSelect.Value className="truncate">
+          {(v: string) => items.find((it) => it.value === v)?.label ?? <span className="text-fg-subtle">{placeholder}</span>}
+        </BaseSelect.Value>
         <BaseSelect.Icon className="flex text-fg-secondary">
           <ChevronDown className="size-3.5" strokeWidth={1.75} />
         </BaseSelect.Icon>
