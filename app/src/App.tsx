@@ -96,9 +96,6 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
   // Mandatory data of the first step gates everything: later steps stay locked and the draft cannot be saved.
   const missing = missingData(state)
   const blocked = missing.length > 0
-  // Errors appear only after the user has tried to continue or save with data missing.
-  const [tried, setTried] = useState(false)
-  const attempt = (fn: () => void) => { if (blocked) setTried(true); else fn() }
   // Simulation's Current version is the published portfolio: read-only, so it can be neither saved as a draft nor published.
   const viewingCurrent = asked === 'simulation' && state.sim.mode === 'current'
   const step: StepId = blocked ? 'data' : asked
@@ -131,9 +128,9 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
 
       {/* Panel: tabs and action bar stay put; only the view scrolls (or its inner lists). */}
       <div className="mb-4 flex min-h-0 flex-1 flex-col border border-line-strong bg-surface">
-        <Tabs value={step} onValueChange={(v) => attempt(() => onStep(v as StepId))}>
+        <Tabs value={step} onValueChange={(v) => onStep(v as StepId)}>
           <TabsList variant="step" className="border-b border-line px-5">
-            {STEPS.map((s) => <Tab key={s.id} value={s.id}>{s.label}</Tab>)}
+            {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={blocked && s.id !== 'data'} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : undefined}>{s.label}</Tab>)}
             <Tab value="reporting" disabled title="Not available yet">Reporting</Tab>
           </TabsList>
         </Tabs>
@@ -142,16 +139,17 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
           {/* Animates only when a step change tags the transition 'forward' / 'back'; other updates inside stay instant. */}
           <ViewTransition update={{ forward: 'step-forward', back: 'step-back', default: 'none' }} default="none">
             <div className="flex min-h-0 flex-1 flex-col">
-              {step === 'data' ? <DataView showErrors={tried} /> : step === 'preferences' ? <PreferencesView /> : step === 'components' ? <ComponentsView /> : step === 'allocation' ? <AllocationView /> : <SimulationView />}
+              {step === 'data' ? <DataView /> : step === 'preferences' ? <PreferencesView /> : step === 'components' ? <ComponentsView /> : step === 'allocation' ? <AllocationView /> : <SimulationView />}
             </div>
           </ViewTransition>
         </div>
 
         <ActionBar
           back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
-          next={next ? { label: next.label, onClick: () => attempt(() => onStep(next.id)) } : { label: 'Publish', onClick: () => {}, disabled: viewingCurrent }}
-          onSave={viewingCurrent ? undefined : () => attempt(save)}
-          note={tried && blocked ? `Still needed: ${missing.join(', ')}.` : viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.' : undefined}
+          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked } : { label: 'Publish', onClick: () => {}, disabled: viewingCurrent }}
+          onSave={viewingCurrent ? undefined : save}
+          saveDisabled={blocked}
+          note={blocked ? `Still needed: ${missing.join(', ')}.` : viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.' : undefined}
         />
       </div>
     </main>
@@ -159,7 +157,7 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
 }
 
 /** Dark action bar: Back + Cancel on the left, Save as draft + the forward step (the one primary) on the right. */
-function ActionBar({ back, next, onSave, note }: { back?: { label: string; onClick: () => void }; next: { label: string; onClick: () => void; disabled?: boolean }; /** Omitted where nothing can be saved (the read-only Current version). */ onSave?: () => void; /** Short status next to the actions: what is still needed, or why saving is unavailable. */ note?: string }) {
+function ActionBar({ back, next, onSave, saveDisabled, note }: { saveDisabled?: boolean; back?: { label: string; onClick: () => void }; next: { label: string; onClick: () => void; disabled?: boolean }; /** Omitted where nothing can be saved (the read-only Current version). */ onSave?: () => void; /** Short status next to the actions: what is still needed, or why saving is unavailable. */ note?: string }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 bg-surface-inverse px-6 py-3">
       <div className="flex items-center gap-2.5">
@@ -173,7 +171,7 @@ function ActionBar({ back, next, onSave, note }: { back?: { label: string; onCli
       </div>
       <div className="flex items-center gap-2.5">
         {note && <span role="status" className="mr-1.5 text-xs text-surface-strong">{note}</span>}
-        {onSave && <Button variant="secondary" tone="onDark" size="lg" onClick={onSave}>Save as draft</Button>}
+        {onSave && <Button variant="secondary" tone="onDark" size="lg" disabled={saveDisabled} onClick={onSave}>Save as draft</Button>}
         <Button variant="primary" tone="onDark" size="lg" disabled={next.disabled} onClick={next.onClick}>
           {next.label}
           <ChevronRight className="size-3.5" strokeWidth={2} />
