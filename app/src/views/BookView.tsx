@@ -114,17 +114,16 @@ export function BookView() {
   const [status, setStatus] = useState('all')
   const [area, setArea] = useState('all')
   const [creator, setCreator] = useState('all')
-  const [mine, setMine] = useState(false)
   const [sort, setSort] = useState<Sort>({ key: 'id', dir: 'asc' })
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [size, setSize] = useState('10')
   const [page, setPage] = useState(0)
 
   const ql = q.trim().toLowerCase()
-  const filtered = status !== 'all' || area !== 'all' || creator !== 'all' || mine
+  const filtered = status !== 'all' || area !== 'all' || creator !== 'all'
   const matches = (e: BookEntry) =>
     (type === 'all' || e.type === type) && (status === 'all' || e.status === status) && (area === 'all' || (e.alloc[area as AssetClass] ?? 0) > 0) &&
-    (creator === 'all' || e.creator === creator) && (!mine || e.creator === BOOK_USER) &&
+    (creator === 'all' || e.creator === creator) &&
     (!ql || e.name.toLowerCase().includes(ql) || e.id.includes(ql))
   const ids = new Set(list.filter(matches).map((e) => e.id))
   const cmp = (a: BookEntry, b: BookEntry) => {
@@ -178,7 +177,7 @@ export function BookView() {
 
   const toggle = (id: string) => setExpanded((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const sortBy = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
-  const clear = () => { setStatus('all'); setArea('all'); setCreator('all'); setMine(false) }
+  const clear = () => { setStatus('all'); setArea('all'); setCreator('all') }
 
 
   const head = (key: SortKey, label: string, className?: string) => {
@@ -211,7 +210,8 @@ export function BookView() {
             <Select aria-label="Asset class" value={area} onValueChange={setArea} items={options('All asset classes', ASSET_CLASSES.filter((c) => list.some((e) => (e.alloc[c] ?? 0) > 0)))} className="h-7 w-40 text-xs" />
             <Select aria-label="Created by" value={creator} onValueChange={setCreator} items={options('All creators', uniq(list.map((e) => e.creator)))} className="h-7 w-36 text-xs" />
             <label className="ml-2 flex cursor-pointer items-center gap-2 text-xs">
-              <Checkbox checked={mine} onCheckedChange={setMine} />
+              {/* A shortcut for the creator filter: ticking it selects the signed-in user there, so the two can never disagree. */}
+              <Checkbox checked={creator === BOOK_USER} onCheckedChange={(v) => setCreator(v ? BOOK_USER : 'all')} />
               My portfolios
             </label>
             {filtered && <Button variant="link" className="ml-2 text-xs" onClick={clear}>Clear filters</Button>}

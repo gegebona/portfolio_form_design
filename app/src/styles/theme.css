@@ -115,7 +115,7 @@
   /* Lines */
   --color-line: var(--color-ubs-background-tags-22);              /* dividers inside panels (UBS has no border token this light) */
   --color-line-strong: var(--color-ubs-border-illustrative);      /* panel and card borders */
-  --color-control: var(--color-ubs-border-light);                 /* input and button borders */
+  --color-control: var(--color-ubs-border-illustrative);          /* input and button borders: light, the same tone as panel borders (was the darker ubs-border-light) */
   --color-control-active: var(--color-ubs-border-light-hovered);  /* focused input border */
   --color-focus: var(--color-ubs-focus-ring);                     /* keyboard focus ring */
 

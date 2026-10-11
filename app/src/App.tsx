@@ -82,7 +82,7 @@ function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route)
               href={'#' + l.to}
               onClick={(e) => { e.preventDefault(); onNavigate(l.to) }}
               aria-current={l.active ? 'page' : undefined}
-              className="flex items-center border-b-3 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-tab-active"
+              className="flex items-center border-b-2 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-tab-active"
             >
               {l.label}
             </a>

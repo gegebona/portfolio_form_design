@@ -25,7 +25,7 @@ export function TabsList({ variant = 'step', className, children, ...props }: Om
     <VariantContext.Provider value={variant}>
       <BaseTabs.List className={cn('relative z-0 flex gap-6', variant === 'segment' && 'gap-0', className)} {...props}>
         {children}
-        {variant !== 'segment' && <BaseTabs.Indicator className="absolute bottom-0 left-0 h-0.75 w-(--active-tab-width) translate-x-(--active-tab-left) bg-tab-active transition-[translate,width] duration-200 ease-out" />}
+        {variant !== 'segment' && <BaseTabs.Indicator className="absolute bottom-0 left-0 h-0.5 w-(--active-tab-width) translate-x-(--active-tab-left) bg-tab-active transition-[translate,width] duration-200 ease-out" />}
       </BaseTabs.List>
     </VariantContext.Provider>
   )
@@ -43,7 +43,7 @@ export function Tab({ className, ...props }: Omit<ComponentProps<typeof BaseTabs
   return (
     <BaseTabs.Tab
       className={cn(
-        'inline-flex cursor-pointer items-center gap-1.5 border-b-3 border-transparent pb-1.5 whitespace-nowrap',
+        'inline-flex cursor-pointer items-center gap-1.5 border-b-2 border-transparent pb-1.5 whitespace-nowrap',
         'hover:border-line-strong hover:text-fg data-active:cursor-default data-active:border-transparent data-active:text-fg',
         'data-disabled:cursor-default data-disabled:text-fg-disabled data-disabled:hover:border-transparent',
         tabVariant[variant],
