@@ -1,4 +1,4 @@
-import { Info, MoreHorizontal, TriangleAlert } from 'lucide-react'
+import { ChevronDown, ChevronRight, Info, MoreHorizontal, TriangleAlert } from 'lucide-react'
 import { addTransitionType, Fragment, startTransition, useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
@@ -8,11 +8,11 @@ import { Radio, RadioGroup, Switch } from '../components/ui/selection'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
-import { BOOK_USER } from '../data/data'
+import { ASSET_CLASSES, BOOK_USER, CLASS_COLOR, type AssetClass } from '../data/data'
 import { cn } from '../lib/cn'
 import { setBookTaskStatus } from '../state/book'
 import { f2, near100, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
-import { Overview } from './Overview'
+import { Overview, Swatch } from './Overview'
 
 type Mode = 'current' | 'new'
 type View = 'instrument' | 'class' | 'block' | 'exposure'
@@ -96,7 +96,8 @@ export function SimulationView() {
         <ViewTransition update={{ positions: 'table-swap', default: 'none' }} default="none">
         <div className="min-h-0 flex-1 overflow-auto">
           {view === 'instrument' ? <InstrumentTable mode={mode} showZero={showZero} />
-            : <GroupTable mode={mode} showZero={showZero} title={{ class: 'Asset class', block: 'Building block', exposure: 'Currency' }[view]}
+            : <GroupTable key={view} mode={mode} showZero={showZero} title={{ class: 'Asset class', block: 'Building block', exposure: 'Currency' }[view]}
+                order={view === 'class' ? ASSET_CLASSES : undefined} hide={view === 'class' ? 'cls' : view === 'block' ? 'bb' : 'ccy'}
                 keyOf={view === 'class' ? (r) => r.cls : view === 'block' ? (r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments') : (r) => r.ccy} />}
         </div>
         </ViewTransition>
@@ -323,37 +324,71 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   )
 }
 
-function GroupTable({ mode, showZero, title, keyOf }: { mode: Mode; showZero: boolean; title: string; keyOf: (r: SimRow) => string }) {
+/**
+ * Read-only grouped view (Asset class, Building block, Exposure): one header row per group with its subtotal, and the
+ * group's instruments underneath with their own weights. Groups collapse; weights are edited only in the Instrument view.
+ */
+function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode; showZero: boolean; title: string; keyOf: (r: SimRow) => string; /** Fixed group order; without it, groups sort by weight. */ order?: string[]; /** The column the grouping already expresses. */ hide: 'cls' | 'bb' | 'ccy' }) {
   const { state } = usePortfolio()
+  const [closed, setClosed] = useState<Set<string>>(new Set())
   const cur = mode === 'current'
-  const groups = new Map<string, { n: number; w: number; nw: number }>()
-  state.sim.rows.forEach((r) => {
-    const k = keyOf(r)
-    const g = groups.get(k) ?? { n: 0, w: 0, nw: 0 }
-    if (cur || !r.removed) { g.n++; g.nw += r.removed ? 0 : r.nw }
-    g.w += r.w
-    groups.set(k, g)
-  })
-  const num = (v: ReactNode) => <td className={cn(td, 'text-right tabular-nums')}>{v}</td>
+  const wOf = (r: SimRow) => (cur ? r.w : r.nw)
+  const sum = (l: SimRow[], f: (r: SimRow) => number) => l.reduce((t, r) => t + f(r), 0)
+  const groups = new Map<string, SimRow[]>()
+  state.sim.rows
+    .filter((r) => (cur ? showZero || r.w > 0 : !r.removed && (showZero || r.w > 0 || r.nw > 0)))
+    .forEach((r) => { const k = keyOf(r); groups.set(k, [...(groups.get(k) ?? []), r]) })
+  const keys = [...groups.keys()].sort((a, b) => (order ? order.indexOf(a) - order.indexOf(b) : sum(groups.get(b) ?? [], wOf) - sum(groups.get(a) ?? [], wOf)))
+  const toggle = (k: string) => setClosed((c) => { const n = new Set(c); if (n.has(k)) n.delete(k); else n.add(k); return n })
+  const num = (v: ReactNode, strong?: boolean) => <td className={cn(td, 'text-right tabular-nums', strong && 'font-semibold')}>{v}</td>
+  const change = (d: number) => (Math.abs(d) < 0.005 ? <span className="text-fg-subtle">—</span> : (d > 0 ? '+' : '') + f2(d))
   return (
     <table className="w-full border-collapse text-xs">
       <thead>
         <tr>
-          <th className={th}>{title}</th><th className={cn(th, 'text-right')}>Positions</th>
+          <th className={th}>{title} / instrument</th>
+          {hide !== 'cls' && <th className={th}>Asset class</th>}
+          {hide !== 'bb' && <th className={th}>Building block</th>}
+          {hide !== 'ccy' && <th className={th}>Currency</th>}
           <th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
         </tr>
       </thead>
       <tbody>
-        {[...groups.entries()].filter(([, g]) => showZero || g.w > 0 || (!cur && g.nw > 0)).map(([k, g]) => {
-          const d = g.nw - g.w
+        {keys.map((k) => {
+          const list = [...(groups.get(k) ?? [])].sort((a, b) => wOf(b) - wOf(a))
+          const open = !closed.has(k)
+          const w = sum(list, (r) => r.w)
+          const nw = sum(list, (r) => r.nw)
           return (
-            <tr key={k} className="hover:*:bg-surface-subtle">
-              <td className={td}>{k}</td>{num(g.n)}{num(f2(g.w))}
-              {!cur && <>{num(f2(g.nw))}{num(Math.abs(d) < 0.005 ? <span className="text-fg-subtle">—</span> : (d > 0 ? '+' : '') + f2(d))}</>}
-            </tr>
+            <Fragment key={k}>
+              <tr className="*:bg-surface-subtle">
+                <td className={td} colSpan={3}>
+                  <span className="inline-flex items-center gap-1.5 font-semibold">
+                    <Button variant="ghost" size="icon-sm" aria-expanded={open} aria-label={`${open ? 'Collapse' : 'Expand'} ${k}`} onClick={() => toggle(k)}>
+                      {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                    </Button>
+                    <span>{k in CLASS_COLOR && <Swatch cls={k as AssetClass} />}{k}</span>
+                    <span className="font-normal text-fg-muted">· {list.length} {list.length === 1 ? 'position' : 'positions'}</span>
+                  </span>
+                </td>
+                {num(f2(w), true)}
+                {!cur && <>{num(f2(nw), true)}{num(change(nw - w))}</>}
+              </tr>
+              {open && list.map((r) => (
+                <tr key={r.id} className="hover:*:bg-surface-subtle">
+                  <td className={cn(td, 'pl-10')}>{r.name}{r.isin && <span className="block text-fg-muted">{r.isin}</span>}</td>
+                  {hide !== 'cls' && <td className={td}>{r.cls}</td>}
+                  {hide !== 'bb' && <td className={td}>{r.bb}</td>}
+                  {hide !== 'ccy' && <td className={td}>{r.ccy}</td>}
+                  {num(f2(r.w))}
+                  {!cur && <>{num(f2(r.nw), Math.abs(r.nw - r.w) >= 0.005)}{num(change(r.nw - r.w))}</>}
+                </tr>
+              ))}
+            </Fragment>
           )
         })}
+        {!keys.length && <tr><td colSpan={7} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
   )
