@@ -44,14 +44,11 @@ export function SimulationView() {
   })
 
   return (
-    <Section
-      screenHeading
-      title="Simulation"
-      description="Compare the current portfolio with the new allocation and fine-tune position weights."
-      className="flex min-h-0 flex-1 flex-col"
-    >
-      {/* Version bar: Current / New switch the whole screen; the overview toggle sits right next to them. */}
-      <div className="mt-3.5 flex flex-wrap items-end gap-x-7 gap-y-2 border-b border-line">
+    <Section className="flex min-h-0 flex-1 flex-col pt-3 pb-2.5">
+      {/* One compact row: the screen title, the Current / New switch and the overview toggle. Everything above the
+          positions table is kept short so the table gets the height. */}
+      <div className="flex flex-wrap items-end gap-x-7 gap-y-2 border-b border-line">
+        <h2 className="pb-2.5 text-xl">Simulation</h2>
         <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))} className="pb-2.5">
           <TabsList variant="segment" aria-label="Portfolio version">
             <Tab value="current">Current</Tab>
@@ -77,7 +74,7 @@ export function SimulationView() {
       </div>
       <Overview rows={[{ label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} />
 
-      <div className="mt-4 flex min-h-0 flex-1 flex-col">
+      <div className="mt-2 flex min-h-0 flex-1 flex-col">
         <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line">
           <Tabs value={view} onValueChange={(v) => switchTable(() => setView(v as View))}>
             <TabsList variant="sub" aria-label="Positions view">
@@ -85,7 +82,7 @@ export function SimulationView() {
             </TabsList>
           </Tabs>
           <div className="flex items-center gap-4.5 pb-1.5">
-            {!cur && <Button size="md" onClick={() => { location.hash = 'components' }}>+ Add component</Button>}
+            {!cur && <Button size="sm" onClick={() => { location.hash = 'components' }}>+ Add component</Button>}
             <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
               <Switch checked={showZero} onCheckedChange={setShowZero} />
               Show zero-weighted positions
@@ -100,10 +97,10 @@ export function SimulationView() {
                 keyOf={view === 'class' ? (r) => r.cls : view === 'block' ? (r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments') : (r) => r.ccy} />}
         </div>
         </ViewTransition>
-        <div className="flex shrink-0 items-center justify-end gap-4 border-t border-line-strong px-2.5 pt-2.5">
+        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-line-strong px-2.5 pt-1.5 text-xs">
           <span className="text-fg-muted">{cur ? 'Total weight' : 'Total new weight'}</span>
-          <strong className={cn('text-lg font-semibold tabular-nums', !near100(total) && 'text-error')}>{f2(total)}%</strong>
-          {!cur && <Button disabled={near100(total)} onClick={redistribute}>Redistribute to 100%</Button>}
+          <strong className={cn('text-sm font-semibold tabular-nums', !near100(total) && 'text-error')}>{f2(total)}%</strong>
+          {!cur && <Button size="xs" disabled={near100(total)} onClick={redistribute}>Redistribute to 100%</Button>}
         </div>
       </div>
     </Section>
