@@ -22,7 +22,8 @@ export function SimulationView() {
   const mode = state.sim.mode
   const setMode = (m: Mode) => update((s) => { s.sim.mode = m })
   const [view, setView] = useState<View>('instrument')
-  const [compact, setCompact] = useState(false)
+  // Compact by default: the strip is context, the tables below are the work. Full view is one click away.
+  const [compact, setCompact] = useState(true)
   const [showZero, setShowZero] = useState(false)
   const rows = state.sim.rows
   // Changing view or version swaps the table in a transition tagged 'positions' (see the table boundary below).

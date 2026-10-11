@@ -10,8 +10,8 @@ export type AllocRow = { label: string; alloc: Alloc }
 /**
  * Overview strip above Component allocation and Simulation: three columns with one row rhythm —
  * Asset allocation | Exclusionary preferences | Portfolio. Full by default; compact = two lines per column.
- * Exclusions sit in the middle because they explain the flags in the tables below. Each excluded value is a red-tint
- * tag with the ⊘ mark (the system's sign for "excluded"), so nobody can read the list as things that were chosen.
+ * Exclusions sit in the middle because they explain the flags in the tables below. They are plain text under a
+ * ⊘ heading (the system's sign for "excluded"): clear about what they are, without competing with the tables.
  */
 type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Show the Quality checks column. Off everywhere for now. */ quality?: boolean }
 
@@ -116,23 +116,19 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
       )}
       {!quality && (
         <div className={sec}>
-          <div className={title}><span>Exclusionary preferences</span>{editExclusions}</div>
+          <div className={title}><span className="inline-flex items-center gap-1.5"><Ban className="size-3" strokeWidth={1.75} aria-hidden />Exclusionary preferences</span>{editExclusions}</div>
           {exclusionGroups(state.prefs).length ? (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              {exclusionGroups(state.prefs).map((g) => (
-                <span key={g.label} className="inline-flex flex-wrap items-center gap-1">
-                  <span className="mr-0.5 text-fg-muted">{g.label}</span>
-                  {g.values.slice(0, 3).map((v) => (
-                    <span key={v} className="inline-flex items-center gap-1 border border-excluded-border bg-excluded px-1.5 text-xs/4.5 whitespace-nowrap">
-                      <Ban className="size-2.5 shrink-0" strokeWidth={2} aria-label="Excluded" />{v}
-                    </span>
-                  ))}
-                  {g.values.length > 3 && <span className="text-fg-muted" title={g.values.slice(3).join(', ')}>+{g.values.length - 3} more</span>}
+            <p className="leading-relaxed">
+              {exclusionGroups(state.prefs).map((g, i) => (
+                <span key={g.label} title={g.values.join(', ')}>
+                  {i > 0 && <span className="text-fg-subtle"> · </span>}
+                  <span className="text-fg-muted">{g.label}: </span>
+                  {g.values.slice(0, 3).join(', ')}{g.values.length > 3 && ` +${g.values.length - 3}`}
                 </span>
               ))}
-            </div>
+            </p>
           ) : <p className="text-fg-subtle">Nothing excluded</p>}
-          <div className="mt-2 text-fg-muted">Limits: min. position {state.prefs.minPos || '—'}% · max. {state.prefs.maxInst || '—'} instruments</div>
+          <div className="mt-1 text-fg-muted">Limits: min. position {state.prefs.minPos || '—'}% · max. {state.prefs.maxInst || '—'} instruments</div>
         </div>
       )}
       <div className={sec}>

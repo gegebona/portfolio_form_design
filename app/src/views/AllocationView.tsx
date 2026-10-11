@@ -16,7 +16,8 @@ import { Overview } from './Overview'
 
 export function AllocationView() {
   const { state, update } = usePortfolio()
-  const [compact, setCompact] = useState(false)
+  // Compact by default: the strip is context, the tables below are the work. Full view is one click away.
+  const [compact, setCompact] = useState(true)
   const [selKey, setSelKey] = useState<string | null>(null)
   const list = allocItems(state)
   const sel = list.find((it) => it.key === selKey) ?? list[0]
