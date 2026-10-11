@@ -44,7 +44,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
   const editExclusions = <Button variant="link" className="text-xs" onClick={() => { location.hash = 'preferences' }}>Edit</Button>
   const status = (
     <span className={cn('inline-flex items-center gap-1.25', failed.length ? 'text-error' : 'text-fg')}>
-      {failed.length ? <TriangleAlert className="size-3" strokeWidth={1.75} /> : <Check className="size-3" strokeWidth={2.5} />}
+      {failed.length ? <TriangleAlert className="size-3 text-error" strokeWidth={1.75} /> : <Check className="size-3" strokeWidth={2.5} />}
       {failed.length ? `${failed.length} of ${QUALITY_CHECKS.length} failed${compact ? ': ' + failed.map(([n]) => n).join(', ') : ''}` : `${QUALITY_CHECKS.length} of ${QUALITY_CHECKS.length} passed`}
     </span>
   )
@@ -106,7 +106,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
             const fail = score < PASS_SCORE
             return (
               <li key={name} className={cn('grid grid-cols-[minmax(max-content,1fr)_minmax(3rem,0.8fr)_1.75rem] items-center gap-3 border-t border-line py-0.75 first:border-t-0', fail && 'text-error')}>
-                <span className="inline-flex items-center gap-1">{fail && <TriangleAlert className="size-3" />}{name}</span>
+                <span className="inline-flex items-center gap-1">{fail && <TriangleAlert className="size-3 text-error" />}{name}</span>
                 <ScoreDashes score={score} fail={fail} />
                 <span className="text-right tabular-nums">{score.toFixed(1)}</span>
               </li>

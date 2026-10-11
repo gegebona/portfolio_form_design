@@ -182,7 +182,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
     {toReview + keptN > 0 && (
       <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-2.5 py-1.5 text-xs">
         <span className="inline-flex items-center gap-1.5">
-          <TriangleAlert className={cn('size-3.5', toReview > 0 ? 'text-error' : 'text-fg-subtle')} strokeWidth={1.75} aria-hidden />
+          <TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />
           {toReview > 0 ? `${toReview} ${toReview === 1 ? 'warning' : 'warnings'} to review` : 'No warnings to review'}
           {keptN > 0 && <span className="text-fg-muted">· {keptN} kept</span>}
         </span>

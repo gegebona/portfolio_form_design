@@ -8,13 +8,13 @@ import { cn } from '../../lib/cn'
  *   ConflictTag   pink fill, dark-red text: a component conflicts with exclusions (cards, allocation rows)
  *   ConflictNote  same text, no fill: inside rows that are already pink (Simulation)
  *   CurrencyTag   outlined: benchmark currency differs from the portfolio's
- * ⚠ marks conflicts and failed checks; ⊘ is reserved for excluded items.
+ * ⚠ marks conflicts and failed checks and is always red (the error token), wherever it appears; ⊘ is reserved for excluded items.
  */
 
 export function ConflictTag({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span className={cn('inline-flex items-start gap-1.25 self-start rounded-xs bg-excluded-subtle px-1.75 py-0.75 text-xs/snug text-conflict', className)}>
-      <TriangleAlert className="mt-px size-3 shrink-0" strokeWidth={1.75} aria-hidden />
+      <TriangleAlert className="mt-px size-3 shrink-0 text-error" strokeWidth={1.75} aria-hidden />
       <span>{children}</span>
     </span>
   )

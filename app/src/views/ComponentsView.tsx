@@ -165,7 +165,7 @@ function Basket() {
       </div>
       {nConf > 0 && (
         <div className="mt-1.5 flex items-start gap-1.5 text-xs text-fg-secondary">
-          <TriangleAlert className="mt-0.5 size-3 shrink-0" strokeWidth={1.75} />
+          <TriangleAlert className="mt-0.5 size-3 shrink-0 text-error" strokeWidth={1.75} />
           {nConf} {nConf === 1 ? 'component conflicts' : 'components conflict'} with your exclusions
         </div>
       )}
@@ -228,7 +228,7 @@ function BasketRow({ label, sub, warn, onRemove }: { label: string; sub?: string
     <div className="flex min-h-7.5 items-center gap-2.5">
       <Check className="size-3 shrink-0 text-selected" strokeWidth={3} aria-hidden />
       <span className="min-w-0 flex-1">{label}{sub && <span className="ml-1.5 text-xs text-fg-muted">{sub}</span>}</span>
-      {warn && <TriangleAlert className="size-3 text-fg-secondary" strokeWidth={1.75} aria-label="Conflicts with exclusions" />}
+      {warn && <TriangleAlert className="size-3 text-error" strokeWidth={1.75} aria-label="Conflicts with exclusions" />}
       {onRemove && <RemoveButton onClick={onRemove} label={'Remove ' + label} className="text-fg-subtle" />}
     </div>
     </ViewTransition>
