@@ -3,13 +3,14 @@ import { ViewTransition } from 'react'
 import { Button } from '../components/ui/button'
 import { ASSET_CLASSES, CLASS_COLOR, PASS_SCORE, QUALITY_CHECKS } from '../data/data'
 import { cn } from '../lib/cn'
-import { benchmarkById, exclusionSummary, pct, usePortfolio, type Alloc } from '../state/portfolio'
+import { benchmarkById, exclusionSummary, pct, preferenceRows, usePortfolio, type Alloc } from '../state/portfolio'
 
 export type AllocRow = { label: string; alloc: Alloc }
 
 /**
  * Overview strip above Component allocation and Simulation: three columns with one row rhythm —
- * Asset allocation | Quality checks | Portfolio. Full by default; compact = two lines per column.
+ * Asset allocation | Preferences | Portfolio. Full by default; compact = two lines per column.
+ * Preferences sits in the middle because it explains the flags in the tables below: limits and every exclusion at a glance.
  */
 type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Show the Quality checks column. Off everywhere for now. */ quality?: boolean }
 
@@ -33,12 +34,12 @@ export function Overview(props: OverviewProps) {
 }
 
 function OverviewBody({ rows, focus, showChange, compact, quality = false }: OverviewProps) {
-  const grid = cn('grid shrink-0 border-y border-line text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]')
+  const grid = cn('grid shrink-0 border-y border-line text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)_minmax(0,0.9fr)]')
   const { state } = usePortfolio()
   const failed = QUALITY_CHECKS.filter(([, s]) => s < PASS_SCORE)
   const excl = exclusionSummary(state.prefs)
   const bench = benchmarkById(state.data.benchmark)?.name ?? ''
-  const editExclusions = <Button variant="link" className="text-xs" onClick={() => { location.hash = 'preferences' }}>{compact ? 'Edit exclusions' : 'Edit'}</Button>
+  const editExclusions = <Button variant="link" className="text-xs" onClick={() => { location.hash = 'preferences' }}>Edit</Button>
   const status = (
     <span className={cn('inline-flex items-center gap-1.25', failed.length ? 'text-error' : 'text-fg')}>
       {failed.length ? <TriangleAlert className="size-3" strokeWidth={1.75} /> : <Check className="size-3" strokeWidth={2.5} />}
@@ -52,7 +53,8 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
     const f = rows[focus].alloc
     const other = rows[1 - focus].alloc
     const inUse = ASSET_CLASSES.filter((c) => f[c] > 0.004)
-    const line = `${state.data.ccy} · Standard · ${bench} · Exclusions: ${excl.length ? excl.join(' · ') : 'none'}`
+    const line = `${state.data.code} · Standard · ${state.data.ccy} · ${bench}`
+    const prefLine = excl.length ? excl.join(' · ') : 'No exclusions'
     return (
       <div className={grid}>
         <div className={sec}>
@@ -74,8 +76,14 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
           </div>
         </div>
         {quality && <div className={sec}><div className={title}>Quality checks</div><div className="leading-relaxed">{status}</div></div>}
+        {!quality && (
+          <div className={sec}>
+            <div className={title}><span>Preferences</span>{editExclusions}</div>
+            <div className="truncate leading-relaxed" title={prefLine}>{prefLine}</div>
+          </div>
+        )}
         <div className={sec}>
-          <div className={title}><span>Portfolio</span>{editExclusions}</div>
+          <div className={title}>Portfolio</div>
           <div className="truncate leading-relaxed" title={line}>{line}</div>
         </div>
       </div>
@@ -105,13 +113,26 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
         </ul>
       </div>
       )}
+      {!quality && (
+        <div className={sec}>
+          <div className={title}><span>Preferences</span>{editExclusions}</div>
+          {/* Three columns of label / value pairs; unset preferences read "None" in a quieter ink so the active ones stand out. */}
+          <dl className="grid grid-cols-3 gap-x-6">
+            {preferenceRows(state.prefs).map(([k, v]) => (
+              <div key={k} className="min-w-0 border-t border-line py-0.75 [&:nth-child(-n+3)]:border-t-0">
+                <dt className="text-fg-muted">{k}</dt>
+                <dd className={cn('truncate', v === 'None' && 'text-fg-subtle')} title={v}>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
       <div className={sec}>
         <div className={title}>Portfolio</div>
         <dl>
           {[
-            ['Currency', state.data.ccy], ['Type', 'Standard'], ['Benchmark', bench],
+            ['Code', state.data.code], ['Type', 'Standard'], ['Currency', state.data.ccy], ['Benchmark', bench],
           ].map(([k, v]) => <FactRow key={k} k={k}>{v}</FactRow>)}
-          <FactRow k="Exclusions">{excl.length ? excl.join(' · ') : 'None'} {editExclusions}</FactRow>
         </dl>
       </div>
     </div>

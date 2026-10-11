@@ -174,6 +174,26 @@ export function exclusionSummary(p: PortfolioState['prefs']) {
   return parts
 }
 
+/** Preferences as label / value rows for summaries: position limits first, then every exclusion ("None" when unset). */
+export function preferenceRows(p: PortfolioState['prefs']): [string, string][] {
+  const list = (cat: CategoryId, noun: string) => {
+    const l = p.sel[cat].map((id) => optionLabel(cat, id))
+    return !l.length ? 'None' : l.length > 3 ? `${l.length} ${noun}` : l.join(', ')
+  }
+  const rating = [p.rating < RATINGS.length ? RATINGS[p.rating] + ' and below' : '', p.unrated ? 'not rated' : ''].filter(Boolean).join(', ')
+  return [
+    ['Min. position', p.minPos ? p.minPos + '%' : 'None'],
+    ['Max. instruments', p.maxInst || 'None'],
+    ['Geography', list('geography', 'regions')],
+    ['Sector', list('sector', 'sectors')],
+    ['Currency', list('currency', 'currencies')],
+    ['Category', list('category', 'categories')],
+    ['Rating', rating || 'None'],
+    ['ESG', p.esg > 0 ? 'Score ' + ESG_SCORES[p.esg - 1] + ' and below' : 'None'],
+    ['Instruments', !p.inst.length ? 'None' : p.inst.length === 1 ? instrumentByIsin(p.inst[0]).name : p.inst.length + ' instruments'],
+  ]
+}
+
 // ---- Number helpers ----
 export const f2 = (n: number) => (Math.round(n * 100) / 100).toFixed(2)
 export const pct = (n: number) => Math.round(n * 10) / 10 + '%'
