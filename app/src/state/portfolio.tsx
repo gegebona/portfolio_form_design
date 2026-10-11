@@ -1,7 +1,7 @@
 import { createContext, startTransition, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import {
   AREA_CLASS, BENCHMARKS, CATEGORIES, COMPONENTS, COMPONENT_INSTRUMENTS, EXCLUDABLE_INSTRUMENTS, POSITIONS, RATINGS, ESG_SCORES,
-  type AssetClass, type CategoryId, type Component, type Position,
+  type AssetClass, type BookTask, type CategoryId, type Component, type Position,
 } from '../data/data'
 
 export type SimRow = Position & { nw: number; removed: boolean; kept: boolean }
@@ -23,6 +23,8 @@ export type PortfolioState = {
   /** Weights per allocation key ('c:<component id>', 'i:<isin>'); cash weights live on the cash entries. */
   weights: Record<string, number>
   sim: { rows: SimRow[] }
+  /** Which book entry is open in the flow, and its open position task (shown at the top of Simulation). */
+  book: { id: string; task: BookTask | null }
 }
 
 const INITIAL: PortfolioState = {
@@ -43,6 +45,7 @@ const INITIAL: PortfolioState = {
     'c:hybond': 7, 'c:gold': 3, 'c:mp-balanced': 6, 'c:mp-income': 2, 'i:US02079K1079': 3,
   },
   sim: { rows: POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false })) },
+  book: { id: '', task: null },
 }
 
 type Recipe = (draft: PortfolioState) => void

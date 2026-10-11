@@ -53,7 +53,7 @@ Tailwind defaults ─► UBS colour tokens ─► Semantic tokens ─► Compone
    - `font-normal` / `font-semibold`, `rounded-full`, the breakpoints.
 
    Using the built-in scales means anyone who knows Tailwind already knows our sizes.
-2. **UBS colour tokens.** These are the colours ubs.com publishes as `--col-*` (light theme). The theme keeps only the 31 the app uses; the full list of 108 is in [docs/ubs-colour-tokens.md](docs/ubs-colour-tokens.md).
+2. **UBS colour tokens.** These are the colours ubs.com publishes as `--col-*` (light theme). The theme keeps only the 33 the app uses; the full list of 108 is in [docs/ubs-colour-tokens.md](docs/ubs-colour-tokens.md).
    - They keep their UBS names with a `ubs-` prefix: `--col-text-subtle` becomes `--color-ubs-text-subtle`.
    - Values are copied from ubs.com, so they match UBS exactly; don't change them. To use another UBS colour, copy its line from the reference list.
    - **Edge cases only:** where UBS has no fitting colour, a Tailwind default colour is added back explicitly and marked in the file. Today there are two:
@@ -205,7 +205,7 @@ text   fg · fg-secondary · fg-muted · fg-subtle · fg-disabled · fg-inverse 
 bg     page · surface · surface-subtle · surface-muted · surface-strong · surface-inverse
 lines  line · line-strong · control · control-active · focus
 brand  accent · accent-hover · error · conflict
-domain excluded · excluded-border · excluded-subtle · suggested · suggested-border · status-published · status-draft
+domain excluded · excluded-border · excluded-subtle · suggested · suggested-border · status-published · status-draft · type-multi · task
 charts chart-1 (Equity) · chart-2 (Bonds) · chart-3 (Alternatives) · chart-4 (Liquidity) · chart-neutral
 ubs    ubs-<UBS token name>, e.g. ubs-text-subtle, ubs-background-tags-21 (only to define semantic tokens)
 type   text-xs 12 · text-sm 14 (body) · text-base 16 · text-lg 18 · text-xl 20 · text-2xl 24

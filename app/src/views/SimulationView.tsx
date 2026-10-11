@@ -8,6 +8,7 @@ import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
 import { cn } from '../lib/cn'
+import { closeBookTasks } from '../state/book'
 import { f2, near100, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { Overview } from './Overview'
 
@@ -105,12 +106,24 @@ const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) {
   const { state, update } = usePortfolio()
   const cur = mode === 'current'
+  // The open position task of this portfolio sits on its instrument's row, first in the table (New only).
+  const task = cur ? null : state.book.task
   const excluded = (r: SimRow) => !!r.isin && state.prefs.inst.includes(r.isin)
   const conflict = (r: SimRow) => excluded(r) && !r.kept
   const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0)))
     .slice()
-    .sort((a, b) => (cur ? 0 : Number(conflict(b)) - Number(conflict(a))))
+    .sort((a, b) => (cur ? 0 : Number(b.id === task?.rowId) - Number(a.id === task?.rowId) || Number(conflict(b)) - Number(conflict(a))))
   const edit = (id: string, fn: (r: SimRow) => void) => update((s) => { fn(s.sim.rows.find((r) => r.id === id)!) })
+  /** Position task: accept takes the proposed weight, reject keeps the current one (both close the task); defer leaves it open in the book. */
+  const resolve = (how: 'accept' | 'reject' | 'defer') => {
+    if (!task) return
+    update((s) => {
+      const r = s.sim.rows.find((x) => x.id === task.rowId)
+      if (r && how === 'accept') r.nw = task.next
+      s.book.task = null
+    })
+    if (how !== 'defer') closeBookTasks(state.book.id)
+  }
 
   return (
     <table className="w-full border-collapse text-xs">
@@ -127,12 +140,17 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
         {rows.map((r) => {
           const c = !cur && conflict(r)
           const edited = Math.abs(r.nw - r.w) >= 0.005
+          const t = task && task.rowId === r.id ? task : null
           return (
-            <tr key={r.id} className={cn('group', c ? '*:bg-excluded-subtle' : 'hover:*:bg-surface-subtle')}>
-              <td className={td}>{r.cls}</td>
+            <tr key={r.id} className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : 'hover:*:bg-surface-subtle')}>
+              <td className={td}>
+                {t && <span className="mb-0.75 block w-fit bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task</span>}
+                {r.cls}
+              </td>
               <td className={td}>
                 {r.name}
                 {r.isin && <span className="block text-fg-muted">{r.isin}</span>}
+                {t && <span className="mt-0.75 block text-fg-muted">New weight proposed by {t.component}</span>}
                 {(c || (cur && excluded(r))) && <ConflictNote>Conflicts with exclusions: excluded instrument</ConflictNote>}
                 {!cur && r.kept && excluded(r) && <span className="mt-0.75 inline-flex items-center gap-1 text-fg-muted"><TriangleAlert className="size-3" />Kept despite exclusion</span>}
               </td>
@@ -140,7 +158,8 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               <td className={td}>{r.ccy}<span className="block text-fg-muted">{r.fx.toFixed(2)}</span></td>
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.price)}</td>
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.w)}</td>
-              {!cur && (
+              {!cur && t && <td className={cn(td, 'text-right tabular-nums')}><strong className="font-semibold">{f2(t.next)}</strong></td>}
+              {!cur && !t && (
                 <td className={td}>
                   <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />
                 </td>
@@ -148,7 +167,13 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               <td className={cn(td, 'text-right tabular-nums')}>{r.esg}</td>
               {!cur && (
                 <td className={cn(td, 'text-right whitespace-nowrap')}>
-                  {c ? (
+                  {t ? (
+                    <span className="inline-flex gap-1">
+                      <Button size="sm" onClick={() => resolve('accept')}>Accept</Button>
+                      <Button size="sm" onClick={() => resolve('reject')}>Reject</Button>
+                      <Button size="sm" onClick={() => resolve('defer')}>Defer</Button>
+                    </span>
+                  ) : c ? (
                     <span className="inline-flex gap-1">
                       <Button size="sm" onClick={() => edit(r.id, (x) => { x.kept = true })}>Keep</Button>
                       <Button size="sm" onClick={() => edit(r.id, (x) => { x.removed = true; x.nw = 0 })}>Remove</Button>

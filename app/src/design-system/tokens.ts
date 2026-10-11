@@ -61,6 +61,8 @@ export const SEMANTIC_GROUPS: { title: string; note: string; rows: TokenRow[] }[
       { token: 'suggested', primitive: 'ubs-background-tags-01', use: 'Suggestion chips', classes: 'bg-suggested' },
       { token: 'suggested-border', primitive: 'ubs-border-illustrative', use: 'Their border', classes: 'border-suggested-border' },
       { token: 'status-published', primitive: 'ubs-background-tags-06', use: 'Published tag in the Model portfolio book', classes: 'bg-status-published' },
+      { token: 'type-multi', primitive: 'ubs-background-tags-05', use: 'Multi type tag in the Model portfolio book', classes: 'bg-type-multi' },
+      { token: 'task', primitive: 'ubs-background-tags-08', use: 'Open position task tags (book and Simulation)', classes: 'bg-task' },
       { token: 'status-draft', primitive: 'ubs-background-tags-10', use: 'Draft tag in the Model portfolio book', classes: 'bg-status-draft' },
     ],
   },

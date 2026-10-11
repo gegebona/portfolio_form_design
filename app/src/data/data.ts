@@ -200,7 +200,8 @@ export const POSITIONS: Position[] = [
 export type BookStatus = 'Draft' | 'Published' | 'Archived'
 /** Lifecycle: Draft → Published → Archived. No approval step for now. */
 export const BOOK_STATUSES: BookStatus[] = ['Draft', 'Published', 'Archived']
-export type BookTask = { label: string; owner: string; due: string }
+/** Position task: an underlying component changed the weight of one of its instruments; the manager accepts, rejects or defers it in Simulation. */
+export type BookTask = { rowId: string; instrument: string; isin: string; component: string; current: number; next: number }
 /** The signed-in user of the prototype (drives “My portfolios” and who edits a row). */
 export const BOOK_USER = 'Wayne, B.'
 /** Date the 1Y performance figures refer to. */
@@ -209,21 +210,24 @@ export type BookEntry = {
   id: string; name: string; type: 'Standard' | 'Multi' | 'Customized'; benchmark: string
   /** Asset allocation in % per asset class; most portfolios hold several. */
   alloc: Partial<Record<AssetClass, number>>
-  perf1y: number; creator: string; status: BookStatus; editedBy: string; modified: string; tasks?: BookTask[]
+  /** 1Y performance in %; not every portfolio has one yet (new or unpublished ones). */
+  perf1y?: number
+  creator: string; status: BookStatus; editedBy: string; modified: string; tasks?: BookTask[]
   /** Customized versions point at the model portfolio they derive from and are listed under it. */
   parent?: string
 }
 export const MODEL_PORTFOLIOS: BookEntry[] = [
   { id: '001', name: 'Growth Focus Portfolio', type: 'Standard', alloc: { Equity: 90, Liquidity: 10 }, benchmark: 'S&P 500 (USA)', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '11/10/2025' },
-  { id: '002', name: 'Balanced Allocation Portfolio', type: 'Standard', alloc: { Equity: 50, Bonds: 35, Alternatives: 10, Liquidity: 5 }, benchmark: 'Dow Jones Industrial Average (USA)', perf1y: 39.55, creator: 'Wayne, B.', status: 'Draft', editedBy: 'Wayne, B.', modified: '06/03/2026' },
-  { id: '003', name: 'Conservative Income Portfolio', type: 'Standard', alloc: { Bonds: 70, Equity: 20, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', tasks: [{ label: 'Review benchmark change', owner: 'Jones, I.', due: '20/10/2026' }] },
+  { id: '002', name: 'Balanced Allocation Portfolio', type: 'Standard', alloc: { Equity: 50, Bonds: 35, Alternatives: 10, Liquidity: 5 }, benchmark: 'Dow Jones Industrial Average (USA)', creator: 'Wayne, B.', status: 'Draft', editedBy: 'Wayne, B.', modified: '06/03/2026' },
+  { id: '003', name: 'Conservative Income Portfolio', type: 'Standard', alloc: { Bonds: 70, Equity: 20, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', tasks: [{ rowId: 'anto', instrument: 'Antofagasta plc', isin: 'GB0000456144', component: 'Systematic Allocation Portfolio Equity', current: 0.51, next: 1 }] },
   { id: '011', name: 'Conservative Income Portfolio A', type: 'Customized', alloc: { Bonds: 75, Equity: 15, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
   { id: '012', name: 'Conservative Income Portfolio B', type: 'Customized', alloc: { Bonds: 65, Equity: 25, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
   { id: '004', name: 'Global Equity Portfolio', type: 'Multi', alloc: { Equity: 95, Liquidity: 5 }, benchmark: 'FTSE 100 (UK)', perf1y: 12.42, creator: 'Wayne, B.', status: 'Draft', editedBy: 'Wayne, B.', modified: '06/03/2026' },
   { id: '005', name: 'Sustainable Future Portfolio', type: 'Multi', alloc: { Equity: 70, Bonds: 20, Alternatives: 10 }, benchmark: 'DAX (Germany)', perf1y: 12.01, creator: 'Stark, T.', status: 'Published', editedBy: 'Stark, T.', modified: '28/08/2025' },
-  { id: '006', name: 'Dynamic Opportunities Portfolio', type: 'Standard', alloc: { Equity: 45, Bonds: 25, Alternatives: 25, Liquidity: 5 }, benchmark: 'CAC 40 (France)', perf1y: 11.2, creator: 'Jones, I.', status: 'Draft', editedBy: 'Jones, I.', modified: '06/03/2026' },
+  { id: '006', name: 'Dynamic Opportunities Portfolio', type: 'Standard', alloc: { Equity: 45, Bonds: 25, Alternatives: 25, Liquidity: 5 }, benchmark: 'CAC 40 (France)', creator: 'Jones, I.', status: 'Draft', editedBy: 'Jones, I.', modified: '06/03/2026' },
   { id: '007', name: 'Defensive Strategy Portfolio', type: 'Standard', alloc: { Bonds: 60, Liquidity: 25, Equity: 15 }, benchmark: 'MSCI World Index (Global)', perf1y: 11.34, creator: 'Smith, J.', status: 'Published', editedBy: 'Smith, J.', modified: '27/08/2025' },
-  { id: '008', name: 'Emerging Markets Portfolio', type: 'Multi', alloc: { Equity: 85, Bonds: 10, Liquidity: 5 }, benchmark: 'Custom', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '04/08/2025' },
+  { id: '008', name: 'Emerging Markets Portfolio', type: 'Multi', alloc: { Equity: 85, Bonds: 10, Liquidity: 5 }, benchmark: 'Custom', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '04/08/2025', tasks: [{ rowId: 'anto', instrument: 'Antofagasta plc', isin: 'GB0000456144', component: 'Systematic Allocation Portfolio Equity', current: 0.51, next: 1 }] },
   { id: '009', name: 'Dividend Yield Portfolio', type: 'Multi', alloc: { Equity: 80, Bonds: 15, Liquidity: 5 }, benchmark: 'Custom', perf1y: 15.09, creator: 'Smith, J.', status: 'Published', editedBy: 'Smith, J.', modified: '04/08/2025' },
   { id: '010', name: 'Technology Leaders Portfolio', type: 'Standard', alloc: { Equity: 100 }, benchmark: 'Custom', perf1y: 4.65, creator: 'Wayne, B.', status: 'Published', editedBy: 'Wayne, B.', modified: '04/08/2025' },
+  { id: '013', name: 'Systematic Allocation Portfolio Equity', type: 'Standard', alloc: { Equity: 100 }, benchmark: 'S&P 500 (USA)', perf1y: 4.65, creator: 'Wayne, B.', status: 'Published', editedBy: 'Wayne, B.', modified: '06/03/2026' },
 ]

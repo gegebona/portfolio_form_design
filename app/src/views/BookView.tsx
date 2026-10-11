@@ -5,23 +5,26 @@ import { Button } from '../components/ui/button'
 import { SearchInput } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
 import { Menu, MenuTrigger } from '../components/ui/menu'
+import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Select } from '../components/ui/select'
 import { Checkbox } from '../components/ui/selection'
 import { TooltipPopup } from '../components/ui/tag'
 import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
-import { ASSET_CLASSES, BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, CLASS_COLOR, MODEL_PORTFOLIOS, type AssetClass, type BookEntry, type BookStatus } from '../data/data'
+import { ASSET_CLASSES, BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, CLASS_COLOR, type AssetClass, type BookEntry, type BookStatus } from '../data/data'
 import { cn } from '../lib/cn'
-import { usePortfolio } from '../state/portfolio'
+import { getBook, setBook } from '../state/book'
+import { f2, usePortfolio } from '../state/portfolio'
+import { MiniTable } from './ComponentDetail'
 import { Swatch } from './Overview'
 
 /** Same table look as the Simulation positions table: muted sticky header, 12px rows, hairline dividers. */
 const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg-muted'
 const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 const tagBase = 'inline-block px-1.5 text-xs/4.5 whitespace-nowrap'
-/** Portfolio type reads at a glance: grey fill = Standard, dark fill = Multi, outline = Customized. */
+/** Portfolio type reads at a glance: grey fill = Standard, lavender fill = Multi, outline = Customized. */
 const TYPE_TAG: Record<BookEntry['type'], string> = {
   Standard: 'bg-surface-strong',
-  Multi: 'bg-surface-inverse text-fg-inverse',
+  Multi: 'bg-type-multi',
   Customized: 'border border-control',
 }
 /** Status tags: green = Published, yellow = Draft, outline = Archived. The label is always printed. */
@@ -60,7 +63,7 @@ function AllocCell({ e }: { e: BookEntry }) {
 
 function sortValue(e: BookEntry, k: SortKey): string | number {
   if (k === 'area') { const m = byWeight(e)[0]; return m ? `${m[0]} ${String(999 - m[1]).padStart(3, '0')}` : '' }
-  if (k === 'perf1y') return e.perf1y
+  if (k === 'perf1y') return e.perf1y ?? -Infinity
   if (k === 'modified') return e.modified.split('/').reverse().join('')
   return e[k]
 }
@@ -69,18 +72,16 @@ const today = () => new Date().toLocaleDateString('en-GB')
 const nextId = (l: BookEntry[]) => String(Math.max(0, ...l.map((e) => Number(e.id) || 0)) + 1).padStart(3, '0')
 const uniq = (v: string[]) => [...new Set(v)].sort()
 
-/** The book survives going into the flow and back (module-level copy); a page reload restores the sample list. */
-let saved: BookEntry[] = MODEL_PORTFOLIOS
 
 /**
  * Model portfolio book: the landing list of every model portfolio.
  * Type tabs + filters + search narrow it; column headers sort it; customized versions sit under their parent
- * and can be collapsed. Row actions follow the lifecycle Draft → Published → Archived.
+ * and stay collapsed until asked for, so a portfolio with many versions is still one row. Row actions follow the lifecycle Draft → Published → Archived.
  */
 export function BookView() {
   const { update } = usePortfolio()
-  const [list, setListState] = useState(saved)
-  const setList = (fn: (l: BookEntry[]) => BookEntry[]) => setListState((l) => (saved = fn(l)))
+  const [list, setListState] = useState(getBook)
+  const setList = (fn: (l: BookEntry[]) => BookEntry[]) => setListState((l) => setBook(fn(l)))
 
   const [q, setQ] = useState('')
   const [type, setType] = useState('all')
@@ -89,7 +90,7 @@ export function BookView() {
   const [creator, setCreator] = useState('all')
   const [mine, setMine] = useState(false)
   const [sort, setSort] = useState<Sort>({ key: 'id', dir: 'asc' })
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [size, setSize] = useState('10')
   const [page, setPage] = useState(0)
 
@@ -114,17 +115,30 @@ export function BookView() {
   const p = Math.min(page, pages - 1)
   const rows = tops.slice(p * per, p * per + per).flatMap((t) => {
     const kids = kidsOf(t.id)
-    return [{ e: t, kids: kids.length, context: !ids.has(t.id) }, ...(collapsed.has(t.id) ? [] : kids.map((e) => ({ e, kids: 0, context: false })))]
+    // Collapsed by default; a search, or a parent shown only because a version matches, opens the family.
+    const forced = !!ql || !ids.has(t.id)
+    const isOpen = forced || expanded.has(t.id)
+    return [{ e: t, kids: kids.length, context: !ids.has(t.id), forced, isOpen }, ...(isOpen ? kids.map((e) => ({ e, kids: 0, context: false, forced: false, isOpen: false })) : [])]
   })
 
   /** Opening a portfolio lands on its Simulation; editing a draft starts at the first step. */
-  const open = (e: BookEntry, step = 'simulation') => { update((s) => { s.data.name = e.name; s.data.code = 'MP_' + e.id }); location.hash = step }
-  const create = () => { update((s) => { s.data.name = 'New model portfolio'; s.data.code = 'MP_' + nextId(list) }); location.hash = 'data' }
+  const open = (e: BookEntry, step = 'simulation') => { update((s) => {
+      s.data.name = e.name
+      s.data.code = 'MP_' + e.id
+      const task = e.tasks?.[0] ?? null
+      s.book = { id: e.id, task }
+      // The task proposes a change; start from the current weight each time the portfolio is opened.
+      const r = task && s.sim.rows.find((x) => x.id === task.rowId)
+      if (r) r.nw = r.w
+    })
+    location.hash = step
+  }
+  const create = () => { update((s) => { s.data.name = 'New model portfolio'; s.data.code = 'MP_' + nextId(list); s.book = { id: '', task: null } }); location.hash = 'data' }
   const patch = (id: string, change: Partial<BookEntry>) =>
     setList((l) => l.map((e) => (e.id === id ? { ...e, ...change, editedBy: BOOK_USER, modified: today() } : e)))
   const add = (src: BookEntry, change: Partial<BookEntry>) =>
     setList((l) => {
-      const copy: BookEntry = { ...src, tasks: undefined, ...change, id: nextId(l), status: 'Draft', creator: BOOK_USER, editedBy: BOOK_USER, modified: today() }
+      const copy: BookEntry = { ...src, tasks: undefined, perf1y: undefined, ...change, id: nextId(l), status: 'Draft', creator: BOOK_USER, editedBy: BOOK_USER, modified: today() }
       const at = l.findIndex((e) => e.id === src.id)
       return [...l.slice(0, at + 1), copy, ...l.slice(at + 1)]
     })
@@ -140,7 +154,7 @@ export function BookView() {
     ...(e.status === 'Archived' ? [{ label: 'Restore', onClick: setTo(e, 'Published') }] : []),
   ]
 
-  const toggle = (id: string) => setCollapsed((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const toggle = (id: string) => setExpanded((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const sortBy = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
   const clear = () => { setStatus('all'); setArea('all'); setCreator('all'); setMine(false) }
 
@@ -148,7 +162,7 @@ export function BookView() {
     const out = tops.flatMap((t) => [t, ...kidsOf(t.id)]).filter((e) => ids.has(e.id))
     const lines = [
       ['ID', 'Model portfolio name', 'Type', 'Asset allocation', 'Benchmark', 'Performance % (1Y)', 'Created by', 'Status', 'Last modified', 'Last edited by'],
-      ...out.map((e) => [e.id, e.name, e.type, allocText(e), e.benchmark, e.perf1y.toFixed(2), e.creator, e.status, e.modified, e.editedBy]),
+      ...out.map((e) => [e.id, e.name, e.type, allocText(e), e.benchmark, e.perf1y?.toFixed(2) ?? '', e.creator, e.status, e.modified, e.editedBy]),
     ]
     const csv = lines.map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
@@ -218,14 +232,14 @@ export function BookView() {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ e, kids, context }) => (
+              {rows.map(({ e, kids, context, forced, isOpen }) => (
                 <tr key={e.id} className={cn('hover:bg-surface-subtle', e.parent && 'bg-surface-subtle hover:bg-surface-muted', (context || e.status === 'Archived') && 'text-fg-muted')}>
                   <td className={cn(td, 'pl-6 text-fg-muted tabular-nums')}>{e.id}</td>
                   <td className={td}>
                     <div className={cn('flex items-center gap-1.5', e.parent && 'pl-5.5')}>
-                      {kids > 0 ? (
-                        <Button variant="ghost" size="icon-sm" aria-expanded={!collapsed.has(e.id)} aria-label={`${collapsed.has(e.id) ? 'Show' : 'Hide'} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
-                          {collapsed.has(e.id) ? <ChevronRight className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                      {kids > 0 && !forced ? (
+                        <Button variant="ghost" size="icon-sm" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
+                          {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                         </Button>
                       ) : <span className="w-5.5 shrink-0" />}
                       <a href="#simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="text-link hover:text-link-hover hover:underline">{e.name}</a>
@@ -235,16 +249,26 @@ export function BookView() {
                   <td className={td}><span className={cn(tagBase, TYPE_TAG[e.type])}>{e.type}</span></td>
                   <td className={td}>
                     {e.tasks?.length ? (
-                      <Menu
-                        align="start"
-                        trigger={<MenuTrigger className={cn(tagBase, 'cursor-pointer bg-surface-strong hover:bg-line-strong')} aria-label={`${e.tasks.length} open task${e.tasks.length > 1 ? 's' : ''} for ${e.name}`}>{e.tasks.length} open</MenuTrigger>}
-                        items={e.tasks.map((t) => ({ label: `${t.label} · ${t.owner} · due ${t.due}`, onClick: () => open(e) }))}
-                      />
+                      <Popover
+                        trigger={<PopoverTrigger openOnHover delay={150} className={cn(tagBase, 'cursor-pointer bg-task hover:underline')} aria-label={`${e.tasks.length} open position task${e.tasks.length > 1 ? 's' : ''} for ${e.name}`}>{e.tasks.length} open</PopoverTrigger>}
+                        title="Position tasks"
+                        description="An underlying component changed the weight of a position. Accept, reject or defer it in Simulation."
+                      >
+                        <MiniTable
+                          caption="New position weight in underlying component"
+                          heads={['Instrument', 'Underlying component', 'Current weight %', 'New weight %']}
+                          numFrom={2}
+                          rows={e.tasks.map((t) => [<>{t.instrument}<span className="block text-fg-muted">{t.isin}</span></>, t.component, f2(t.current), f2(t.next)])}
+                        />
+                        <div className="mt-3 flex justify-end"><Button size="sm" onClick={() => open(e)}>Review in Simulation</Button></div>
+                      </Popover>
                     ) : null}
                   </td>
                   <td className={td}><AllocCell e={e} /></td>
                   <td className={td}>{e.benchmark}</td>
-                  <td className={cn(td, 'text-right tabular-nums', e.perf1y < 0 && 'text-error')}>{e.perf1y < 0 ? '−' : ''}{Math.abs(e.perf1y).toFixed(2)}</td>
+                  <td className={cn(td, 'text-right tabular-nums', e.perf1y !== undefined && e.perf1y < 0 && 'text-error')}>
+                    {e.perf1y === undefined ? <span className="text-fg-subtle" title="No performance yet">—</span> : (e.perf1y < 0 ? '−' : '') + Math.abs(e.perf1y).toFixed(2)}
+                  </td>
                   <td className={cn(td, 'whitespace-nowrap')}>{e.creator}</td>
                   <td className={td}>
                     <span className={cn(tagBase, STATUS_TAG[e.status])}>{e.status}</span>
