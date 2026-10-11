@@ -120,11 +120,21 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
   }
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
-      <nav aria-label="Breadcrumb" className="my-3.5 flex items-center gap-1.5 text-xs">
+      <nav aria-label="Breadcrumb" className="mt-3.5 mb-1.5 flex items-center gap-1.5 text-xs">
         <a href="#book" className="text-link hover:text-link-hover">Model portfolio book</a>
         <span aria-hidden className="text-fg-subtle">›</span>
         <span>{state.data.name || 'New model portfolio'}</span>
       </nav>
+      {/* The portfolio is the subject of every step: its name leads, its facts follow, and in Simulation a tag says which version is on screen. */}
+      <div className="mb-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h1 className="text-2xl">{state.data.name || 'New model portfolio'}</h1>
+        <span className="text-xs text-fg-muted">{[state.data.code, state.data.ccy].filter(Boolean).join(' · ')}</span>
+        {step === 'simulation' && (
+          <span className={cn('self-center px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control' : 'bg-surface-inverse text-fg-inverse')}>
+            {viewingCurrent ? 'Current version · published, read-only' : 'New version · working copy'}
+          </span>
+        )}
+      </div>
 
       {/* Panel: tabs and action bar stay put; only the view scrolls (or its inner lists). */}
       <div className="mb-4 flex min-h-0 flex-1 flex-col border border-line-strong bg-surface">

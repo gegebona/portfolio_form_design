@@ -159,7 +159,7 @@ export function AllocationBlock({ rows, focus, showChange }: { rows: [AllocRow, 
               {showChange && <th className="pb-0.75 pl-5 text-right font-normal text-fg-muted">Change</th>}
             </tr>
           </thead>
-          <tbody className="text-sm">
+          <tbody>
             {ASSET_CLASSES.map((c) => {
               const d = b[c] - a[c]
               return (

@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Switch } from '../components/ui/selection'
-import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
+import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
 import { cn } from '../lib/cn'
@@ -43,21 +43,27 @@ export function SimulationView() {
   return (
     <Section
       screenHeading
-      title={<>Simulation <span className="ml-1.5 text-base text-fg-subtle">{state.data.name}</span></>}
+      title="Simulation"
       description="Compare the current portfolio with the new allocation and fine-tune position weights."
       className="flex min-h-0 flex-1 flex-col"
     >
       {/* Version bar: Current / New switch the whole screen; the overview toggle sits right next to them. */}
       <div className="mt-3.5 flex flex-wrap items-end gap-x-7 gap-y-2 border-b border-line">
-        <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))}>
-          <TabsList variant="version" aria-label="Portfolio version">
+        <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))} className="pb-2.5">
+          <TabsList variant="segment" aria-label="Portfolio version">
             <Tab value="current">Current</Tab>
-            <Tab value="new">New {changes > 0 && <TabCount>{changes} {changes === 1 ? 'change' : 'changes'}</TabCount>}</Tab>
+            <Tab value="new">New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
           </TabsList>
         </Tabs>
         <div className="flex items-center gap-5 pb-1.25 before:h-4 before:w-px before:bg-line-strong">
           <Button variant="link" aria-pressed={compact} onClick={() => setCompact(!compact)}>{compact ? 'Full view' : 'Compact view'}</Button>
         </div>
+        {!cur && (
+          <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
+            <Info className="size-3.5" strokeWidth={1.5} />
+            Working version — changes stay here until you publish.
+          </div>
+        )}
         {cur && (
           <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
             <Info className="size-3.5" strokeWidth={1.5} />

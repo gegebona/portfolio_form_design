@@ -3,6 +3,8 @@ import { cn } from '../../lib/cn'
 
 /**
  * Screen section: 24px sides, title (20px regular) and a one-line description.
+ * Type hierarchy: guidance (descriptions, hints, counts) is 12px muted, so it always reads quieter than the
+ * portfolio's own content (14px body, 12px in dense tables).
  * screenHeading: the first heading of each step. It carries one fixed view-transition name, so when the step
  * changes it stays where it is and only its text cross-fades, while the rest of the screen slides.
  */
@@ -10,7 +12,7 @@ export function Section({ title, description, actions, screenHeading, className,
   const heading = (
     <div>
       {title && <h2 className="mb-1 text-xl">{title}</h2>}
-      {description && <p className="text-fg-secondary">{description}</p>}
+      {description && <p className="text-xs text-fg-muted">{description}</p>}
     </div>
   )
   return (
