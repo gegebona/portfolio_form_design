@@ -41,7 +41,7 @@ let saved: BookEntry[] = MODEL_PORTFOLIOS
 /**
  * Model portfolio book: the landing list of every model portfolio.
  * Type tabs + filters + search narrow it; column headers sort it; customized versions sit under their parent
- * and can be collapsed. Row actions follow the lifecycle Draft → Pending → Published → Archived.
+ * and can be collapsed. Row actions follow the lifecycle Draft → Published → Archived.
  */
 export function BookView() {
   const { update } = usePortfolio()
@@ -99,8 +99,7 @@ export function BookView() {
     { label: e.status === 'Draft' ? 'Edit' : 'Open', onClick: () => open(e) },
     { label: 'Duplicate', onClick: () => add(e, { name: e.name + ' (copy)' }) },
     ...(e.status === 'Published' && e.type !== 'Customized' ? [{ label: 'Create customized version', onClick: () => add(e, { name: e.name + ' – customized', type: 'Customized', parent: e.id }) }] : []),
-    ...(e.status === 'Draft' ? [{ label: 'Submit for approval', onClick: setTo(e, 'Pending') }] : []),
-    ...(e.status === 'Pending' ? [{ label: 'Approve and publish', onClick: setTo(e, 'Published') }, { label: 'Return to draft', onClick: setTo(e, 'Draft') }] : []),
+    ...(e.status === 'Draft' ? [{ label: 'Publish', onClick: setTo(e, 'Published') }] : []),
     ...(e.status === 'Published' ? [{ label: 'Archive', onClick: setTo(e, 'Archived') }] : []),
     ...(e.status === 'Archived' ? [{ label: 'Restore', onClick: setTo(e, 'Published') }] : []),
   ]

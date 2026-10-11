@@ -197,9 +197,9 @@ export const POSITIONS: Position[] = [
 ]
 
 // ---- Model portfolio book (illustrative list; names, people and figures are invented) ----
-export type BookStatus = 'Draft' | 'Pending' | 'Published' | 'Archived'
-/** Lifecycle: Draft → Pending (submitted for approval) → Published → Archived. */
-export const BOOK_STATUSES: BookStatus[] = ['Draft', 'Pending', 'Published', 'Archived']
+export type BookStatus = 'Draft' | 'Published' | 'Archived'
+/** Lifecycle: Draft → Published → Archived. No approval step for now. */
+export const BOOK_STATUSES: BookStatus[] = ['Draft', 'Published', 'Archived']
 export type BookTask = { label: string; owner: string; due: string }
 /** The signed-in user of the prototype (drives “My portfolios” and who edits a row). */
 export const BOOK_USER = 'Wayne, B.'
@@ -217,9 +217,9 @@ export const MODEL_PORTFOLIOS: BookEntry[] = [
   { id: '003', name: 'Conservative Income Portfolio', type: 'Standard', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', tasks: [{ label: 'Review benchmark change', owner: 'Jones, I.', due: '20/10/2026' }] },
   { id: '011', name: 'Conservative Income Portfolio A', type: 'Customized', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
   { id: '012', name: 'Conservative Income Portfolio B', type: 'Customized', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
-  { id: '004', name: 'Global Equity Portfolio', type: 'Multi', area: 'Equity', benchmark: 'FTSE 100 (UK)', perf1y: 12.42, creator: 'Wayne, B.', status: 'Pending', editedBy: 'Wayne, B.', modified: '06/03/2026' },
+  { id: '004', name: 'Global Equity Portfolio', type: 'Multi', area: 'Equity', benchmark: 'FTSE 100 (UK)', perf1y: 12.42, creator: 'Wayne, B.', status: 'Draft', editedBy: 'Wayne, B.', modified: '06/03/2026' },
   { id: '005', name: 'Sustainable Future Portfolio', type: 'Multi', area: 'Equity', benchmark: 'DAX (Germany)', perf1y: 12.01, creator: 'Stark, T.', status: 'Published', editedBy: 'Stark, T.', modified: '28/08/2025' },
-  { id: '006', name: 'Dynamic Opportunities Portfolio', type: 'Standard', area: 'Multi-asset', benchmark: 'CAC 40 (France)', perf1y: 11.2, creator: 'Jones, I.', status: 'Pending', editedBy: 'Jones, I.', modified: '06/03/2026' },
+  { id: '006', name: 'Dynamic Opportunities Portfolio', type: 'Standard', area: 'Multi-asset', benchmark: 'CAC 40 (France)', perf1y: 11.2, creator: 'Jones, I.', status: 'Draft', editedBy: 'Jones, I.', modified: '06/03/2026' },
   { id: '007', name: 'Defensive Strategy Portfolio', type: 'Standard', area: 'Fixed income', benchmark: 'MSCI World Index (Global)', perf1y: 11.34, creator: 'Smith, J.', status: 'Published', editedBy: 'Smith, J.', modified: '27/08/2025' },
   { id: '008', name: 'Emerging Markets Portfolio', type: 'Multi', area: 'Equity', benchmark: 'Custom', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '04/08/2025' },
   { id: '009', name: 'Dividend Yield Portfolio', type: 'Multi', area: 'Equity', benchmark: 'Custom', perf1y: 15.09, creator: 'Smith, J.', status: 'Published', editedBy: 'Smith, J.', modified: '04/08/2025' },
