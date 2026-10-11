@@ -1,3 +1,4 @@
+import { Tooltip } from '@base-ui/react/tooltip'
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Download, MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../components/ui/button'
@@ -6,10 +7,12 @@ import { Section } from '../components/ui/layout'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Select } from '../components/ui/select'
 import { Checkbox } from '../components/ui/selection'
+import { TooltipPopup } from '../components/ui/tag'
 import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
-import { BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, MODEL_PORTFOLIOS, type BookEntry, type BookStatus } from '../data/data'
+import { ASSET_CLASSES, BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, CLASS_COLOR, MODEL_PORTFOLIOS, type AssetClass, type BookEntry, type BookStatus } from '../data/data'
 import { cn } from '../lib/cn'
 import { usePortfolio } from '../state/portfolio'
+import { Swatch } from './Overview'
 
 /** Same table look as the Simulation positions table: muted sticky header, 12px rows, hairline dividers. */
 const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg-muted'
@@ -25,7 +28,32 @@ const TYPES: BookEntry['type'][] = ['Standard', 'Multi', 'Customized']
 
 type SortKey = 'id' | 'name' | 'type' | 'area' | 'benchmark' | 'perf1y' | 'creator' | 'status' | 'modified'
 type Sort = { key: SortKey; dir: 'asc' | 'desc' }
+/** Asset classes a portfolio holds, in the fixed chart order (Equity, Bonds, Alternatives, Liquidity). */
+const classesOf = (e: BookEntry) => ASSET_CLASSES.filter((c) => (e.alloc[c] ?? 0) > 0).map((c) => [c, e.alloc[c] ?? 0] as [AssetClass, number])
+/** The same, largest first: the first entry is the portfolio's main asset class. */
+const byWeight = (e: BookEntry) => classesOf(e).sort((a, b) => b[1] - a[1])
+const allocText = (e: BookEntry) => byWeight(e).map(([c, w]) => `${c} ${w}%`).join(', ')
+
+/** Asset class cell: a mini allocation bar in the chart colours, the main class with its share, and "+n" for the rest (full split on hover). */
+function AllocCell({ e }: { e: BookEntry }) {
+  const main = byWeight(e)[0]
+  const more = classesOf(e).length - 1
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger render={<span />} className="flex items-center gap-2 whitespace-nowrap">
+        <span role="img" aria-label={allocText(e)} className="flex h-2 w-20 shrink-0 gap-0.5 bg-surface-strong">
+          {classesOf(e).map(([c, w]) => <span key={c} className="h-full" style={{ width: `${w}%`, background: CLASS_COLOR[c] }} />)}
+        </span>
+        {main && <span>{main[0]} <span className="tabular-nums">{main[1]}%</span></span>}
+        {more > 0 && <span className="text-fg-muted">+{more}</span>}
+      </Tooltip.Trigger>
+      <TooltipPopup>{allocText(e)}</TooltipPopup>
+    </Tooltip.Root>
+  )
+}
+
 function sortValue(e: BookEntry, k: SortKey): string | number {
+  if (k === 'area') { const m = byWeight(e)[0]; return m ? `${m[0]} ${String(999 - m[1]).padStart(3, '0')}` : '' }
   if (k === 'perf1y') return e.perf1y
   if (k === 'modified') return e.modified.split('/').reverse().join('')
   return e[k]
@@ -62,7 +90,7 @@ export function BookView() {
   const ql = q.trim().toLowerCase()
   const filtered = status !== 'all' || area !== 'all' || creator !== 'all' || mine
   const matches = (e: BookEntry) =>
-    (type === 'all' || e.type === type) && (status === 'all' || e.status === status) && (area === 'all' || e.area === area) &&
+    (type === 'all' || e.type === type) && (status === 'all' || e.status === status) && (area === 'all' || (e.alloc[area as AssetClass] ?? 0) > 0) &&
     (creator === 'all' || e.creator === creator) && (!mine || e.creator === BOOK_USER) &&
     (!ql || e.name.toLowerCase().includes(ql) || e.id.includes(ql))
   const ids = new Set(list.filter(matches).map((e) => e.id))
@@ -83,7 +111,8 @@ export function BookView() {
     return [{ e: t, kids: kids.length, context: !ids.has(t.id) }, ...(collapsed.has(t.id) ? [] : kids.map((e) => ({ e, kids: 0, context: false })))]
   })
 
-  const open = (e: BookEntry) => { update((s) => { s.data.name = e.name; s.data.code = 'MP_' + e.id }); location.hash = 'data' }
+  /** Opening a portfolio lands on its Simulation; editing a draft starts at the first step. */
+  const open = (e: BookEntry, step = 'simulation') => { update((s) => { s.data.name = e.name; s.data.code = 'MP_' + e.id }); location.hash = step }
   const create = () => { update((s) => { s.data.name = 'New model portfolio'; s.data.code = 'MP_' + nextId(list) }); location.hash = 'data' }
   const patch = (id: string, change: Partial<BookEntry>) =>
     setList((l) => l.map((e) => (e.id === id ? { ...e, ...change, editedBy: BOOK_USER, modified: today() } : e)))
@@ -96,7 +125,8 @@ export function BookView() {
   const setTo = (e: BookEntry, s: BookStatus) => () => patch(e.id, { status: s })
   /** Row actions depend on where the portfolio is in its lifecycle. */
   const actions = (e: BookEntry) => [
-    { label: e.status === 'Draft' ? 'Edit' : 'Open', onClick: () => open(e) },
+    { label: 'Open', onClick: () => open(e) },
+    ...(e.status === 'Draft' ? [{ label: 'Edit', onClick: () => open(e, 'data') }] : []),
     { label: 'Duplicate', onClick: () => add(e, { name: e.name + ' (copy)' }) },
     ...(e.status === 'Published' && e.type !== 'Customized' ? [{ label: 'Create customized version', onClick: () => add(e, { name: e.name + ' – customized', type: 'Customized', parent: e.id }) }] : []),
     ...(e.status === 'Draft' ? [{ label: 'Publish', onClick: setTo(e, 'Published') }] : []),
@@ -111,8 +141,8 @@ export function BookView() {
   const exportCsv = () => {
     const out = tops.flatMap((t) => [t, ...kidsOf(t.id)]).filter((e) => ids.has(e.id))
     const lines = [
-      ['ID', 'Model portfolio name', 'Type', 'Asset class', 'Benchmark', 'Performance % (1Y)', 'Created by', 'Status', 'Last modified', 'Last edited by'],
-      ...out.map((e) => [e.id, e.name, e.type, e.area, e.benchmark, e.perf1y.toFixed(2), e.creator, e.status, e.modified, e.editedBy]),
+      ['ID', 'Model portfolio name', 'Type', 'Asset allocation', 'Benchmark', 'Performance % (1Y)', 'Created by', 'Status', 'Last modified', 'Last edited by'],
+      ...out.map((e) => [e.id, e.name, e.type, allocText(e), e.benchmark, e.perf1y.toFixed(2), e.creator, e.status, e.modified, e.editedBy]),
     ]
     const csv = lines.map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
@@ -149,7 +179,7 @@ export function BookView() {
           <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-2">
             <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID…" aria-label="Find model portfolio" className="w-75 max-w-full" />
             <Select aria-label="Status" value={status} onValueChange={setStatus} items={options('All statuses', BOOK_STATUSES)} className="w-36" />
-            <Select aria-label="Asset class" value={area} onValueChange={setArea} items={options('All asset classes', uniq(list.map((e) => e.area)))} className="w-40" />
+            <Select aria-label="Asset class" value={area} onValueChange={setArea} items={options('All asset classes', ASSET_CLASSES.filter((c) => list.some((e) => (e.alloc[c] ?? 0) > 0)))} className="w-40" />
             <Select aria-label="Created by" value={creator} onValueChange={setCreator} items={options('All creators', uniq(list.map((e) => e.creator)))} className="w-36" />
             <label className="ml-2 flex cursor-pointer items-center gap-2 text-xs">
               <Checkbox checked={mine} onCheckedChange={setMine} />
@@ -176,7 +206,7 @@ export function BookView() {
             <thead>
               <tr>
                 {head('id', 'ID', 'pl-6')}{head('name', 'Model portfolio name')}{head('type', 'Type')}<th className={th}>Tasks</th>
-                {head('area', 'Asset class')}{head('benchmark', 'Benchmark')}{head('perf1y', 'Performance % (1Y)', 'text-right')}
+                {head('area', 'Asset allocation')}{head('benchmark', 'Benchmark')}{head('perf1y', 'Performance % (1Y)', 'text-right')}
                 {head('creator', 'Created by')}{head('status', 'Status')}{head('modified', 'Last modified')}
                 <th className={cn(th, 'pr-6')}><span className="sr-only">Actions</span></th>
               </tr>
@@ -192,7 +222,7 @@ export function BookView() {
                           {collapsed.has(e.id) ? <ChevronRight className="size-3.5" /> : <ChevronDown className="size-3.5" />}
                         </Button>
                       ) : <span className="w-5.5 shrink-0" />}
-                      <a href="#data" onClick={(ev) => { ev.preventDefault(); open(e) }} className="text-link hover:text-link-hover hover:underline">{e.name}</a>
+                      <a href="#simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="text-link hover:text-link-hover hover:underline">{e.name}</a>
                       {kids > 0 && <span className="whitespace-nowrap text-fg-muted">{kids} customized</span>}
                     </div>
                   </td>
@@ -206,7 +236,7 @@ export function BookView() {
                       />
                     ) : null}
                   </td>
-                  <td className={td}>{e.area}</td>
+                  <td className={td}><AllocCell e={e} /></td>
                   <td className={td}>{e.benchmark}</td>
                   <td className={cn(td, 'text-right tabular-nums', e.perf1y < 0 && 'text-error')}>{e.perf1y < 0 ? '−' : ''}{Math.abs(e.perf1y).toFixed(2)}</td>
                   <td className={cn(td, 'whitespace-nowrap')}>{e.creator}</td>
@@ -230,7 +260,10 @@ export function BookView() {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line-strong px-6 py-2.5 text-xs">
-          <span className="text-fg-muted">Performance as of {BOOK_AS_OF}, net of fees.</span>
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-fg-muted">
+            <span>{ASSET_CLASSES.map((c) => <span key={c} className="mr-3 whitespace-nowrap"><Swatch cls={c} />{c}</span>)}</span>
+            <span>Performance as of {BOOK_AS_OF}, net of fees.</span>
+          </span>
           <div className="flex items-center gap-2.5">
             <span className="text-fg-muted">Rows per page</span>
             <Select aria-label="Rows per page" value={size} onValueChange={(v) => { setSize(v); setPage(0) }} items={['10', '25', '50'].map((v) => ({ value: v, label: v }))} className="w-18" />
