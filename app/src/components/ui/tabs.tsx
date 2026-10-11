@@ -10,7 +10,7 @@ import { cn } from '../../lib/cn'
  *   segment  Current / New in Simulation  joined boxes, the active one filled in the tab-active blue — for a choice
  *            that changes what the whole screen means and must stay obvious
  *   version  (older look of Current / New)  16px, inactive labels muted
- * Shared: 24px between tabs (gap-6), label 6px above the line, 3px line.
+ * Shared: 24px between tabs (gap-6), label 6px above the line, 2px line.
  * The blue line is Tabs.Indicator, positioned by Base UI's --active-tab-left / --active-tab-width
  * variables, so it slides between tabs. Hover shows a light line on the tab itself.
  */
