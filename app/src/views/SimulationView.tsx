@@ -188,9 +188,8 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
       <thead>
         <tr>
           <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
-          <th className={cn(th, 'text-right')}>Price</th><th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
+          <th className={cn(th, 'text-right')}>Price</th><th className={cn(th, 'text-right')}>ESG</th><th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
           {!cur && <th className={cn(th, 'text-right')}>New %</th>}
-          <th className={cn(th, 'text-right')}>ESG</th>
           {!cur && <th className={th}><span className="sr-only">Actions</span></th>}
         </tr>
       </thead>
@@ -230,13 +229,13 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               <td className={td}>{r.bb}</td>
               <td className={td}>{r.ccy}<span className="block text-fg-muted">{r.fx.toFixed(2)}</span></td>
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.price)}</td>
+              <td className={cn(td, 'text-right tabular-nums')}>{r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg}</td>
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.w)}</td>
               {!cur && (
                 <td className={td}>
                   <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />
                 </td>
               )}
-              <td className={cn(td, 'text-right tabular-nums')}>{r.esg}</td>
               {!cur && (
                 <td className={cn(td, 'text-right whitespace-nowrap')}>
                   {t ? (
@@ -350,9 +349,9 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
           {hide !== 'cls' && <th className={th}>Asset class</th>}
           {hide !== 'bb' && <th className={th}>Building block</th>}
           {hide !== 'ccy' && <th className={th}>Currency</th>}
+          <th className={cn(th, 'text-right')}>ESG</th>
           <th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
-          <th className={cn(th, 'text-right')}>ESG</th>
         </tr>
       </thead>
       <tbody>
@@ -364,7 +363,8 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
           return (
             <Fragment key={k}>
               <tr className="*:bg-surface-subtle">
-                <td className={td} colSpan={3}>
+                {/* Spans the descriptive columns and ESG: no group score, only supplied instrument scores are shown. */}
+                <td className={td} colSpan={4}>
                   <span className="inline-flex items-center gap-1.5 font-semibold">
                     <Button variant="ghost" size="icon-sm" aria-expanded={open} aria-label={`${open ? 'Collapse' : 'Expand'} ${k}`} onClick={() => toggle(k)}>
                       {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
@@ -375,8 +375,6 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
                 </td>
                 {num(f2(w), true)}
                 {!cur && <>{num(f2(nw), true)}{num(change(nw - w))}</>}
-                {/* No group score: only supplied instrument scores are shown, nothing is averaged. */}
-                <td className={td} />
               </tr>
               {open && list.map((r) => (
                 <tr key={r.id} className="hover:*:bg-surface-subtle">
@@ -384,9 +382,9 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
                   {hide !== 'cls' && <td className={td}>{r.cls}</td>}
                   {hide !== 'bb' && <td className={td}>{r.bb}</td>}
                   {hide !== 'ccy' && <td className={td}>{r.ccy}</td>}
+                  {num(r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg)}
                   {num(f2(r.w))}
                   {!cur && <>{num(f2(r.nw), Math.abs(r.nw - r.w) >= 0.005)}{num(change(r.nw - r.w))}</>}
-                  {num(r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg)}
                 </tr>
               ))}
             </Fragment>
