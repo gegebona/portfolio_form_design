@@ -8,7 +8,8 @@ export type SimRow = Position & { nw: number; removed: boolean; kept: boolean }
 export type CashEntry = { ccy: string; w: number }
 
 export type PortfolioState = {
-  data: { code: string; name: string; ccy: string; benchmark: string }
+  /** ccy is fixed to EUR for every model portfolio; description is optional. */
+  data: { code: string; name: string; description: string; ccy: string; benchmark: string }
   prefs: {
     minPos: string; maxInst: string
     sel: Record<CategoryId, string[]>
@@ -29,7 +30,7 @@ export type PortfolioState = {
 }
 
 const INITIAL: PortfolioState = {
-  data: { code: 'MP_STD_0001', name: 'SMA - Global - Equities', ccy: 'EUR', benchmark: 'glob-eq' },
+  data: { code: 'MP_STD_0001', name: 'SMA - Global - Equities', description: '', ccy: 'EUR', benchmark: 'glob-eq' },
   prefs: {
     minPos: '0.5', maxInst: '150',
     sel: { geography: ['em'], sector: ['energy', 'ind'], currency: ['EUR', 'JPY', 'SGD', 'SEK', 'DKK', 'NOK'], category: ['deriv'] },
@@ -82,12 +83,12 @@ export function usePortfolio() {
 // ---- Derived data -------------------------------------------------------------
 
 /**
- * Mandatory data of the first step: code, name, currency (always prefilled with EUR) and benchmark.
+ * Mandatory data of the first step: code, name and benchmark (currency is fixed to EUR, description is optional).
  * While anything is missing the later steps are locked and the portfolio cannot be saved as a draft.
  */
 export function missingData(s: PortfolioState): string[] {
   const d = s.data
-  return [!d.code.trim() && 'code', !d.name.trim() && 'name', !d.ccy && 'currency', !BENCHMARKS.some((b) => b.id === d.benchmark) && 'benchmark'].filter((v): v is string => !!v)
+  return [!d.code.trim() && 'code', !d.name.trim() && 'name', !BENCHMARKS.some((b) => b.id === d.benchmark) && 'benchmark'].filter((v): v is string => !!v)
 }
 
 export const componentById = (id: string) => COMPONENTS.find((c) => c.id === id)!

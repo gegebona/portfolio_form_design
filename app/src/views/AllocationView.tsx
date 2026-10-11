@@ -64,10 +64,11 @@ export function AllocationView() {
                   <h3 className="text-lg">{sel.name}</h3>
                   <div className="text-xs text-fg-muted">{sel.meta}</div>
                 </div>
-                <Button variant="link" className="gap-1.5" onClick={() => update((s) => removeItem(s, sel.key))}>
+                {/* Cash positions cannot be removed; their weight can go to 0%. */}
+                {sel.kind !== 'cash' && <Button variant="link" className="gap-1.5" onClick={() => update((s) => removeItem(s, sel.key))}>
                   <X className="size-2.5" strokeWidth={2.5} />
                   {{ bb: 'Remove building block', mp: 'Remove model portfolio', inst: 'Remove instrument', cash: 'Remove cash position' }[sel.kind]}
-                </Button>
+                </Button>}
               </div>
               {sel.comp ? <ComponentDetail c={sel.comp} />
                 : <p className="mt-3 text-fg-secondary">{sel.kind === 'inst' ? 'Single instrument held directly in the model portfolio. Price, currency and ESG data are shown in Simulation.' : `Cash held in ${sel.cashCcy} for liquidity.`}</p>}

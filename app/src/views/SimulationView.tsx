@@ -8,7 +8,7 @@ import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
 import { cn } from '../lib/cn'
-import { closeBookTasks } from '../state/book'
+import { setBookTaskStatus } from '../state/book'
 import { f2, near100, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { Overview } from './Overview'
 
@@ -116,15 +116,18 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
     .slice()
     .sort((a, b) => (cur ? 0 : Number(b.id === task?.rowId) - Number(a.id === task?.rowId) || Number(conflict(b)) - Number(conflict(a))))
   const edit = (id: string, fn: (r: SimRow) => void) => update((s) => { fn(s.sim.rows.find((r) => r.id === id)!) })
-  /** Position task: accept takes the proposed weight, reject keeps the current one (both close the task); defer leaves it open in the book. */
-  const resolve = (how: 'accept' | 'reject' | 'defer') => {
+  /**
+   * Position task decision. All three stay selectable and the latest one wins: Accepted applies the official target,
+   * Rejected and Deferred keep the current weight. The weight field stays editable (a direct override is authoritative).
+   */
+  const decide = (status: 'Accepted' | 'Rejected' | 'Deferred') => {
     if (!task) return
     update((s) => {
       const r = s.sim.rows.find((x) => x.id === task.rowId)
-      if (r && how === 'accept') r.nw = task.next
-      s.book.task = null
+      if (r) r.nw = status === 'Accepted' ? task.next : r.w
+      if (s.book.task) s.book.task.status = status
     })
-    if (how !== 'defer') closeBookTasks(state.book.id)
+    setBookTaskStatus(state.book.id, task.rowId, status)
   }
 
   return (
@@ -146,13 +149,13 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           return (
             <tr key={r.id} className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>
-                {t && <span className="mb-0.75 block w-fit bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task</span>}
+                {t && <span className="mb-0.75 block w-fit bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
                 {r.cls}
               </td>
               <td className={td}>
                 {r.name}
                 {r.isin && <span className="block text-fg-muted">{r.isin}</span>}
-                {t && <span className="mt-0.75 block text-fg-muted">New weight proposed by {t.component}</span>}
+                {t && <span className="mt-0.75 block text-fg-muted">Official target {f2(t.next)}% from {t.component}</span>}
                 {(c || (cur && excluded(r))) && <ConflictNote>Conflicts with exclusions: excluded instrument</ConflictNote>}
                 {!cur && r.kept && excluded(r) && <span className="mt-0.75 inline-flex items-center gap-1 text-fg-muted"><TriangleAlert className="size-3" />Kept despite exclusion</span>}
               </td>
@@ -160,8 +163,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               <td className={td}>{r.ccy}<span className="block text-fg-muted">{r.fx.toFixed(2)}</span></td>
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.price)}</td>
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.w)}</td>
-              {!cur && t && <td className={cn(td, 'text-right tabular-nums')}><strong className="font-semibold">{f2(t.next)}</strong></td>}
-              {!cur && !t && (
+              {!cur && (
                 <td className={td}>
                   <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />
                 </td>
@@ -171,9 +173,11 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                 <td className={cn(td, 'text-right whitespace-nowrap')}>
                   {t ? (
                     <span className="inline-flex gap-1">
-                      <Button size="sm" onClick={() => resolve('accept')}>Accept</Button>
-                      <Button size="sm" onClick={() => resolve('reject')}>Reject</Button>
-                      <Button size="sm" onClick={() => resolve('defer')}>Defer</Button>
+                      {(['Accepted', 'Rejected', 'Deferred'] as const).map((st) => (
+                        <Button key={st} size="sm" aria-pressed={t.status === st} className={cn(t.status === st && 'border-control-active bg-surface-strong font-semibold')} onClick={() => decide(st)}>
+                          {{ Accepted: 'Accept', Rejected: 'Reject', Deferred: 'Defer' }[st]}
+                        </Button>
+                      ))}
                     </span>
                   ) : c ? (
                     <span className="inline-flex gap-1">

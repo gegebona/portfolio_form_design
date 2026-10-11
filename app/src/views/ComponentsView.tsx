@@ -191,7 +191,7 @@ function Basket() {
         title="Cash positions"
         add={<CashAdd />}
         rows={state.comps.cash.map((c) => (
-          <BasketRow key={c.ccy} label={c.ccy} sub={f2(c.w) + '%'} onRemove={() => animate((s) => { s.comps.cash = s.comps.cash.filter((x) => x.ccy !== c.ccy) })} />
+          <BasketRow key={c.ccy} label={c.ccy} sub={f2(c.w) + '%'} />
         ))}
       />
     </aside>
@@ -219,14 +219,14 @@ function BasketGroup({ title, rows, add }: { title: string; rows: ReactNode[]; a
 }
 
 /** Each row is its own view-transition boundary: it slides in when added, fades out when removed, and glides when rows above it change. */
-function BasketRow({ label, sub, warn, onRemove }: { label: string; sub?: string; warn?: boolean; onRemove: () => void }) {
+function BasketRow({ label, sub, warn, onRemove }: { label: string; sub?: string; warn?: boolean; /** Omit for rows that cannot be removed (cash positions). */ onRemove?: () => void }) {
   return (
     <ViewTransition enter="item-in" exit="item-out" update="item-move">
     <div className="flex min-h-7.5 items-center gap-2.5">
       <Check className="size-3 shrink-0 text-accent" strokeWidth={3} aria-hidden />
       <span className="min-w-0 flex-1">{label}{sub && <span className="ml-1.5 text-xs text-fg-muted">{sub}</span>}</span>
       {warn && <TriangleAlert className="size-3 text-fg-secondary" strokeWidth={1.75} aria-label="Conflicts with exclusions" />}
-      <RemoveButton onClick={onRemove} label={'Remove ' + label} className="text-fg-subtle" />
+      {onRemove && <RemoveButton onClick={onRemove} label={'Remove ' + label} className="text-fg-subtle" />}
     </div>
     </ViewTransition>
   )

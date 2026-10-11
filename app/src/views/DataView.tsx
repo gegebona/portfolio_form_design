@@ -2,10 +2,9 @@ import { Info } from 'lucide-react'
 import { useState, ViewTransition } from 'react'
 import { Field, Input, SearchInput } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
-import { Select } from '../components/ui/select'
 import { Radio, RadioGroup } from '../components/ui/selection'
 import { CurrencyTag } from '../components/ui/tag'
-import { BENCHMARKS, PORTFOLIO_CURRENCIES } from '../data/data'
+import { BENCHMARKS } from '../data/data'
 import { usePortfolio } from '../state/portfolio'
 
 export function DataView() {
@@ -23,8 +22,11 @@ export function DataView() {
           <Field label="Model portfolio name" error={touched.name && !d.name.trim() && 'Required'}>
             <Input aria-invalid={touched.name && !d.name.trim()} onBlur={() => setTouched((t) => ({ ...t, name: true }))} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
           </Field>
-          <Field label="Currency">
-            <Select value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={PORTFOLIO_CURRENCIES.map((c) => ({ value: c, label: c }))} />
+          <Field label="Description" description="Optional.">
+            <Input value={d.description} onValueChange={(v) => update((s) => { s.data.description = v })} />
+          </Field>
+          <Field label="Currency" description="Fixed for all model portfolios.">
+            <Input value="EUR" disabled readOnly />
           </Field>
         </div>
       </Section>

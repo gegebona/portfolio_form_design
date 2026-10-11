@@ -1,5 +1,5 @@
 import { Tooltip } from '@base-ui/react/tooltip'
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Download, MoreHorizontal } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../components/ui/button'
 import { SearchInput } from '../components/ui/input'
@@ -27,11 +27,10 @@ const TYPE_TAG: Record<BookEntry['type'], string> = {
   Multi: 'bg-type-multi',
   Customized: 'border border-control',
 }
-/** Status tags: green = Published, yellow = Draft, outline = Archived. The label is always printed. */
+/** Status tags: green = Published, yellow = Draft. The label is always printed. */
 const STATUS_TAG: Record<BookStatus, string> = {
   Published: 'bg-status-published text-fg',
   Draft: 'bg-status-draft text-fg',
-  Archived: 'border border-line-strong text-fg-muted',
 }
 const TYPES: BookEntry['type'][] = ['Standard', 'Multi', 'Customized']
 
@@ -61,6 +60,33 @@ function AllocCell({ e }: { e: BookEntry }) {
   )
 }
 
+/**
+ * Tasks cell. The blue tag counts Open tasks only (they are what needs attention); deferred tasks stay reachable
+ * through a quiet outlined tag; accepted and rejected ones show nothing. The panel lists every task with its status.
+ */
+function TaskTag({ e, onReview }: { e: BookEntry; onReview: () => void }) {
+  const tasks = e.tasks ?? []
+  const openN = tasks.filter((t) => t.status === 'Open').length
+  const deferredN = tasks.filter((t) => t.status === 'Deferred').length
+  if (!openN && !deferredN) return null
+  const label = openN ? `${openN} open` : `${deferredN} deferred`
+  return (
+    <Popover
+      trigger={<PopoverTrigger openOnHover delay={150} className={cn(tagBase, 'cursor-pointer hover:underline', openN ? 'bg-task' : 'border border-line-strong text-fg-muted')} aria-label={`${label} position task${openN + deferredN > 1 ? 's' : ''} for ${e.name}`}>{label}</PopoverTrigger>}
+      title="Position tasks"
+      description="An underlying component changed the weight of a position. Accept, reject or defer it in Simulation."
+    >
+      <MiniTable
+        caption="New position weight in underlying component"
+        heads={['Instrument', 'Underlying component', 'Status', 'Current weight %', 'New weight %']}
+        numFrom={3}
+        rows={tasks.map((t) => [<>{t.instrument}<span className="block text-fg-muted">{t.isin}</span></>, t.component, t.status, f2(t.current), f2(t.next)])}
+      />
+      <div className="mt-3 flex justify-end"><Button size="sm" onClick={onReview}>Review in Simulation</Button></div>
+    </Popover>
+  )
+}
+
 function sortValue(e: BookEntry, k: SortKey): string | number {
   if (k === 'area') { const m = byWeight(e)[0]; return m ? `${m[0]} ${String(999 - m[1]).padStart(3, '0')}` : '' }
   if (k === 'perf1y') return e.perf1y ?? -Infinity
@@ -76,7 +102,7 @@ const uniq = (v: string[]) => [...new Set(v)].sort()
 /**
  * Model portfolio book: the landing list of every model portfolio.
  * Type tabs + filters + search narrow it; column headers sort it; customized versions sit under their parent
- * and stay collapsed until asked for, so a portfolio with many versions is still one row. Row actions follow the lifecycle Draft → Published → Archived.
+ * and stay collapsed until asked for, so a portfolio with many versions is still one row. Publishing happens from NEW inside the flow, never from this list.
  */
 export function BookView() {
   const { update } = usePortfolio()
@@ -129,50 +155,31 @@ export function BookView() {
       s.book = { id: e.id, task }
       s.sim.mode = 'new'
       // The task proposes a change; start from the current weight each time the portfolio is opened.
-      const r = task && s.sim.rows.find((x) => x.id === task.rowId)
-      if (r) r.nw = r.w
+      if (task) {
+        const r = s.sim.rows.find((x) => x.id === task.rowId)
+        if (r) r.nw = task.status === 'Accepted' ? task.next : r.w
+      }
     })
     location.hash = step
   }
-  const create = () => { update((s) => { s.data.name = ''; s.data.code = ''; s.data.ccy = 'EUR'; s.data.benchmark = ''; s.book = { id: '', task: null } }); location.hash = 'data' }
-  const patch = (id: string, change: Partial<BookEntry>) =>
-    setList((l) => l.map((e) => (e.id === id ? { ...e, ...change, editedBy: BOOK_USER, modified: today() } : e)))
+  const create = () => { update((s) => { s.data.name = ''; s.data.code = ''; s.data.description = ''; s.data.ccy = 'EUR'; s.data.benchmark = ''; s.book = { id: '', task: null } }); location.hash = 'data' }
   const add = (src: BookEntry, change: Partial<BookEntry>) =>
     setList((l) => {
       const copy: BookEntry = { ...src, tasks: undefined, perf1y: undefined, ...change, id: nextId(l), status: 'Draft', creator: BOOK_USER, editedBy: BOOK_USER, modified: today() }
       const at = l.findIndex((e) => e.id === src.id)
       return [...l.slice(0, at + 1), copy, ...l.slice(at + 1)]
     })
-  const setTo = (e: BookEntry, s: BookStatus) => () => patch(e.id, { status: s })
-  /** Row actions depend on where the portfolio is in its lifecycle. */
+  /** Row actions. A customized version can only be created from a published STANDARD portfolio. */
   const actions = (e: BookEntry) => [
     { label: 'Open', onClick: () => open(e) },
     ...(e.status === 'Draft' ? [{ label: 'Edit', onClick: () => open(e, 'data') }] : []),
-    { label: 'Duplicate', onClick: () => add(e, { name: e.name + ' (copy)' }) },
-    ...(e.status === 'Published' && e.type !== 'Customized' ? [{ label: 'Create customized version', onClick: () => add(e, { name: e.name + ' – customized', type: 'Customized', parent: e.id }) }] : []),
-    ...(e.status === 'Draft' ? [{ label: 'Publish', onClick: setTo(e, 'Published') }] : []),
-    ...(e.status === 'Published' ? [{ label: 'Archive', onClick: setTo(e, 'Archived') }] : []),
-    ...(e.status === 'Archived' ? [{ label: 'Restore', onClick: setTo(e, 'Published') }] : []),
+    ...(e.status === 'Published' && e.type === 'Standard' ? [{ label: 'Create customized version', onClick: () => add(e, { name: e.name + ' – customized', type: 'Customized', parent: e.id }) }] : []),
   ]
 
   const toggle = (id: string) => setExpanded((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const sortBy = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
   const clear = () => { setStatus('all'); setArea('all'); setCreator('all'); setMine(false) }
 
-  const exportCsv = () => {
-    const out = tops.flatMap((t) => [t, ...kidsOf(t.id)]).filter((e) => ids.has(e.id))
-    const lines = [
-      ['ID', 'Model portfolio name', 'Type', 'Asset allocation', 'Benchmark', 'Performance % (1Y)', 'Created by', 'Status', 'Last modified', 'Last edited by'],
-      ...out.map((e) => [e.id, e.name, e.type, allocText(e), e.benchmark, e.perf1y?.toFixed(2) ?? '', e.creator, e.status, e.modified, e.editedBy]),
-    ]
-    const csv = lines.map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n')
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'model-portfolio-book.csv'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
 
   const head = (key: SortKey, label: string, className?: string) => {
     const on = sort.key === key
@@ -234,7 +241,7 @@ export function BookView() {
             </thead>
             <tbody>
               {rows.map(({ e, kids, context, forced, isOpen }) => (
-                <tr key={e.id} className={cn('hover:bg-surface-subtle', e.parent && 'bg-surface-subtle hover:bg-surface-muted', (context || e.status === 'Archived') && 'text-fg-muted')}>
+                <tr key={e.id} className={cn('hover:bg-surface-subtle', e.parent && 'bg-surface-subtle hover:bg-surface-muted', context && 'text-fg-muted')}>
                   <td className={cn(td, 'pl-6 text-fg-muted tabular-nums')}>{e.id}</td>
                   <td className={td}>
                     <div className={cn('flex items-center gap-1.5', e.parent && 'pl-5.5')}>
@@ -249,21 +256,7 @@ export function BookView() {
                   </td>
                   <td className={td}><span className={cn(tagBase, TYPE_TAG[e.type])}>{e.type}</span></td>
                   <td className={td}>
-                    {e.tasks?.length ? (
-                      <Popover
-                        trigger={<PopoverTrigger openOnHover delay={150} className={cn(tagBase, 'cursor-pointer bg-task hover:underline')} aria-label={`${e.tasks.length} open position task${e.tasks.length > 1 ? 's' : ''} for ${e.name}`}>{e.tasks.length} open</PopoverTrigger>}
-                        title="Position tasks"
-                        description="An underlying component changed the weight of a position. Accept, reject or defer it in Simulation."
-                      >
-                        <MiniTable
-                          caption="New position weight in underlying component"
-                          heads={['Instrument', 'Underlying component', 'Current weight %', 'New weight %']}
-                          numFrom={2}
-                          rows={e.tasks.map((t) => [<>{t.instrument}<span className="block text-fg-muted">{t.isin}</span></>, t.component, f2(t.current), f2(t.next)])}
-                        />
-                        <div className="mt-3 flex justify-end"><Button size="sm" onClick={() => open(e)}>Review in Simulation</Button></div>
-                      </Popover>
-                    ) : null}
+                    <TaskTag e={e} onReview={() => open(e)} />
                   </td>
                   <td className={td}><AllocCell e={e} /></td>
                   <td className={td}>{e.benchmark}</td>
@@ -293,7 +286,7 @@ export function BookView() {
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line-strong px-6 py-2.5 text-xs">
           <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-fg-muted">
             <span>{ASSET_CLASSES.map((c) => <span key={c} className="mr-3 whitespace-nowrap"><Swatch cls={c} />{c}</span>)}</span>
-            <span>Performance as of {BOOK_AS_OF}, net of fees.</span>
+            <span>Performance as of {BOOK_AS_OF}.</span>
           </span>
           <div className="flex items-center gap-2.5">
             <span className="text-fg-muted">Rows per page</span>
@@ -301,7 +294,6 @@ export function BookView() {
             <span className="tabular-nums">Page {p + 1} of {pages}</span>
             <Button size="sm" disabled={p === 0} onClick={() => setPage(p - 1)}>Previous</Button>
             <Button size="sm" disabled={p >= pages - 1} onClick={() => setPage(p + 1)}>Next</Button>
-            <Button size="sm" className="ml-2" disabled={!ids.size} onClick={exportCsv}><Download className="size-3.5" strokeWidth={1.75} aria-hidden />Export CSV</Button>
           </div>
         </div>
       </div>

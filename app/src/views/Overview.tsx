@@ -11,7 +11,7 @@ export type AllocRow = { label: string; alloc: Alloc }
  * Overview strip above Component allocation and Simulation: three columns with one row rhythm —
  * Asset allocation | Quality checks | Portfolio. Full by default; compact = two lines per column.
  */
-type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Show the Quality checks column (default true). */ quality?: boolean }
+type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Show the Quality checks column. Off everywhere for now. */ quality?: boolean }
 
 /**
  * The same strip sits on Component allocation and on Simulation. One fixed view-transition name makes it a
@@ -32,7 +32,7 @@ export function Overview(props: OverviewProps) {
   )
 }
 
-function OverviewBody({ rows, focus, showChange, compact, quality = true }: OverviewProps) {
+function OverviewBody({ rows, focus, showChange, compact, quality = false }: OverviewProps) {
   const grid = cn('grid shrink-0 border-y border-line text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]')
   const { state } = usePortfolio()
   const failed = QUALITY_CHECKS.filter(([, s]) => s < PASS_SCORE)
@@ -109,7 +109,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = true }: Over
         <div className={title}>Portfolio</div>
         <dl>
           {[
-            ['Currency', state.data.ccy], ['Type', 'Standard'], ['Min. investment', "1'000'000.00"], ['Booking center', 'Luxembourg and Italy'], ['Benchmark', bench],
+            ['Currency', state.data.ccy], ['Type', 'Standard'], ['Benchmark', bench],
           ].map(([k, v]) => <FactRow key={k} k={k}>{v}</FactRow>)}
           <FactRow k="Exclusions">{excl.length ? excl.join(' · ') : 'None'} {editExclusions}</FactRow>
         </dl>
