@@ -4,7 +4,8 @@ import {
   type AssetClass, type BookTask, type CategoryId, type Component, type Position,
 } from '../data/data'
 
-export type SimRow = Position & { nw: number; removed: boolean; kept: boolean }
+/** kept: the user decided to keep a position that breaches a preference; keptOn records when (shown with the warning icon). */
+export type SimRow = Position & { nw: number; removed: boolean; kept: boolean; keptOn?: string }
 export type CashEntry = { ccy: string; w: number }
 
 export type PortfolioState = {

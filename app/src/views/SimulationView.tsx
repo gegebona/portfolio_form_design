@@ -3,10 +3,12 @@ import { addTransitionType, Fragment, startTransition, useState, ViewTransition,
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
 import { Menu, MenuTrigger } from '../components/ui/menu'
+import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Radio, RadioGroup, Switch } from '../components/ui/selection'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
+import { BOOK_USER } from '../data/data'
 import { cn } from '../lib/cn'
 import { setBookTaskStatus } from '../state/book'
 import { f2, near100, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
@@ -140,6 +142,7 @@ function redistribution(all: SimRow[], id: string, method: Method) {
 function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) {
   // The position being removed and the redistribution method picked for it (the panel opens under its row).
   const [removing, setRemoving] = useState<{ id: string; method: Method } | null>(null)
+  const [onlyWarnings, setOnlyWarnings] = useState(false)
   const { state, update } = usePortfolio()
   const cur = mode === 'current'
   // The open position task of this portfolio sits on its instrument's row, first in the table (New only).
@@ -149,6 +152,10 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0)))
     .slice()
     .sort((a, b) => (cur ? 0 : Number(b.id === task?.rowId) - Number(a.id === task?.rowId) || Number(conflict(b)) - Number(conflict(a))))
+  // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
+  const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
+  const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
+  const shown = onlyWarnings && !cur && toReview + keptN > 0 ? rows.filter((r) => excluded(r)) : rows
   const edit = (id: string, fn: (r: SimRow) => void) => update((s) => { fn(s.sim.rows.find((r) => r.id === id)!) })
   /**
    * Position task decision. All three stay selectable and the latest one wins: Accepted applies the official target,
@@ -165,6 +172,17 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   }
 
   return (
+    <>
+    {toReview + keptN > 0 && (
+      <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-2.5 py-1.5 text-xs">
+        <span className="inline-flex items-center gap-1.5">
+          <TriangleAlert className={cn('size-3.5', toReview > 0 ? 'text-error' : 'text-fg-subtle')} strokeWidth={1.75} aria-hidden />
+          {toReview > 0 ? `${toReview} ${toReview === 1 ? 'warning' : 'warnings'} to review` : 'No warnings to review'}
+          {keptN > 0 && <span className="text-fg-muted">· {keptN} kept</span>}
+        </span>
+        <Button variant="link" className="text-xs" aria-pressed={onlyWarnings} onClick={() => setOnlyWarnings(!onlyWarnings)}>{onlyWarnings ? 'Show all positions' : 'Show only warnings'}</Button>
+      </div>
+    )}
     <table className="w-full border-collapse text-xs">
       <thead>
         <tr>
@@ -176,7 +194,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
         </tr>
       </thead>
       <tbody>
-        {rows.map((r) => {
+        {shown.map((r) => {
           const c = !cur && conflict(r)
           const edited = Math.abs(r.nw - r.w) >= 0.005
           const t = task && task.rowId === r.id ? task : null
@@ -190,10 +208,23 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               </td>
               <td className={td}>
                 {r.name}
+                {!cur && r.kept && excluded(r) && (
+                  <Popover
+                    className="w-90"
+                    trigger={<PopoverTrigger openOnHover delay={150} aria-label={`${r.name}: kept despite a preference warning. Show details`} className="ml-1.5 inline-flex cursor-pointer align-[-2px] text-error"><TriangleAlert className="size-3.5" strokeWidth={1.75} /></PopoverTrigger>}
+                    title="Portfolio preference warning · kept"
+                    description={`${r.name} breaches the instrument exclusion preference: it is on the excluded instruments list.`}
+                  >
+                    <p className="text-xs text-fg-muted">Kept by {BOOK_USER}{r.keptOn ? ` on ${r.keptOn}` : ''}. Does not block Simulation or publication.</p>
+                    <div className="mt-3 flex gap-1.5">
+                      <Button size="sm" onClick={() => edit(r.id, (x) => { x.kept = false; x.keptOn = undefined })}>Review again</Button>
+                      <Button size="sm" onClick={() => setRemoving({ id: r.id, method: 'proportional' })}>Remove…</Button>
+                    </div>
+                  </Popover>
+                )}
                 {r.isin && <span className="block text-fg-muted">{r.isin}</span>}
                 {t && <span className="mt-0.75 block text-fg-muted">Official target {f2(t.next)}% from {t.component}</span>}
                 {(c || (cur && excluded(r))) && <ConflictNote>Conflicts with exclusions: excluded instrument</ConflictNote>}
-                {!cur && r.kept && excluded(r) && <span className="mt-0.75 inline-flex items-center gap-1 text-fg-muted"><TriangleAlert className="size-3" />Kept despite exclusion</span>}
               </td>
               <td className={td}>{r.bb}</td>
               <td className={td}>{r.ccy}<span className="block text-fg-muted">{r.fx.toFixed(2)}</span></td>
@@ -217,7 +248,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     </span>
                   ) : c ? (
                     <span className="inline-flex gap-1">
-                      <Button size="sm" onClick={() => edit(r.id, (x) => { x.kept = true })}>Keep</Button>
+                      <Button size="sm" onClick={() => edit(r.id, (x) => { x.kept = true; x.keptOn = new Date().toLocaleDateString('en-GB') })}>Keep</Button>
                       <Button size="sm" onClick={() => setRemoving({ id: r.id, method: 'proportional' })}>Remove…</Button>
                     </span>
                   ) : (
@@ -285,9 +316,10 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             </Fragment>
           )
         })}
-        {!rows.length && <tr><td colSpan={9} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
+        {!shown.length && <tr><td colSpan={9} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
+    </>
   )
 }
 
