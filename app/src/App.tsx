@@ -5,7 +5,9 @@ import { Button } from './components/ui/button'
 import { Checkbox } from './components/ui/selection'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
-import { PortfolioProvider, usePortfolio } from './state/portfolio'
+import { BOOK_USER } from './data/data'
+import { getBook, nextBookId, setBook } from './state/book'
+import { benchmarkById, missingData, portfolioAlloc, PortfolioProvider, usePortfolio } from './state/portfolio'
 import { BookView } from './views/BookView'
 import { DataView } from './views/DataView'
 import { DesignSystemPage } from './design-system/DesignSystemPage'
@@ -54,7 +56,7 @@ export default function App() {
       <Tooltip.Provider delay={300}>
         <div className="flex h-dvh flex-col overflow-hidden">
           <AppHeader route={route} onNavigate={go} />
-          {route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} />}
+          {route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
         </div>
       </Tooltip.Provider>
     </PortfolioProvider>
@@ -89,11 +91,31 @@ function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route)
   )
 }
 
-function Flow({ step, onStep }: { step: StepId; onStep: (r: StepId) => void }) {
+function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepId) => void; onBook: () => void }) {
+  const { state } = usePortfolio()
+  // Mandatory data of the first step gates everything: later steps stay locked and the draft cannot be saved.
+  const missing = missingData(state)
+  const blocked = missing.length > 0
+  const step: StepId = blocked ? 'data' : asked
+  useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
   const i = STEPS.findIndex((s) => s.id === step)
   const prev = STEPS[i - 1]
   const next = STEPS[i + 1]
-  const { state } = usePortfolio()
+  /** Save as draft: writes the portfolio to the book (a new Draft, or the entry that was opened) and returns there. */
+  const save = () => {
+    const a = portfolioAlloc(state)
+    const fields = {
+      name: state.data.name.trim(),
+      benchmark: benchmarkById(state.data.benchmark)?.name ?? '',
+      alloc: { Equity: Math.round(a.Equity), Bonds: Math.round(a.Bonds), Alternatives: Math.round(a.Alternatives), Liquidity: Math.round(a.Liquidity) },
+      editedBy: BOOK_USER,
+      modified: new Date().toLocaleDateString('en-GB'),
+    }
+    const l = getBook()
+    if (l.some((e) => e.id === state.book.id)) setBook(l.map((e) => (e.id === state.book.id ? { ...e, ...fields } : e)))
+    else setBook([...l, { id: nextBookId(l), type: 'Standard', creator: BOOK_USER, status: 'Draft', ...fields }])
+    onBook()
+  }
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
       <nav aria-label="Breadcrumb" className="my-3.5 flex items-center gap-1.5 text-xs">
@@ -106,7 +128,7 @@ function Flow({ step, onStep }: { step: StepId; onStep: (r: StepId) => void }) {
       <div className="mb-4 flex min-h-0 flex-1 flex-col border border-line-strong bg-surface">
         <Tabs value={step} onValueChange={(v) => onStep(v as StepId)}>
           <TabsList variant="step" className="border-b border-line px-5">
-            {STEPS.map((s) => <Tab key={s.id} value={s.id}>{s.label}</Tab>)}
+            {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={blocked && s.id !== 'data'} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : undefined}>{s.label}</Tab>)}
             <Tab value="reporting" disabled title="Not available yet">Reporting</Tab>
           </TabsList>
         </Tabs>
@@ -123,6 +145,8 @@ function Flow({ step, onStep }: { step: StepId; onStep: (r: StepId) => void }) {
         <ActionBar
           back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
           next={next ? { label: next.label, onClick: () => onStep(next.id) } : { label: 'Publish', onClick: () => {} }}
+          onSave={save}
+          blocked={blocked ? `Still needed: ${missing.join(', ')}.` : undefined}
         />
       </div>
     </main>
@@ -130,7 +154,7 @@ function Flow({ step, onStep }: { step: StepId; onStep: (r: StepId) => void }) {
 }
 
 /** Dark action bar: Back + Cancel on the left, Save as draft + the forward step (the one primary) on the right. */
-function ActionBar({ back, next }: { back?: { label: string; onClick: () => void }; next: { label: string; onClick: () => void } }) {
+function ActionBar({ back, next, onSave, blocked }: { back?: { label: string; onClick: () => void }; next: { label: string; onClick: () => void }; onSave: () => void; /** Why the forward and save actions are disabled. */ blocked?: string }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 bg-surface-inverse px-6 py-3">
       <div className="flex items-center gap-2.5">
@@ -143,8 +167,9 @@ function ActionBar({ back, next }: { back?: { label: string; onClick: () => void
         <Button variant="link" tone="onDark" className="h-9 px-2">Cancel</Button>
       </div>
       <div className="flex items-center gap-2.5">
-        <Button variant="secondary" tone="onDark" size="lg">Save as draft</Button>
-        <Button variant="primary" tone="onDark" size="lg" onClick={next.onClick}>
+        {blocked && <span role="status" className="mr-1.5 text-xs text-surface-strong">{blocked}</span>}
+        <Button variant="secondary" tone="onDark" size="lg" disabled={!!blocked} onClick={onSave}>Save as draft</Button>
+        <Button variant="primary" tone="onDark" size="lg" disabled={!!blocked} onClick={next.onClick}>
           {next.label}
           <ChevronRight className="size-3.5" strokeWidth={2} />
         </Button>

@@ -80,6 +80,15 @@ export function usePortfolio() {
 
 // ---- Derived data -------------------------------------------------------------
 
+/**
+ * Mandatory data of the first step: code, name, currency (always prefilled with EUR) and benchmark.
+ * While anything is missing the later steps are locked and the portfolio cannot be saved as a draft.
+ */
+export function missingData(s: PortfolioState): string[] {
+  const d = s.data
+  return [!d.code.trim() && 'code', !d.name.trim() && 'name', !d.ccy && 'currency', !BENCHMARKS.some((b) => b.id === d.benchmark) && 'benchmark'].filter((v): v is string => !!v)
+}
+
 export const componentById = (id: string) => COMPONENTS.find((c) => c.id === id)!
 export const instrumentByIsin = (isin: string) => COMPONENT_INSTRUMENTS.find((x) => x.isin === isin) ?? EXCLUDABLE_INSTRUMENTS.find((x) => x.isin === isin)!
 export const benchmarkById = (id: string) => BENCHMARKS.find((b) => b.id === id)

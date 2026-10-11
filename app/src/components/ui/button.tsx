@@ -36,7 +36,7 @@ export const buttonVariants = cva(
       },
     },
     compoundVariants: [
-      { variant: 'secondary', tone: 'onDark', className: 'border-control bg-transparent text-fg-inverse hover:bg-fg-secondary' },
+      { variant: 'secondary', tone: 'onDark', className: 'border-control bg-transparent text-fg-inverse hover:bg-fg-secondary disabled:border-fg-secondary disabled:bg-transparent disabled:text-fg-subtle' },
       { variant: 'link', tone: 'onDark', className: 'text-surface-strong hover:text-fg-inverse hover:no-underline' },
       { variant: 'link', className: 'h-auto px-0.5' },
     ],

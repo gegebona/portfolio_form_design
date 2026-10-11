@@ -7,5 +7,6 @@ import { MODEL_PORTFOLIOS, type BookEntry } from '../data/data'
 let book: BookEntry[] = MODEL_PORTFOLIOS
 export const getBook = () => book
 export const setBook = (next: BookEntry[]) => { book = next; return next }
+export const nextBookId = (l: BookEntry[]) => String(Math.max(0, ...l.map((e) => Number(e.id) || 0)) + 1).padStart(3, '0')
 /** Accepting or rejecting a position task in Simulation closes it in the book. */
 export const closeBookTasks = (id: string) => { book = book.map((e) => (e.id === id ? { ...e, tasks: undefined } : e)) }

@@ -133,7 +133,7 @@ export function BookView() {
     })
     location.hash = step
   }
-  const create = () => { update((s) => { s.data.name = 'New model portfolio'; s.data.code = 'MP_' + nextId(list); s.book = { id: '', task: null } }); location.hash = 'data' }
+  const create = () => { update((s) => { s.data.name = ''; s.data.code = ''; s.data.ccy = 'EUR'; s.data.benchmark = ''; s.book = { id: '', task: null } }); location.hash = 'data' }
   const patch = (id: string, change: Partial<BookEntry>) =>
     setList((l) => l.map((e) => (e.id === id ? { ...e, ...change, editedBy: BOOK_USER, modified: today() } : e)))
   const add = (src: BookEntry, change: Partial<BookEntry>) =>

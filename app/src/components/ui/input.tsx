@@ -44,12 +44,13 @@ export function AffixInput({ className, suffix, inputClassName, ...props }: Inpu
 }
 
 /** Field: label above the control, optional description. Base UI Field links label ↔ control for screen readers. */
-export function Field({ label, description, className, children }: { label: ReactNode; description?: ReactNode; className?: string; children: ReactNode }) {
+export function Field({ label, description, error, className, children }: { label: ReactNode; description?: ReactNode; /** Shown in the error colour under the control (e.g. "Required"). */ error?: ReactNode; className?: string; children: ReactNode }) {
   return (
     <BaseField.Root className={cn('flex flex-col gap-1', className)}>
       <BaseField.Label className="text-sm text-fg">{label}</BaseField.Label>
       {children}
       {description && <BaseField.Description className="text-xs text-fg-muted">{description}</BaseField.Description>}
+      {error && <p className="text-xs text-error">{error}</p>}
     </BaseField.Root>
   )
 }

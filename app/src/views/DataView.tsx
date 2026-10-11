@@ -15,11 +15,11 @@ export function DataView() {
     <div className="flex flex-wrap">
       <Section screenHeading title="Model portfolio data" description="Please enter the data specific to the model portfolio." className="w-75 shrink-0 border-r border-line">
         <div className="mt-5 flex flex-col gap-4">
-          <Field label="Model portfolio code">
-            <Input value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
+          <Field label="Model portfolio code" error={!d.code.trim() && 'Required'}>
+            <Input aria-invalid={!d.code.trim()} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
           </Field>
-          <Field label="Model portfolio name">
-            <Input value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
+          <Field label="Model portfolio name" error={!d.name.trim() && 'Required'}>
+            <Input aria-invalid={!d.name.trim()} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
           </Field>
           <Field label="Currency">
             <Select value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={PORTFOLIO_CURRENCIES.map((c) => ({ value: c, label: c }))} />
@@ -46,7 +46,7 @@ function BenchmarkPicker() {
     <div className="mt-5 grid grid-cols-[22.5rem_minmax(0,1fr)] grid-rows-[auto_1fr]">
       <div className="pr-5">
         <SearchInput value={q} onValueChange={setQ} placeholder="Search benchmarks or indices…" aria-label="Search benchmarks" />
-        <div className="mt-2.5 mb-2 text-xs text-fg-muted">{ql ? `${list.length} of ${BENCHMARKS.length} benchmarks` : `${BENCHMARKS.length} benchmarks`}</div>
+        <div className="mt-2.5 mb-2 text-xs text-fg-muted">{ql ? `${list.length} of ${BENCHMARKS.length} benchmarks` : `${BENCHMARKS.length} benchmarks`}{!sel && <span className="ml-2 text-error">Required: select one</span>}</div>
       </div>
       <div />
       <RadioGroup aria-label="Benchmark" value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v as string })} className="min-w-0 border-t border-line">
