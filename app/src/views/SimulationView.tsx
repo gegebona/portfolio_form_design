@@ -108,6 +108,14 @@ const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 
 
 const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 
+/**
+ * Column widths in percent, shared by the four position tables so the space is spread evenly: text columns no wider
+ * than their content needs, number columns with room to breathe. The tables use a fixed layout to honour them.
+ */
+function Cols({ w }: { w: number[] }) {
+  return <colgroup>{w.map((x, i) => <col key={i} style={{ width: x + '%' }} />)}</colgroup>
+}
+
 type Method = 'equal' | 'proportional' | 'cash'
 const METHODS: { id: Method; label: string; help: string }[] = [
   { id: 'equal', label: 'Equal', help: 'The same share to each remaining position.' },
@@ -181,7 +189,8 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
         <Button variant="link" className="text-xs" aria-pressed={onlyWarnings} onClick={() => setOnlyWarnings(!onlyWarnings)}>{onlyWarnings ? 'Show all positions' : 'Show only warnings'}</Button>
       </div>
     )}
-    <table className="w-full border-collapse text-xs">
+    <table className="w-full table-fixed border-collapse text-xs">
+      <Cols w={cur ? [10, 28, 26, 9, 9, 7, 11] : [9, 17, 18, 8, 8, 6, 8, 9, 6, 11]} />
       <thead>
         <tr>
           <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
@@ -221,7 +230,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                 )}
                 {r.isin && <span className="block text-fg-muted">{r.isin}</span>}
                 {t && <span className="mt-0.75 block text-fg-muted">Official target {f2(t.next)}% from {t.component}</span>}
-                {(c || (cur && excluded(r))) && <ConflictNote>Conflicts with exclusions: excluded instrument</ConflictNote>}
+                {(c || (cur && excluded(r))) && <ConflictNote>Excluded instrument</ConflictNote>}
               </td>
               <td className={td}>{r.bb}</td>
               <td className={td}>{r.ccy}<span className="block text-fg-muted">{r.fx.toFixed(2)}</span></td>
@@ -341,7 +350,8 @@ function GroupTable({ mode, showZero, keyOf, order }: { mode: Mode; showZero: bo
   const num = (v: ReactNode, strong?: boolean) => <td className={cn(td, 'text-right tabular-nums', strong && 'font-semibold')}>{v}</td>
   const change = (d: number) => (Math.abs(d) < 0.005 ? <span className="text-fg-subtle">—</span> : (d > 0 ? '+' : '') + f2(d))
   return (
-    <table className="w-full border-collapse text-xs">
+    <table className="w-full table-fixed border-collapse text-xs">
+      <Cols w={cur ? [10, 28, 26, 9, 9, 7, 11] : [10, 22, 22, 9, 9, 6, 8, 8, 6]} />
       <thead>
         <tr>
           <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
