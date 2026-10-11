@@ -90,7 +90,7 @@ export function SimulationView() {
         <ViewTransition update={{ positions: 'table-swap', default: 'none' }} default="none">
         <div className="min-h-0 flex-1 overflow-auto">
           {view === 'instrument' ? <InstrumentTable mode={mode} showZero={showZero} />
-            : <GroupTable key={view} mode={mode} showZero={showZero} order={view === 'class' ? ASSET_CLASSES : undefined}
+            : <GroupTable key={view} mode={mode} showZero={showZero} order={view === 'class' ? ASSET_CLASSES : undefined} hide={view === 'class' ? 'cls' : view === 'block' ? 'bb' : undefined}
                 keyOf={view === 'class' ? (r) => r.cls : view === 'block' ? (r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments') : (r) => r.ccy} />}
         </div>
         </ViewTransition>
@@ -333,10 +333,13 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
 /**
  * Read-only grouped view (Asset class, Building block, Exposure): one header row per group with its subtotal, and the
  * group's instruments underneath with their own weights. Groups collapse; weights are edited only in the Instrument view.
- * Columns, their order and their cell content match the Instrument view exactly, so switching view never moves a column.
+ * The column a view groups by is not repeated on every row: its room goes to the instrument's share of the group, and the
+ * group row summarises what the group holds.
  */
-function GroupTable({ mode, showZero, keyOf, order }: { mode: Mode; showZero: boolean; keyOf: (r: SimRow) => string; /** Fixed group order; without it, groups sort by weight. */ order?: string[] }) {
+function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZero: boolean; keyOf: (r: SimRow) => string; /** Fixed group order; without it, groups sort by weight. */ order?: string[]; /** Column already given by the group header. */ hide?: 'cls' | 'bb' }) {
   const { state } = usePortfolio()
+  const showCls = hide !== 'cls'
+  const showBb = hide !== 'bb'
   const [closed, setClosed] = useState<Set<string>>(new Set())
   const cur = mode === 'current'
   const wOf = (r: SimRow) => (cur ? r.w : r.nw)
@@ -351,12 +354,17 @@ function GroupTable({ mode, showZero, keyOf, order }: { mode: Mode; showZero: bo
   const change = (d: number) => (Math.abs(d) < 0.005 ? <span className="text-fg-subtle">—</span> : (d > 0 ? '+' : '') + f2(d))
   return (
     <table className="w-full table-fixed border-collapse text-xs">
-      <Cols w={cur ? [10, 28, 26, 9, 9, 7, 11] : [10, 22, 22, 9, 9, 6, 8, 8, 6]} />
+      <Cols w={(() => {
+        const raw = [...(showCls ? [12] : []), showBb ? 22 : 28, ...(showBb ? [showCls ? 20 : 24] : []), 9, 10, 8, 11, ...(cur ? [11] : [9, 9, 8])]
+        const t = raw.reduce((a, b) => a + b, 0)
+        return raw.map((x) => (x / t) * 100)
+      })()} />
       <thead>
         <tr>
-          <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
+          {showCls && <th className={th}>Asset class</th>}<th className={cn(th, !showCls && 'pl-10')}>Instrument / account</th>{showBb && <th className={th}>Building block</th>}<th className={th}>Currency</th>
           <th className={cn(th, 'text-right')}>Price</th>
           <th className={cn(th, 'text-right')}>ESG</th>
+          <th className={cn(th, 'text-right')}>Share of group %</th>
           <th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
         </tr>
@@ -367,17 +375,24 @@ function GroupTable({ mode, showZero, keyOf, order }: { mode: Mode; showZero: bo
           const open = !closed.has(k)
           const w = sum(list, (r) => r.w)
           const nw = sum(list, (r) => r.nw)
+          const total = sum(list, wOf)
+          const mix = new Map<string, number>()
+          list.forEach((r) => mix.set(r.cls, (mix.get(r.cls) ?? 0) + wOf(r)))
+          const blocks = new Set(list.map((r) => r.bb).filter((b) => b !== '—')).size
+          const summary = showCls
+            ? [...mix.entries()].sort((a, b) => b[1] - a[1]).map(([c, v]) => `${c} ${total > 0 ? Math.round((v / total) * 100) : 0}%`).join(' · ')
+            : blocks ? `${blocks} ${blocks === 1 ? 'building block' : 'building blocks'}` : ''
           return (
             <Fragment key={k}>
               <tr className="*:bg-surface-subtle">
                 {/* Spans the descriptive columns, price and ESG: no group price or score, only supplied instrument values are shown. */}
-                <td className={td} colSpan={6}>
+                <td className={td} colSpan={6 + (hide ? 0 : 1)}>
                   <span className="inline-flex items-center gap-1.5 font-semibold">
                     <Button variant="ghost" size="icon-sm" aria-expanded={open} aria-label={`${open ? 'Collapse' : 'Expand'} ${k}`} onClick={() => toggle(k)}>
                       {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                     </Button>
                     <span>{k in CLASS_COLOR && <Swatch cls={k as AssetClass} />}{k}</span>
-                    <span className="font-normal text-fg-muted">· {list.length} {list.length === 1 ? 'position' : 'positions'}</span>
+                    <span className="font-normal text-fg-muted">· {list.length} {list.length === 1 ? 'position' : 'positions'}{summary && ` · ${summary}`}</span>
                   </span>
                 </td>
                 {num(f2(w), true)}
@@ -385,12 +400,13 @@ function GroupTable({ mode, showZero, keyOf, order }: { mode: Mode; showZero: bo
               </tr>
               {open && list.map((r) => (
                 <tr key={r.id} className="hover:*:bg-surface-subtle">
-                  <td className={cn(td, 'pl-10')}>{r.cls}</td>
-                  <td className={td}>{r.name}{r.isin && <span className="block text-fg-muted">{r.isin}</span>}</td>
-                  <td className={td}>{r.bb}</td>
+                  {showCls && <td className={cn(td, 'pl-10')}>{r.cls}</td>}
+                  <td className={cn(td, !showCls && 'pl-10')}>{r.name}{r.isin && <span className="block text-fg-muted">{r.isin}</span>}</td>
+                  {showBb && <td className={td}>{r.bb}</td>}
                   <td className={td}>{r.ccy}<span className="block text-fg-muted">{r.fx.toFixed(2)}</span></td>
                   {num(f2(r.price))}
                   {num(r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg)}
+                  {num(total > 0 ? <span className="text-fg-muted">{f2((wOf(r) / total) * 100)}</span> : <span className="text-fg-subtle">—</span>)}
                   {num(f2(r.w))}
                   {!cur && <>{num(f2(r.nw), Math.abs(r.nw - r.w) >= 0.005)}{num(change(r.nw - r.w))}</>}
                 </tr>
@@ -398,7 +414,7 @@ function GroupTable({ mode, showZero, keyOf, order }: { mode: Mode; showZero: bo
             </Fragment>
           )
         })}
-        {!keys.length && <tr><td colSpan={9} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
+        {!keys.length && <tr><td colSpan={10} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
   )
