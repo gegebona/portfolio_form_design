@@ -39,11 +39,10 @@ export function AllocationView() {
       screenHeading
       title="Component allocation"
       description="Set the weight of each component in whole percentages. Weights must add up to exactly 100%."
-      actions={<Button variant="link" className="self-end" aria-pressed={compact} onClick={() => setCompact(!compact)}>{compact ? 'Full view' : 'Compact view'}</Button>}
       className="flex min-h-0 flex-1 flex-col"
     >
       <div className="mt-3.5">
-        <Overview rows={[{ label: 'Portfolio', alloc: portfolioAlloc(state) }, { label: 'Benchmark', alloc: benchmarkAlloc(state) }]} focus={0} compact={compact} quality={false} />
+        <Overview rows={[{ label: 'Portfolio', alloc: portfolioAlloc(state) }, { label: 'Benchmark', alloc: benchmarkAlloc(state) }]} focus={0} compact={compact} quality={false} onToggleCompact={() => setCompact(!compact)} />
       </div>
       <div className="mt-4 grid min-h-0 flex-1 grid-cols-[26.25rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
         <div className="flex min-h-0 flex-col">

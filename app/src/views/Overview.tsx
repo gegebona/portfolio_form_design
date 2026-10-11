@@ -13,7 +13,7 @@ export type AllocRow = { label: string; alloc: Alloc }
  * Exclusions sit in the middle because they explain the flags in the tables below. They are plain text under a
  * ⊘ heading (the system's sign for "excluded"): clear about what they are, without competing with the tables.
  */
-type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Show the Quality checks column. Off everywhere for now. */ quality?: boolean }
+type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Shows the strip's own Show / Hide details control (in its last panel), so the control sits on the thing it changes. */ onToggleCompact?: () => void; /** Show the Quality checks column. Off everywhere for now. */ quality?: boolean }
 
 /**
  * The same strip sits on Component allocation and on Simulation. One fixed view-transition name makes it a
@@ -34,7 +34,8 @@ export function Overview(props: OverviewProps) {
   )
 }
 
-function OverviewBody({ rows, focus, showChange, compact, quality = false }: OverviewProps) {
+function OverviewBody({ rows, focus, showChange, compact, quality = false, onToggleCompact }: OverviewProps) {
+  const toggle = onToggleCompact && <Button variant="link" className="text-xs" aria-expanded={!compact} onClick={onToggleCompact}>{compact ? 'Show details' : 'Hide details'}</Button>
   const grid = cn('grid shrink-0 border-y border-line text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)_minmax(0,0.9fr)]')
   const { state } = usePortfolio()
   const failed = QUALITY_CHECKS.filter(([, s]) => s < PASS_SCORE)
@@ -84,7 +85,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
           </div>
         )}
         <div className={sec}>
-          <div className={title}>Portfolio</div>
+          <div className={title}><span>Portfolio</span>{toggle}</div>
           <div className="truncate leading-relaxed" title={line}>{line}</div>
         </div>
       </div>
@@ -132,7 +133,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
         </div>
       )}
       <div className={sec}>
-        <div className={title}>Portfolio</div>
+        <div className={title}><span>Portfolio</span>{toggle}</div>
         <dl>
           {[
             ['Code', state.data.code], ['Type', 'Standard'], ['Currency', state.data.ccy], ['Benchmark', bench],

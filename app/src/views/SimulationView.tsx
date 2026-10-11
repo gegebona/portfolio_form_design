@@ -45,7 +45,7 @@ export function SimulationView() {
 
   return (
     <Section className="flex min-h-0 flex-1 flex-col pt-3 pb-2.5">
-      {/* One compact row: the screen title, the Current / New switch and the overview toggle. Everything above the
+      {/* One compact row: the screen title and the Current / New switch. Everything above the
           positions table is kept short so the table gets the height. */}
       <div className="flex flex-wrap items-end gap-x-7 gap-y-2 border-b border-line">
         <h2 className="pb-2.5 text-xl">Simulation</h2>
@@ -55,9 +55,6 @@ export function SimulationView() {
             <Tab value="new">New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
           </TabsList>
         </Tabs>
-        <div className="flex items-center gap-5 pb-1.25 before:h-4 before:w-px before:bg-line-strong">
-          <Button variant="link" aria-pressed={compact} onClick={() => setCompact(!compact)}>{compact ? 'Full view' : 'Compact view'}</Button>
-        </div>
         {!cur && (
           <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
             <Info className="size-3.5" strokeWidth={1.5} />
@@ -72,7 +69,7 @@ export function SimulationView() {
           </div>
         )}
       </div>
-      <Overview rows={[{ label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} />
+      <Overview rows={[{ label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} onToggleCompact={() => setCompact(!compact)} />
 
       <div className="mt-2 flex min-h-0 flex-1 flex-col">
         <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line">
@@ -146,11 +143,13 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const task = cur ? null : state.book.task
   const excluded = (r: SimRow) => !!r.isin && state.prefs.inst.includes(r.isin)
   const conflict = (r: SimRow) => excluded(r) && !r.kept
+  const needsDecision = (r: SimRow) => conflict(r) || (task?.rowId === r.id && task.status === 'Open')
   const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0)))
     .slice()
-    // Cash first (set apart visually), then every other position by descending weight. The order uses the current
-    // weight so rows do not jump while a new weight is being typed; new positions (no current weight) follow by new weight.
-    .sort((a, b) => Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
+    // Rows that need a decision first (an undecided warning or an open task), then cash (set apart visually), then every
+    // other position by descending weight. The order uses the current weight so rows do not jump while a new weight
+    // is being typed; new positions (no current weight) follow by new weight.
+    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a))) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
   // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
   const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
   const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
