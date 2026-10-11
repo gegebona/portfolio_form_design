@@ -50,7 +50,7 @@ export function HowItWorks() {
 /* src/styles/theme.css */
 @theme static {
   --color-*: initial;                       /* drop Tailwind's palette */
-  --font-sans: Frutiger, "Source Sans 3 Variable", Arial, sans-serif;
+  --font-sans: Frutiger, "Frutiger for UBS Web", "Source Sans 3 Variable", Arial, sans-serif;
 
   --color-ubs-text-subtle: #5A5D5C;              /* 2. UBS token (--col-text-subtle) */
   --color-ubs-background-brand: #E60000;

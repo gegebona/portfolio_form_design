@@ -23,7 +23,7 @@
 
   /* ---- Typeface ---- */
   /* UBS Frutiger when installed (same family names as ubs.com); Source Sans 3 is the open fallback. */
-  --font-sans: Frutiger, "Frutiger LT Std", "Frutiger LT Pro", "Frutiger Next", "Source Sans 3 Variable", "Source Sans 3", Arial, Helvetica, sans-serif;
+  --font-sans: Frutiger, "Frutiger for UBS Web", "Frutiger LT Std", "Frutiger LT Pro", "Frutiger Next", "Source Sans 3 Variable", "Source Sans 3", Arial, Helvetica, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* ---- Elevation ---- */
