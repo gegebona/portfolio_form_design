@@ -349,6 +349,7 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
           {hide !== 'cls' && <th className={th}>Asset class</th>}
           {hide !== 'bb' && <th className={th}>Building block</th>}
           {hide !== 'ccy' && <th className={th}>Currency</th>}
+          <th className={cn(th, 'text-right')}>Price</th>
           <th className={cn(th, 'text-right')}>ESG</th>
           <th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
@@ -363,8 +364,8 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
           return (
             <Fragment key={k}>
               <tr className="*:bg-surface-subtle">
-                {/* Spans the descriptive columns and ESG: no group score, only supplied instrument scores are shown. */}
-                <td className={td} colSpan={4}>
+                {/* Spans the descriptive columns, price and ESG: no group price or score, only supplied instrument values are shown. */}
+                <td className={td} colSpan={5}>
                   <span className="inline-flex items-center gap-1.5 font-semibold">
                     <Button variant="ghost" size="icon-sm" aria-expanded={open} aria-label={`${open ? 'Collapse' : 'Expand'} ${k}`} onClick={() => toggle(k)}>
                       {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
@@ -382,6 +383,7 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
                   {hide !== 'cls' && <td className={td}>{r.cls}</td>}
                   {hide !== 'bb' && <td className={td}>{r.bb}</td>}
                   {hide !== 'ccy' && <td className={td}>{r.ccy}</td>}
+                  {num(f2(r.price))}
                   {num(r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg)}
                   {num(f2(r.w))}
                   {!cur && <>{num(f2(r.nw), Math.abs(r.nw - r.w) >= 0.005)}{num(change(r.nw - r.w))}</>}
@@ -390,7 +392,7 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
             </Fragment>
           )
         })}
-        {!keys.length && <tr><td colSpan={8} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
+        {!keys.length && <tr><td colSpan={9} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
   )
