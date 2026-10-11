@@ -197,17 +197,24 @@ export const POSITIONS: Position[] = [
 ]
 
 // ---- Model portfolio book (illustrative list; names, people and figures are invented) ----
-export type BookStatus = 'Published' | 'Draft' | 'Pending'
+export type BookStatus = 'Draft' | 'Pending' | 'Published' | 'Archived'
+/** Lifecycle: Draft → Pending (submitted for approval) → Published → Archived. */
+export const BOOK_STATUSES: BookStatus[] = ['Draft', 'Pending', 'Published', 'Archived']
+export type BookTask = { label: string; owner: string; due: string }
+/** The signed-in user of the prototype (drives “My portfolios” and who edits a row). */
+export const BOOK_USER = 'Wayne, B.'
+/** Date the 1Y performance figures refer to. */
+export const BOOK_AS_OF = '30/09/2026'
 export type BookEntry = {
   id: string; name: string; type: 'Standard' | 'Multi' | 'Customized'; area: string; benchmark: string
-  perf1y: number; creator: string; status: BookStatus; editedBy: string; modified: string; tasks?: number
+  perf1y: number; creator: string; status: BookStatus; editedBy: string; modified: string; tasks?: BookTask[]
   /** Customized versions point at the model portfolio they derive from and are listed under it. */
   parent?: string
 }
 export const MODEL_PORTFOLIOS: BookEntry[] = [
   { id: '001', name: 'Growth Focus Portfolio', type: 'Standard', area: 'Equity', benchmark: 'S&P 500 (USA)', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '11/10/2025' },
   { id: '002', name: 'Balanced Allocation Portfolio', type: 'Standard', area: 'Multi-asset', benchmark: 'Dow Jones Industrial Average (USA)', perf1y: 39.55, creator: 'Wayne, B.', status: 'Draft', editedBy: 'Wayne, B.', modified: '06/03/2026' },
-  { id: '003', name: 'Conservative Income Portfolio', type: 'Standard', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', tasks: 1 },
+  { id: '003', name: 'Conservative Income Portfolio', type: 'Standard', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', tasks: [{ label: 'Review benchmark change', owner: 'Jones, I.', due: '20/10/2026' }] },
   { id: '011', name: 'Conservative Income Portfolio A', type: 'Customized', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
   { id: '012', name: 'Conservative Income Portfolio B', type: 'Customized', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
   { id: '004', name: 'Global Equity Portfolio', type: 'Multi', area: 'Equity', benchmark: 'FTSE 100 (UK)', perf1y: 12.42, creator: 'Wayne, B.', status: 'Pending', editedBy: 'Wayne, B.', modified: '06/03/2026' },

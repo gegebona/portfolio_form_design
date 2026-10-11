@@ -5,7 +5,7 @@ import { Button } from './components/ui/button'
 import { Checkbox } from './components/ui/selection'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
-import { PortfolioProvider } from './state/portfolio'
+import { PortfolioProvider, usePortfolio } from './state/portfolio'
 import { BookView } from './views/BookView'
 import { DataView } from './views/DataView'
 import { DesignSystemPage } from './design-system/DesignSystemPage'
@@ -93,12 +93,13 @@ function Flow({ step, onStep }: { step: StepId; onStep: (r: StepId) => void }) {
   const i = STEPS.findIndex((s) => s.id === step)
   const prev = STEPS[i - 1]
   const next = STEPS[i + 1]
+  const { state } = usePortfolio()
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
       <nav aria-label="Breadcrumb" className="my-3.5 flex items-center gap-1.5 text-xs">
         <a href="#book" className="text-link hover:text-link-hover">Model portfolio book</a>
         <span aria-hidden className="text-fg-subtle">›</span>
-        <span>NEW Model portfolio</span>
+        <span>{state.data.name || 'New model portfolio'}</span>
       </nav>
 
       {/* Panel: tabs and action bar stay put; only the view scrolls (or its inner lists). */}
