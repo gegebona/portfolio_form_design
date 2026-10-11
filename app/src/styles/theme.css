@@ -26,6 +26,13 @@
   --font-sans: Frutiger, "Frutiger for UBS Web", "Frutiger LT Std", "Frutiger LT Pro", "Frutiger Next", "Source Sans 3 Variable", "Source Sans 3", Arial, Helvetica, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+  /* ---- Corners ---- */
+  /* Barely rounded, so shapes stop looking cut with a ruler without reading as "rounded". The two steps the components
+     use are set here, so the amount is tuned in one place: rounded-sm (controls, buttons, cards, panels) and
+     rounded-xs (tags, checkboxes). */
+  --radius-sm: 2px;
+  --radius-xs: 1px;
+
   /* ---- Elevation ---- */
   /* UBS pop shadow (--col-opacity-shadow = rgba(28, 28, 28, 0.10)) — used by every floating surface: shadow-pop */
   --shadow-pop: 0 4px 12px rgb(28 28 28 / 0.1);

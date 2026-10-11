@@ -6,7 +6,7 @@ import { cn } from '../../lib/cn'
 
 /**
  * Shared look of every boxed control: 32px, 1px control border, darker border while focused.
- * Corners: a subtle 4px radius (rounded-sm) on controls, buttons, cards and panels; 2px (rounded-xs) on tags and checkboxes.
+ * Corners: rounded-sm on controls, buttons, cards and panels; rounded-xs on tags and checkboxes (both set in theme.css).
  */
 export const controlBox =
   'flex h-8 items-center rounded-sm border border-control bg-surface text-sm text-fg has-[input:focus]:border-control-active data-popup-open:border-control-active'
