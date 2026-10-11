@@ -18,7 +18,9 @@ const VIEWS: [View, string][] = [['instrument', 'Instrument view'], ['class', 'A
 
 export function SimulationView() {
   const { state, update } = usePortfolio()
-  const [mode, setMode] = useState<Mode>('new')
+  // Kept in the flow state (not local) so the action bar knows which version is on screen: only New can be saved as a draft.
+  const mode = state.sim.mode
+  const setMode = (m: Mode) => update((s) => { s.sim.mode = m })
   const [view, setView] = useState<View>('instrument')
   const [compact, setCompact] = useState(false)
   const [showZero, setShowZero] = useState(false)

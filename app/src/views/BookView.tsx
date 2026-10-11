@@ -127,6 +127,7 @@ export function BookView() {
       s.data.code = 'MP_' + e.id
       const task = e.tasks?.[0] ?? null
       s.book = { id: e.id, task }
+      s.sim.mode = 'new'
       // The task proposes a change; start from the current weight each time the portfolio is opened.
       const r = task && s.sim.rows.find((x) => x.id === task.rowId)
       if (r) r.nw = r.w

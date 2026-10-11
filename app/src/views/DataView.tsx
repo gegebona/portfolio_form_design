@@ -8,18 +8,19 @@ import { CurrencyTag } from '../components/ui/tag'
 import { BENCHMARKS, PORTFOLIO_CURRENCIES } from '../data/data'
 import { usePortfolio } from '../state/portfolio'
 
-export function DataView() {
+/** showErrors: set once the user has tried to continue or save, so an empty new form is not covered in errors. */
+export function DataView({ showErrors }: { showErrors?: boolean }) {
   const { state, update } = usePortfolio()
   const d = state.data
   return (
     <div className="flex flex-wrap">
       <Section screenHeading title="Model portfolio data" description="Please enter the data specific to the model portfolio." className="w-75 shrink-0 border-r border-line">
         <div className="mt-5 flex flex-col gap-4">
-          <Field label="Model portfolio code" error={!d.code.trim() && 'Required'}>
-            <Input aria-invalid={!d.code.trim()} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
+          <Field label="Model portfolio code" error={showErrors && !d.code.trim() && 'Required'}>
+            <Input aria-invalid={showErrors && !d.code.trim()} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
           </Field>
-          <Field label="Model portfolio name" error={!d.name.trim() && 'Required'}>
-            <Input aria-invalid={!d.name.trim()} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
+          <Field label="Model portfolio name" error={showErrors && !d.name.trim() && 'Required'}>
+            <Input aria-invalid={showErrors && !d.name.trim()} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
           </Field>
           <Field label="Currency">
             <Select value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={PORTFOLIO_CURRENCIES.map((c) => ({ value: c, label: c }))} />
@@ -27,14 +28,14 @@ export function DataView() {
         </div>
       </Section>
       <Section title="Benchmark" description="Please select the benchmark associated to the model portfolio." className="min-w-0 flex-[1_1_45rem]">
-        <BenchmarkPicker />
+        <BenchmarkPicker showErrors={showErrors} />
       </Section>
     </div>
   )
 }
 
 /** Searchable radio list joined to a details panel: the selected row shares the panel's fill and runs into it. */
-function BenchmarkPicker() {
+function BenchmarkPicker({ showErrors }: { showErrors?: boolean }) {
   const { state, animate } = usePortfolio()
   const [q, setQ] = useState('')
   const pccy = state.data.ccy
@@ -46,7 +47,7 @@ function BenchmarkPicker() {
     <div className="mt-5 grid grid-cols-[22.5rem_minmax(0,1fr)] grid-rows-[auto_1fr]">
       <div className="pr-5">
         <SearchInput value={q} onValueChange={setQ} placeholder="Search benchmarks or indices…" aria-label="Search benchmarks" />
-        <div className="mt-2.5 mb-2 text-xs text-fg-muted">{ql ? `${list.length} of ${BENCHMARKS.length} benchmarks` : `${BENCHMARKS.length} benchmarks`}{!sel && <span className="ml-2 text-error">Required: select one</span>}</div>
+        <div className="mt-2.5 mb-2 text-xs text-fg-muted">{ql ? `${list.length} of ${BENCHMARKS.length} benchmarks` : `${BENCHMARKS.length} benchmarks`}{showErrors && !sel && <span className="ml-2 text-error">Required: select one</span>}</div>
       </div>
       <div />
       <RadioGroup aria-label="Benchmark" value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v as string })} className="min-w-0 border-t border-line">

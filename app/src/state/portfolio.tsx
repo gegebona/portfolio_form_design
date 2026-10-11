@@ -22,7 +22,8 @@ export type PortfolioState = {
   comps: { added: string[]; inst: string[]; cash: CashEntry[] }
   /** Weights per allocation key ('c:<component id>', 'i:<isin>'); cash weights live on the cash entries. */
   weights: Record<string, number>
-  sim: { rows: SimRow[] }
+  /** mode: which version Simulation shows. Current is the published portfolio (read-only); New is the working version. */
+  sim: { rows: SimRow[]; mode: 'current' | 'new' }
   /** Which book entry is open in the flow, and its open position task (shown at the top of Simulation). */
   book: { id: string; task: BookTask | null }
 }
@@ -44,7 +45,7 @@ const INITIAL: PortfolioState = {
     'c:keyeq': 18, 'c:gem': 6, 'c:gbond': 16, 'c:defender': 8, 'c:holt-world': 10, 'c:holt-spx': 9, 'c:ch-eq': 6, 'c:jp-eq': 4,
     'c:hybond': 7, 'c:gold': 3, 'c:mp-balanced': 6, 'c:mp-income': 2, 'i:US02079K1079': 3,
   },
-  sim: { rows: POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false })) },
+  sim: { rows: POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false })), mode: 'new' },
   book: { id: '', task: null },
 }
 
