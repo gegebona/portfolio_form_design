@@ -51,11 +51,11 @@ export function SimulationView() {
       className="flex min-h-0 flex-1 flex-col"
     >
       {/* Version bar: Current / New switch the whole screen; the overview toggle sits right next to them. */}
-      <div className="mt-3.5 flex flex-wrap items-end gap-x-7 gap-y-2 border-b border-line-strong">
-        <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))}>
+      <div className="mt-3.5 flex flex-wrap items-end gap-x-7 gap-y-2 border-b border-line">
+        <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))} className="pb-2.5">
           <TabsList variant="segment" aria-label="Portfolio version">
             <Tab value="current">Current</Tab>
-            <Tab value="new">New {changes > 0 && <span className="text-xs text-fg-muted">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
+            <Tab value="new">New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
           </TabsList>
         </Tabs>
         <div className="flex items-center gap-5 pb-1.25 before:h-4 before:w-px before:bg-line-strong">
