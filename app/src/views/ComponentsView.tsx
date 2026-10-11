@@ -79,6 +79,8 @@ function useToggleComponent() {
 
 /**
  * Catalogue card = one big checkbox: the label fills the card, so a click anywhere toggles it.
+ * Every card has the same fixed height: the name and meta take one line each and the description two (the full text is
+ * in Learn more).
  * "Learn more" sits on top of the label (not inside it), so it opens details without toggling.
  */
 /** View-transition names a catalogue card shares with its expanded version. */
@@ -93,17 +95,18 @@ function CatalogueCard({ c, expanded, onLearnMore }: { c: Component; expanded: b
   // While expanded, the card's slot stays (keeps the grid still) but is empty and has no names: the expanded card holds them.
   const n = expanded ? undefined : cardNames(c.id)
   const card = (
-    <div id={'card-' + c.id} className={'relative flex min-w-0 border bg-surface hover:bg-surface-subtle has-[[role=checkbox]:focus-visible]:outline-2 has-[[role=checkbox]:focus-visible]:outline-offset-1 has-[[role=checkbox]:focus-visible]:outline-focus ' + (on ? 'border-accent' : 'border-line-strong')}>
+    <div id={'card-' + c.id} className={'relative flex h-34 min-w-0 border bg-surface hover:bg-surface-subtle has-[[role=checkbox]:focus-visible]:outline-2 has-[[role=checkbox]:focus-visible]:outline-offset-1 has-[[role=checkbox]:focus-visible]:outline-focus ' + (on ? 'border-accent' : 'border-line-strong')}>
       <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 px-4 pt-3.5 pb-10">
         <Checkbox checked={on} onCheckedChange={(v) => toggle(c.id, v)} className="mt-0.5 focus-visible:outline-none" />
         <span className="flex min-w-0 flex-col">
-          <Shared name={n?.title} className="font-semibold">{c.name}</Shared>
-          <Shared name={n?.meta} className="mt-px text-xs text-fg-muted">{c.area} · {c.region} · {c.provider}</Shared>
-          <span className="mt-2 block text-xs text-fg-secondary">{c.desc}</span>
-          {cf.length > 0 && <ConflictTag className="mt-2.5">Conflicts with exclusions: {cf.join(', ')}</ConflictTag>}
+          <Shared name={n?.title} className="line-clamp-1 font-semibold">{c.name}</Shared>
+          <Shared name={n?.meta} className="mt-px line-clamp-1 text-xs text-fg-muted">{c.area} · {c.region} · {c.provider}</Shared>
+          <span className="mt-2 line-clamp-2 text-xs text-fg-secondary">{c.desc}</span>
         </span>
       </label>
       <Button variant="link" className="absolute bottom-2 left-9.5" onClick={onLearnMore} aria-haspopup="dialog">Learn more</Button>
+      {/* The conflict tag sits in the footer, beside Learn more, so every card keeps the same height. */}
+      {cf.length > 0 && <ConflictTag className="absolute right-3 bottom-2">Conflict: {cf.join(', ')}</ConflictTag>}
     </div>
   )
   if (expanded) return <div aria-hidden className="invisible grid">{card}</div>
