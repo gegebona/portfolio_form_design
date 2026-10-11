@@ -142,15 +142,17 @@ export function Swatch({ cls }: { cls: keyof typeof CLASS_COLOR }) {
   return <span className="mr-1.5 inline-block size-2.5 rounded-xs align-[-1px]" style={{ background: CLASS_COLOR[cls] }} />
 }
 
-/** Donut of the allocation in focus + a table comparing both (Portfolio | Benchmark, or Current | New). */
+/** Slim stacked bar of the allocation in focus + a table comparing both (Portfolio | Benchmark, or Current | New). */
 export function AllocationBlock({ rows, focus, showChange }: { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean }) {
   const [a, b] = [rows[0].alloc, rows[1].alloc]
   const f = rows[focus].alloc
   const used = ASSET_CLASSES.reduce((s, c) => s + f[c], 0)
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-      <Donut alloc={f} label={rows[focus].label} />
-      <div className="shrink-0">
+    <div>
+      <span role="img" aria-label={`${rows[focus].label}: ${ASSET_CLASSES.filter((c) => f[c] > 0.004).map((c) => `${c} ${pct(f[c])}`).join(', ') || 'nothing allocated'}`} className="mb-2 flex h-2 max-w-90 gap-0.5 bg-surface-strong">
+        {ASSET_CLASSES.filter((c) => f[c] > 0.004).map((c) => <span key={c} className="h-full" style={{ width: `${Math.min(100, f[c])}%`, background: CLASS_COLOR[c] }} />)}
+      </span>
+      <div className="w-fit">
         <table className="border-collapse">
           <thead>
             <tr>
@@ -175,39 +177,5 @@ export function AllocationBlock({ rows, focus, showChange }: { rows: [AllocRow, 
         {used > 0 && used < 99.995 && <div className="mt-1.5 text-fg-muted">{(100 - used).toFixed(2)}% not allocated yet</div>}
       </div>
     </div>
-  )
-}
-
-/** Donut with 2px gaps between segments and the largest class in the centre. Colours come from the chart tokens. */
-function Donut({ alloc, label }: { alloc: Alloc; label: string }) {
-  const R = 42
-  const C = 2 * Math.PI * R
-  const inUse = ASSET_CLASSES.filter((c) => alloc[c] > 0.004)
-  const gap = inUse.length > 1 ? 2 : 0
-  let start = 0
-  const top = [...inUse].sort((x, y) => alloc[y] - alloc[x])[0]
-  return (
-    <svg viewBox="0 0 112 112" role="img" aria-label={`${label}: ${inUse.map((c) => `${c} ${pct(alloc[c])}`).join(', ') || 'nothing allocated'}`} className="aspect-square max-w-60 min-w-28 flex-[1_1_10.75rem]">
-      <circle cx="56" cy="56" r={R} fill="none" strokeWidth="14" className="stroke-surface-strong" />
-      {inUse.map((c) => {
-        const len = (Math.min(100, alloc[c]) / 100) * C
-        const dash = Math.max(0.5, len - gap)
-        const el = (
-          <circle key={c} cx="56" cy="56" r={R} fill="none" strokeWidth="14" stroke={CLASS_COLOR[c]} strokeDasharray={`${dash.toFixed(2)} ${(C - dash).toFixed(2)}`} strokeDashoffset={(-start).toFixed(2)} transform="rotate(-90 56 56)" className="transition-[stroke-dasharray,stroke-dashoffset] duration-200 hover:[stroke-width:16]">
-            <title>{`${label}: ${c} ${pct(alloc[c])}`}</title>
-          </circle>
-        )
-        start += len
-        return el
-      })}
-      {top ? (
-        <>
-          <text x="56" y="58" textAnchor="middle" className="fill-fg text-xl font-semibold">{Math.round(alloc[top])}%</text>
-          <text x="56" y="74" textAnchor="middle" className="fill-fg-muted text-xs">{top}</text>
-        </>
-      ) : (
-        <text x="56" y="61" textAnchor="middle" className="fill-fg-muted text-xs">Not allocated</text>
-      )}
-    </svg>
   )
 }
