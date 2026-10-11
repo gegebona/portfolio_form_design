@@ -106,7 +106,7 @@ function CatalogueCard({ c, expanded, onLearnMore }: { c: Component; expanded: b
       </label>
       <Button variant="link" className="absolute bottom-2 left-9.5" onClick={onLearnMore} aria-haspopup="dialog">Learn more</Button>
       {/* The conflict tag sits in the footer, beside Learn more, so every card keeps the same height. */}
-      {cf.length > 0 && <ConflictTag className="absolute right-3 bottom-2">Conflict: {cf.join(', ')}</ConflictTag>}
+      {cf.length > 0 && <ConflictTag className="absolute right-3 bottom-2 max-w-40 [&>span]:min-w-0 [&>span]:truncate"><span className="sr-only">Conflicts with exclusions: </span>{cf.join(', ')}</ConflictTag>}
     </div>
   )
   if (expanded) return <div aria-hidden className="invisible grid">{card}</div>
