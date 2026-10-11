@@ -60,7 +60,7 @@ export function MultiCombobox({
                     value={id}
                     className="group flex min-h-8 cursor-pointer items-center gap-2 px-2.5 outline-none select-none data-highlighted:bg-surface-muted data-selected:bg-excluded-subtle data-selected:data-highlighted:bg-excluded"
                   >
-                    <span className="flex size-3.5 shrink-0 items-center justify-center border border-control bg-surface text-on-accent group-data-selected:border-accent group-data-selected:bg-accent">
+                    <span className="flex size-3.5 shrink-0 items-center justify-center border border-control bg-surface text-on-accent group-data-selected:border-error group-data-selected:bg-error">
                       <BaseCombobox.ItemIndicator><Check className="size-2.5" strokeWidth={3.5} /></BaseCombobox.ItemIndicator>
                     </span>
                     <span>{o.label}</span>

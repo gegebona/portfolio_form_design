@@ -113,8 +113,8 @@
   --color-focus: var(--color-ubs-focus-ring);                     /* keyboard focus ring */
 
   /* Brand & status */
-  --color-accent: var(--color-ubs-background-brand);              /* the one main action per screen */
-  --color-accent-hover: var(--color-ubs-background-brand-hovered);
+  --color-accent: var(--color-ubs-focus-ring);                    /* the one main action per screen (blue, like everything interactive; was the brand red) */
+  --color-accent-hover: var(--color-ubs-chart-19);
   --color-on-accent: var(--color-white);
   --color-error: var(--color-ubs-icon-error);
   --color-conflict: var(--color-ubs-background-highlight-01);     /* conflict note text */

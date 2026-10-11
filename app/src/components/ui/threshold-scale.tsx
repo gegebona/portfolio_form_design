@@ -34,7 +34,7 @@ export function ThresholdScale({
       {labels.map((label, i) => (
         <Fragment key={label}>
           {/* 40px bar on a 28px row: negative margins let it overhang without changing the row height. */}
-          {i > 0 && i === cutAt && <span aria-hidden className="relative z-2 -my-1.5 mr-1 ml-0.75 h-10 w-0.75 shrink-0 bg-accent" />}
+          {i > 0 && i === cutAt && <span aria-hidden className="relative z-2 -my-1.5 mr-1 ml-0.75 h-10 w-0.75 shrink-0 bg-error" />}
           <Toggle
             value={String(i)}
             aria-label={`${label}, ${isExcluded(i) ? 'excluded' : 'allowed'}`}

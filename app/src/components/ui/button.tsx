@@ -6,7 +6,7 @@ import { cn } from '../../lib/cn'
 /**
  * Button — Base UI Button (a <button> that handles disabled + focus correctly) styled with tokens.
  *
- * variant:  primary   one per screen, the main forward action (accent red)
+ * variant:  primary   one per screen, the main forward action (accent: blue)
  *           secondary everything else (outlined)
  *           link      text actions inside content ("Fill remaining", "Clear all")
  *           ghost     icon-only and quiet actions (row ×, ⋯)

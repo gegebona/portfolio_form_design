@@ -158,7 +158,7 @@ function InstrumentsColumn() {
           return (
             <ViewTransition key={isin} enter="item-in" exit="item-out" update="item-move">
             <div className="flex min-h-7.5 items-center gap-2.5">
-              <Ban className="size-3.25 shrink-0 text-accent" strokeWidth={2} aria-label="Excluded" />
+              <Ban className="size-3.25 shrink-0 text-error" strokeWidth={2} aria-label="Excluded" />
               <span className="min-w-0 flex-1">{n}<span className="ml-1.5 text-xs text-fg-muted">{isin}</span></span>
               <RemoveButton onClick={() => setInst(inst.filter((x) => x !== isin))} label={'Remove ' + n} className="text-fg-subtle" />
             </div>
