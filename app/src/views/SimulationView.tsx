@@ -96,8 +96,7 @@ export function SimulationView() {
         <ViewTransition update={{ positions: 'table-swap', default: 'none' }} default="none">
         <div className="min-h-0 flex-1 overflow-auto">
           {view === 'instrument' ? <InstrumentTable mode={mode} showZero={showZero} />
-            : <GroupTable key={view} mode={mode} showZero={showZero} title={{ class: 'Asset class', block: 'Building block', exposure: 'Currency' }[view]}
-                order={view === 'class' ? ASSET_CLASSES : undefined} hide={view === 'class' ? 'cls' : view === 'block' ? 'bb' : 'ccy'}
+            : <GroupTable key={view} mode={mode} showZero={showZero} order={view === 'class' ? ASSET_CLASSES : undefined}
                 keyOf={view === 'class' ? (r) => r.cls : view === 'block' ? (r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments') : (r) => r.ccy} />}
         </div>
         </ViewTransition>
@@ -189,7 +188,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
         <tr>
           <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
           <th className={cn(th, 'text-right')}>Price</th><th className={cn(th, 'text-right')}>ESG</th><th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
-          {!cur && <th className={cn(th, 'text-right')}>New %</th>}
+          {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
           {!cur && <th className={th}><span className="sr-only">Actions</span></th>}
         </tr>
       </thead>
@@ -236,6 +235,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                   <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />
                 </td>
               )}
+              {!cur && <td className={cn(td, 'text-right tabular-nums')}>{Math.abs(r.nw - r.w) < 0.005 ? <span className="text-fg-subtle">—</span> : (r.nw > r.w ? '+' : '') + f2(r.nw - r.w)}</td>}
               {!cur && (
                 <td className={cn(td, 'text-right whitespace-nowrap')}>
                   {t ? (
@@ -265,7 +265,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             </tr>
             {plan && removing && (
               <tr>
-                <td colSpan={9} className="border-b border-line bg-surface-muted px-6 py-4">
+                <td colSpan={10} className="border-b border-line bg-surface-muted px-6 py-4">
                   <div className="max-w-180">
                     <div className="text-sm font-semibold">Remove {r.name}</div>
                     <p className="text-fg-muted">{f2(plan.amount)}% will be released. Choose how to redistribute it.</p>
@@ -316,7 +316,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             </Fragment>
           )
         })}
-        {!shown.length && <tr><td colSpan={9} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
+        {!shown.length && <tr><td colSpan={10} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
     </>
@@ -326,8 +326,9 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
 /**
  * Read-only grouped view (Asset class, Building block, Exposure): one header row per group with its subtotal, and the
  * group's instruments underneath with their own weights. Groups collapse; weights are edited only in the Instrument view.
+ * Columns, their order and their cell content match the Instrument view exactly, so switching view never moves a column.
  */
-function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode; showZero: boolean; title: string; keyOf: (r: SimRow) => string; /** Fixed group order; without it, groups sort by weight. */ order?: string[]; /** The column the grouping already expresses. */ hide: 'cls' | 'bb' | 'ccy' }) {
+function GroupTable({ mode, showZero, keyOf, order }: { mode: Mode; showZero: boolean; keyOf: (r: SimRow) => string; /** Fixed group order; without it, groups sort by weight. */ order?: string[] }) {
   const { state } = usePortfolio()
   const [closed, setClosed] = useState<Set<string>>(new Set())
   const cur = mode === 'current'
@@ -345,10 +346,7 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
     <table className="w-full border-collapse text-xs">
       <thead>
         <tr>
-          <th className={th}>{title} / instrument</th>
-          {hide !== 'cls' && <th className={th}>Asset class</th>}
-          {hide !== 'bb' && <th className={th}>Building block</th>}
-          {hide !== 'ccy' && <th className={th}>Currency</th>}
+          <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
           <th className={cn(th, 'text-right')}>Price</th>
           <th className={cn(th, 'text-right')}>ESG</th>
           <th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
@@ -365,7 +363,7 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
             <Fragment key={k}>
               <tr className="*:bg-surface-subtle">
                 {/* Spans the descriptive columns, price and ESG: no group price or score, only supplied instrument values are shown. */}
-                <td className={td} colSpan={5}>
+                <td className={td} colSpan={6}>
                   <span className="inline-flex items-center gap-1.5 font-semibold">
                     <Button variant="ghost" size="icon-sm" aria-expanded={open} aria-label={`${open ? 'Collapse' : 'Expand'} ${k}`} onClick={() => toggle(k)}>
                       {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
@@ -379,10 +377,10 @@ function GroupTable({ mode, showZero, title, keyOf, order, hide }: { mode: Mode;
               </tr>
               {open && list.map((r) => (
                 <tr key={r.id} className="hover:*:bg-surface-subtle">
-                  <td className={cn(td, 'pl-10')}>{r.name}{r.isin && <span className="block text-fg-muted">{r.isin}</span>}</td>
-                  {hide !== 'cls' && <td className={td}>{r.cls}</td>}
-                  {hide !== 'bb' && <td className={td}>{r.bb}</td>}
-                  {hide !== 'ccy' && <td className={td}>{r.ccy}</td>}
+                  <td className={cn(td, 'pl-10')}>{r.cls}</td>
+                  <td className={td}>{r.name}{r.isin && <span className="block text-fg-muted">{r.isin}</span>}</td>
+                  <td className={td}>{r.bb}</td>
+                  <td className={td}>{r.ccy}<span className="block text-fg-muted">{r.fx.toFixed(2)}</span></td>
                   {num(f2(r.price))}
                   {num(r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg)}
                   {num(f2(r.w))}
