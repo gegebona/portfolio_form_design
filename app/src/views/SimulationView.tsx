@@ -1,9 +1,9 @@
 import { Info, MoreHorizontal, TriangleAlert } from 'lucide-react'
-import { addTransitionType, startTransition, useState, ViewTransition, type ReactNode } from 'react'
+import { addTransitionType, Fragment, startTransition, useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
 import { Menu, MenuTrigger } from '../components/ui/menu'
-import { Switch } from '../components/ui/selection'
+import { Radio, RadioGroup, Switch } from '../components/ui/selection'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
@@ -112,7 +112,34 @@ const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 
 
 const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 
+type Method = 'equal' | 'proportional' | 'cash'
+const METHODS: { id: Method; label: string; help: string }[] = [
+  { id: 'equal', label: 'Equal', help: 'The same share to each remaining position.' },
+  { id: 'proportional', label: 'Proportional', help: "In proportion to each remaining position's current weight." },
+  { id: 'cash', label: 'Cash', help: 'All of it to the cash position.' },
+]
+
+/**
+ * Where the weight of a removed position would go. Returns the amount per receiving position (2 decimals, summing to
+ * exactly the released weight), or add = null with the limitation that makes the method impossible. Nothing is applied here.
+ */
+function redistribution(all: SimRow[], id: string, method: Method) {
+  const amount = all.find((r) => r.id === id)?.nw ?? 0
+  const others = all.filter((r) => !r.removed && r.id !== id)
+  const targets = method === 'cash' ? others.filter((r) => r.cls === 'Liquidity').slice(0, 1) : others.filter((r) => r.nw > 0)
+  if (!targets.length) return { amount, targets, add: null, why: method === 'cash' ? 'the rule that a cash position must exist' : 'the rule that weight only goes to positions already held' }
+  const base = targets.reduce((t, r) => t + r.nw, 0)
+  const add = new Map<string, number>()
+  targets.forEach((r) => add.set(r.id, round2(method === 'proportional' ? (amount * r.nw) / base : amount / targets.length)))
+  // Rounding leftovers go to the largest receiver so the total stays exact.
+  const big = [...targets].sort((a, b) => b.nw - a.nw)[0]
+  add.set(big.id, round2((add.get(big.id) ?? 0) + amount - [...add.values()].reduce((t, v) => t + v, 0)))
+  return { amount, targets, add, why: '' }
+}
+
 function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) {
+  // The position being removed and the redistribution method picked for it (the panel opens under its row).
+  const [removing, setRemoving] = useState<{ id: string; method: Method } | null>(null)
   const { state, update } = usePortfolio()
   const cur = mode === 'current'
   // The open position task of this portfolio sits on its instrument's row, first in the table (New only).
@@ -153,8 +180,10 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const c = !cur && conflict(r)
           const edited = Math.abs(r.nw - r.w) >= 0.005
           const t = task && task.rowId === r.id ? task : null
+          const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method) : null
           return (
-            <tr key={r.id} className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : 'hover:*:bg-surface-subtle')}>
+            <Fragment key={r.id}>
+            <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>
                 {t && <span className="mb-0.75 block w-fit bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
                 {r.cls}
@@ -189,20 +218,71 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                   ) : c ? (
                     <span className="inline-flex gap-1">
                       <Button size="sm" onClick={() => edit(r.id, (x) => { x.kept = true })}>Keep</Button>
-                      <Button size="sm" onClick={() => edit(r.id, (x) => { x.removed = true; x.nw = 0 })}>Remove</Button>
+                      <Button size="sm" onClick={() => setRemoving({ id: r.id, method: 'proportional' })}>Remove…</Button>
                     </span>
                   ) : (
                     <Menu
                       trigger={<MenuTrigger render={<Button variant="ghost" size="icon" aria-label={`Actions for ${r.name}`} />}><MoreHorizontal className="size-4" /></MenuTrigger>}
                       items={[
                         { label: 'Reset to current weight', onClick: () => edit(r.id, (x) => { x.nw = x.w }) },
-                        { label: 'Remove position', onClick: () => edit(r.id, (x) => { x.removed = true; x.nw = 0 }) },
+                        { label: 'Remove position…', onClick: () => setRemoving({ id: r.id, method: 'proportional' }) },
                       ]}
                     />
                   )}
                 </td>
               )}
             </tr>
+            {plan && removing && (
+              <tr>
+                <td colSpan={9} className="border-b border-line bg-surface-muted px-6 py-4">
+                  <div className="max-w-180">
+                    <div className="text-sm font-semibold">Remove {r.name}</div>
+                    <p className="text-fg-muted">{f2(plan.amount)}% will be released. Choose how to redistribute it.</p>
+                    <RadioGroup aria-label="Redistribution method" value={removing.method} onValueChange={(v) => setRemoving({ id: r.id, method: v as Method })} className="mt-2 border-t border-line">
+                      {METHODS.map((m) => {
+                        const p = redistribution(state.sim.rows, r.id, m.id)
+                        const cash = p.targets[0]
+                        const effect = !p.add ? 'Not possible'
+                          : m.id === 'equal' ? `+${f2(p.amount / p.targets.length)} each · ${p.targets.length} positions`
+                          : m.id === 'proportional' ? `largest +${f2(Math.max(...p.add.values()))}`
+                          : `${cash.name} ${f2(cash.nw)} → ${f2(cash.nw + p.amount)}`
+                        return (
+                          <label key={m.id} className="flex cursor-pointer items-start gap-2.5 border-b border-line py-2 hover:bg-surface-subtle">
+                            <Radio value={m.id} className="mt-0.5" />
+                            <span className="min-w-0 flex-1"><span className="block text-sm">{m.label}</span><span className="text-fg-muted">{m.help}</span></span>
+                            <span className="whitespace-nowrap text-fg-muted tabular-nums">{effect}</span>
+                          </label>
+                        )
+                      })}
+                    </RadioGroup>
+                    {!plan.add && (
+                      <div role="alert" className="mt-3 border border-excluded-border bg-excluded-subtle px-3 py-2 text-conflict">
+                        <strong className="block font-semibold">Automatic redistribution</strong>
+                        The automatic redistribution for {r.name} could not be completed. {f2(plan.amount)}% could not be allocated without violating {plan.why}. No automatic changes were applied. The position can still be removed manually. Choose another redistribution method or cancel.
+                      </div>
+                    )}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
+                      <span className="text-fg-muted">{plan.add ? 'The total weight stays unchanged.' : ''}</span>
+                      <span className="inline-flex flex-wrap items-center gap-2">
+                        <Button size="sm" onClick={() => setRemoving(null)}>Cancel</Button>
+                        <Button size="sm" onClick={() => { edit(r.id, (x) => { x.removed = true; x.nw = 0 }); setRemoving(null) }}>Remove without redistributing</Button>
+                        <Button size="sm" variant="primary" disabled={!plan.add} onClick={() => {
+                          const add = plan.add
+                          if (!add) return
+                          update((s) => {
+                            s.sim.rows.forEach((x) => {
+                              if (x.id === r.id) { x.removed = true; x.nw = 0 } else if (add.has(x.id)) x.nw = round2(x.nw + (add.get(x.id) ?? 0))
+                            })
+                          })
+                          setRemoving(null)
+                        }}>Remove and redistribute</Button>
+                      </span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
+            </Fragment>
           )
         })}
         {!rows.length && <tr><td colSpan={9} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
