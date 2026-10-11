@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button'
 import { RemoveButton } from '../components/ui/chip'
 import { MultiCombobox } from '../components/ui/combobox'
 import { ExpandedCard, Shared } from '../components/ui/expanded-card'
-import { AffixInput, SearchInput } from '../components/ui/input'
+import { SearchInput } from '../components/ui/input'
 import { GroupLabel, Section } from '../components/ui/layout'
 import { Select } from '../components/ui/select'
 import { Checkbox } from '../components/ui/selection'
@@ -191,7 +191,7 @@ function Basket() {
         title="Cash positions"
         add={<CashAdd />}
         rows={state.comps.cash.map((c) => (
-          <BasketRow key={c.ccy} label={c.ccy} sub={f2(c.w) + '%'} />
+          <CashRow key={c.ccy} ccy={c.ccy} w={c.w} />
         ))}
       />
     </aside>
@@ -236,17 +236,28 @@ function CashAdd() {
   const { state, animate } = usePortfolio()
   const left = CASH_CURRENCIES.filter((c) => !state.comps.cash.some((x) => x.ccy === c))
   const [ccy, setCcy] = useState(left[0] ?? '')
-  const [w, setW] = useState('')
   if (!left.length) return null
   const cur = left.includes(ccy) ? ccy : left[0]
-  const val = parseFloat(w.replace(',', '.'))
-  const add = () => { if (val > 0) { animate((s) => { s.comps.cash.push({ ccy: cur, w: val }) }); setW('') } }
+  // A new cash position starts at 0%; its weight is set on Component allocation.
+  const add = () => animate((s) => { s.comps.cash.push({ ccy: cur, w: 0 }) })
   return (
     <div className="flex gap-2">
-      <Select value={cur} onValueChange={setCcy} items={left.map((c) => ({ value: c, label: c }))} aria-label="Cash currency" className="w-24 shrink-0" />
-      <AffixInput value={w} onValueChange={setW} suffix="%" placeholder="Weight" inputMode="decimal" aria-label="Cash weight in percent" className="min-w-0 flex-1"
-        onKeyDown={(e) => { if (e.key === 'Enter') add() }} />
-      <Button onClick={add} disabled={!(val > 0)}>Add</Button>
+      <Select value={cur} onValueChange={setCcy} items={left.map((c) => ({ value: c, label: c }))} aria-label="Cash currency" className="min-w-0 flex-1" />
+      <Button onClick={add}>Add cash position</Button>
+    </div>
+  )
+}
+
+/** Cash row: the currency can be changed (to one not used yet); the row itself cannot be removed. */
+function CashRow({ ccy, w }: { ccy: string; w: number }) {
+  const { state, animate } = usePortfolio()
+  const items = CASH_CURRENCIES.filter((c) => c === ccy || !state.comps.cash.some((x) => x.ccy === c)).map((c) => ({ value: c, label: c }))
+  const change = (v: string) => animate((s) => { const e = s.comps.cash.find((x) => x.ccy === ccy); if (e) e.ccy = v })
+  return (
+    <div className="flex min-h-7.5 items-center gap-2.5">
+      <Check className="size-3 shrink-0 text-accent" strokeWidth={3} aria-hidden />
+      <Select value={ccy} onValueChange={change} items={items} aria-label={`Currency of the ${ccy} cash position`} className="h-7 w-22" />
+      <span className="text-xs text-fg-muted">{f2(w)}%</span>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import { Button } from './components/ui/button'
 import { Checkbox } from './components/ui/selection'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
-import { BOOK_USER } from './data/data'
+import { BOOK_USER, type BookEntry } from './data/data'
 import { getBook, nextBookId, setBook } from './state/book'
 import { benchmarkById, missingData, near100, portfolioAlloc, PortfolioProvider, usePortfolio } from './state/portfolio'
 import { BookView } from './views/BookView'
@@ -14,6 +14,7 @@ import { DesignSystemPage } from './design-system/DesignSystemPage'
 import { PreferencesView } from './views/PreferencesView'
 import { ComponentsView } from './views/ComponentsView'
 import { AllocationView } from './views/AllocationView'
+import { ReportingView } from './views/ReportingView'
 import { SimulationView } from './views/SimulationView'
 
 const STEPS = [
@@ -24,11 +25,13 @@ const STEPS = [
   { id: 'simulation', label: 'Simulation' },
 ] as const
 type StepId = (typeof STEPS)[number]['id']
-type Route = StepId | 'design' | 'book'
+/** Reporting is a tab of the flow but not a step of the creation sequence, so Back / forward skip it. */
+type FlowStep = StepId | 'reporting'
+type Route = FlowStep | 'design' | 'book'
 
 function readHash(): Route {
   const h = location.hash.slice(1)
-  return h === 'design' || STEPS.some((s) => s.id === h) ? (h as Route) : 'book'
+  return h === 'design' || h === 'reporting' || STEPS.some((s) => s.id === h) ? (h as Route) : 'book'
 }
 
 export default function App() {
@@ -91,7 +94,7 @@ function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route)
   )
 }
 
-function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepId) => void; onBook: () => void }) {
+function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: FlowStep) => void; onBook: () => void }) {
   const { state } = usePortfolio()
   // Mandatory data of the first step gates everything: later steps stay locked and the draft cannot be saved.
   const missing = missingData(state)
@@ -101,13 +104,23 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
   // Simulation needs a complete allocation: exactly 100%, never adjusted silently.
   const alloc = portfolioAlloc(state)
   const allocOk = near100(alloc.Equity + alloc.Bonds + alloc.Alternatives + alloc.Liquidity)
-  const step: StepId = blocked ? 'data' : asked === 'simulation' && !allocOk ? 'allocation' : asked
+  const step: FlowStep = blocked ? 'data' : asked === 'simulation' && !allocOk ? 'allocation' : asked
   useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
   const i = STEPS.findIndex((s) => s.id === step)
   const prev = STEPS[i - 1]
   const next = STEPS[i + 1]
-  /** Save as draft: writes the portfolio to the book (a new Draft, or the entry that was opened) and returns there. */
-  const save = () => {
+  // Publication gates: a decision on every open task and a total of exactly 100.00%. Deferred tasks do not block.
+  const openTask = state.book.task?.status === 'Open'
+  const simTotalOk = near100(state.sim.rows.filter((r) => !r.removed).reduce((t, r) => t + r.nw, 0))
+  const publishBlock = viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.'
+    : openTask ? 'To publish, accept, reject or defer the open position task.'
+    : !simTotalOk ? 'To publish, the total weight must be exactly 100.00%.'
+    : undefined
+  /**
+   * Writes the portfolio to the book and returns there. Save as draft keeps an existing entry's status (a new one is
+   * a Draft); Publish sets it to Published and drops task decisions that are settled (deferred ones stay).
+   */
+  const save = (publish?: boolean) => {
     const a = portfolioAlloc(state)
     const fields = {
       name: state.data.name.trim(),
@@ -117,8 +130,11 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
       modified: new Date().toLocaleDateString('en-GB'),
     }
     const l = getBook()
-    if (l.some((e) => e.id === state.book.id)) setBook(l.map((e) => (e.id === state.book.id ? { ...e, ...fields } : e)))
-    else setBook([...l, { id: nextBookId(l), type: 'Standard', creator: BOOK_USER, status: 'Draft', ...fields }])
+    if (l.some((e) => e.id === state.book.id)) {
+      setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : publish
+        ? { ...e, ...fields, status: 'Published', tasks: e.tasks?.filter((t) => t.status === 'Deferred') }
+        : { ...e, ...fields })))
+    } else setBook([...l, { id: nextBookId(l), type: 'Standard', creator: BOOK_USER, status: publish ? 'Published' : 'Draft', ...fields }])
     onBook()
   }
   return (
@@ -141,10 +157,10 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
 
       {/* Panel: tabs and action bar stay put; only the view scrolls (or its inner lists). */}
       <div className="mb-4 flex min-h-0 flex-1 flex-col border border-line-strong bg-surface">
-        <Tabs value={step} onValueChange={(v) => onStep(v as StepId)}>
+        <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
           <TabsList variant="step" className="border-b border-line px-5">
             {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
-            <Tab value="reporting" disabled title="Not available yet">Reporting</Tab>
+            <Tab value="reporting" disabled={blocked} title={blocked ? 'Complete the model portfolio data first' : undefined}>Reporting</Tab>
           </TabsList>
         </Tabs>
 
@@ -152,18 +168,19 @@ function Flow({ step: asked, onStep, onBook }: { step: StepId; onStep: (r: StepI
           {/* Animates only when a step change tags the transition 'forward' / 'back'; other updates inside stay instant. */}
           <ViewTransition update={{ forward: 'step-forward', back: 'step-back', default: 'none' }} default="none">
             <div className="flex min-h-0 flex-1 flex-col">
-              {step === 'data' ? <DataView /> : step === 'preferences' ? <PreferencesView /> : step === 'components' ? <ComponentsView /> : step === 'allocation' ? <AllocationView /> : <SimulationView />}
+              {step === 'data' ? <DataView /> : step === 'preferences' ? <PreferencesView /> : step === 'components' ? <ComponentsView /> : step === 'allocation' ? <AllocationView /> : step === 'reporting' ? <ReportingView /> : <SimulationView />}
             </div>
           </ViewTransition>
         </div>
 
-        <ActionBar
+        {/* Reporting has its own action (Generate) and is not part of the Back / forward sequence. */}
+        {step !== 'reporting' && <ActionBar
           back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
-          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => {}, disabled: viewingCurrent }}
-          onSave={viewingCurrent ? undefined : save}
+          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
+          onSave={viewingCurrent ? undefined : () => save()}
           saveDisabled={blocked}
-          note={blocked ? `Still needed: ${missing.join(', ')}.` : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.' : undefined}
-        />
+          note={blocked ? `Still needed: ${missing.join(', ')}.` : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : step === 'simulation' ? publishBlock : undefined}
+        />}
       </div>
     </main>
   )

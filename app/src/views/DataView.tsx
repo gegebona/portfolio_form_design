@@ -3,7 +3,7 @@ import { useState, ViewTransition } from 'react'
 import { Field, Input } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
 import { Select } from '../components/ui/select'
-import { BENCHMARKS } from '../data/data'
+import { BENCHMARKS, PORTFOLIO_CURRENCIES } from '../data/data'
 import { usePortfolio } from '../state/portfolio'
 
 export function DataView() {
@@ -24,8 +24,8 @@ export function DataView() {
           <Field label="Description" description="Optional.">
             <Input value={d.description} onValueChange={(v) => update((s) => { s.data.description = v })} />
           </Field>
-          <Field label="Currency" description="EUR is the only currency available.">
-            <Select value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={[{ value: 'EUR', label: 'EUR' }]} />
+          <Field label="Currency">
+            <Select value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={PORTFOLIO_CURRENCIES.map((c) => ({ value: c, label: c }))} />
           </Field>
         </div>
       </Section>

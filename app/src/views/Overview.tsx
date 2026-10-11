@@ -80,7 +80,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
         {!quality && (
           <div className={sec}>
             <div className={title}><span>Exclusionary preferences</span>{editExclusions}</div>
-            <div className="truncate leading-relaxed" title={prefLine}>{excl.length ? 'Excluded: ' + prefLine : prefLine}</div>
+            <div className={cn('truncate leading-relaxed', excl.length > 0 && 'text-conflict')} title={prefLine}>{excl.length ? 'Excluded: ' + prefLine : prefLine}</div>
           </div>
         )}
         <div className={sec}>
@@ -116,14 +116,14 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
       )}
       {!quality && (
         <div className={sec}>
-          <div className={title}><span className="inline-flex items-center gap-1.5"><Ban className="size-3" strokeWidth={1.75} aria-hidden />Exclusionary preferences</span>{editExclusions}</div>
+          <div className={title}><span className="inline-flex items-center gap-1.5"><Ban className="size-3 text-conflict" strokeWidth={1.75} aria-hidden />Exclusionary preferences</span>{editExclusions}</div>
           {exclusionGroups(state.prefs).length ? (
             <p className="leading-relaxed">
               {exclusionGroups(state.prefs).map((g, i) => (
                 <span key={g.label} title={g.values.join(', ')}>
                   {i > 0 && <span className="text-fg-subtle"> · </span>}
                   <span className="text-fg-muted">{g.label}: </span>
-                  {g.values.slice(0, 3).join(', ')}{g.values.length > 3 && ` +${g.values.length - 3}`}
+                  <span className="text-conflict">{g.values.slice(0, 3).join(', ')}{g.values.length > 3 && ` +${g.values.length - 3}`}</span>
                 </span>
               ))}
             </p>

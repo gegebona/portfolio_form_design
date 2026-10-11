@@ -9,7 +9,7 @@ import { WeightField, WeightSlider } from '../components/ui/weight'
 import { ASSET_CLASSES, CLASS_COLOR } from '../data/data'
 import { cn } from '../lib/cn'
 import {
-  allocItems, benchmarkAlloc, conflictsOf, f2, near100, portfolioAlloc, removeItem, round2, setWeight, usePortfolio, weightOf, type AllocItem,
+  allocItems, benchmarkAlloc, conflictsOf, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
 } from '../state/portfolio'
 import { ComponentDetail } from './ComponentDetail'
 import { Overview } from './Overview'
@@ -25,19 +25,20 @@ export function AllocationView() {
   // Clicking a row's name animates the details panel; focusing its field or pressing its slider selects instantly,
   // so typing and dragging are never held up by an animation.
   const pick = (key: string) => startTransition(() => { addTransitionType('detail'); setSelKey(key) })
-  const setW = (it: AllocItem, v: number) => update((s) => setWeight(s, it, round2(Math.min(100, Math.max(0, v)))))
+  const setW = (it: AllocItem, v: number) => update((s) => setWeight(s, it, Math.round(Math.min(100, Math.max(0, v)))))
 
   const distributeEvenly = () => update((s) => {
-    const each = Math.floor(10000 / list.length) / 100
-    list.forEach((it) => setWeight(s, it, each))
-    setWeight(s, list[0], round2(each + (100 - each * list.length)))
+    // Whole percentages: everyone gets the same share and the first rows take the leftover points one by one.
+    const each = Math.floor(100 / list.length)
+    const extra = 100 - each * list.length
+    list.forEach((it, i) => setWeight(s, it, each + (i < extra ? 1 : 0)))
   })
 
   return (
     <Section
       screenHeading
       title="Component allocation"
-      description="Set the weight of each component. Weights must add up to 100%."
+      description="Set the weight of each component in whole percentages. Weights must add up to exactly 100%."
       actions={<Button variant="link" className="self-end" aria-pressed={compact} onClick={() => setCompact(!compact)}>{compact ? 'Full view' : 'Compact view'}</Button>}
       className="flex min-h-0 flex-1 flex-col"
     >
@@ -96,7 +97,7 @@ function AllocRow({ it, selected, onPick, onSelect, total, setW }: { it: AllocIt
           <span className="text-xs text-fg-muted">{it.meta}</span>
           {cf.length > 0 && <ConflictTag className="mt-1">Conflicts with exclusions: {cf.join(', ')}</ConflictTag>}
         </button>
-        <WeightField value={w} onValueChange={(v) => setW(it, v)} onFocus={onSelect} aria-label={`Weight of ${it.name} in percent`} />
+        <WeightField whole value={w} onValueChange={(v) => setW(it, v)} onFocus={onSelect} aria-label={`Weight of ${it.name} in percent`} />
       </div>
       {/* Pressing the slider selects its row immediately; the drag is not interrupted because the slider is not re-mounted. */}
       <WeightSlider value={w} onValueChange={(v) => setW(it, v)} onPointerDown={onSelect} color={CLASS_COLOR[it.cls]} aria-label={`Weight of ${it.name} (slider)`} />

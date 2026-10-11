@@ -4,14 +4,17 @@ import type { CSSProperties } from 'react'
 import { cn } from '../../lib/cn'
 
 export const STEP_HINT = '↑ ↓ or mouse wheel changes by 0.1 · with Shift by 1'
+export const WHOLE_HINT = '↑ ↓ or mouse wheel changes by 1 · whole percentages only'
 
 /**
  * WeightField — Base UI NumberField: typed value with "%", 2 decimals,
  * ↑/↓ step 0.1 (Shift: 1), mouse wheel while focused (allowWheelScrub), clamped to 0–100.
  */
 export function WeightField({
-  value, onValueChange, onFocus, size = 'md', strong, className, 'aria-label': ariaLabel,
+  value, onValueChange, onFocus, size = 'md', strong, whole, className, 'aria-label': ariaLabel,
 }: {
+  /** Whole percentages (component weights). Default is 2 decimals (instrument weights). */
+  whole?: boolean
   value: number
   onValueChange: (v: number) => void
   onFocus?: () => void
@@ -27,22 +30,22 @@ export function WeightField({
       onValueChange={(v) => onValueChange(v ?? 0)}
       min={0}
       max={100}
-      step={0.1}
-      smallStep={0.1}
-      largeStep={1}
+      step={whole ? 1 : 0.1}
+      smallStep={whole ? 1 : 0.1}
+      largeStep={whole ? 5 : 1}
       allowWheelScrub
-      format={{ minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }}
+      format={whole ? { maximumFractionDigits: 0, useGrouping: false } : { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }}
       className={cn('shrink-0', className)}
     >
       <NumberField.Group
-        title={STEP_HINT}
+        title={whole ? WHOLE_HINT : STEP_HINT}
         className={cn(
           'flex items-center border border-control bg-surface has-[input:focus]:border-control-active',
           size === 'md' ? 'h-8 w-24' : 'h-7 w-22',
         )}
       >
         <NumberField.Input
-          aria-label={`${ariaLabel}. ${STEP_HINT}`}
+          aria-label={`${ariaLabel}. ${whole ? WHOLE_HINT : STEP_HINT}`}
           onFocus={onFocus}
           className={cn('h-full w-full min-w-0 bg-transparent pr-1 pl-2 text-right tabular-nums outline-none', strong && 'font-semibold')}
         />

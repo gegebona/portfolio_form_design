@@ -162,7 +162,7 @@ export function BookView() {
     })
     location.hash = step
   }
-  const create = () => { update((s) => { s.data.name = ''; s.data.code = ''; s.data.description = ''; s.data.ccy = 'EUR'; s.data.benchmark = ''; s.book = { id: '', task: null } }); location.hash = 'data' }
+  const create = () => { update((s) => { s.data.name = ''; s.data.code = ''; s.data.description = ''; s.data.ccy = 'EUR'; s.data.benchmark = ''; s.comps = { added: [], inst: [], cash: [{ ccy: 'EUR', w: 0 }] }; s.weights = {}; s.book = { id: '', task: null } }); location.hash = 'data' }
   const add = (src: BookEntry, change: Partial<BookEntry>) =>
     setList((l) => {
       const copy: BookEntry = { ...src, tasks: undefined, perf1y: undefined, ...change, id: nextId(l), status: 'Draft', creator: BOOK_USER, editedBy: BOOK_USER, modified: today() }
