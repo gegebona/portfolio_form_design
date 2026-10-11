@@ -104,7 +104,11 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   // Simulation needs a complete allocation: exactly 100%, never adjusted silently.
   const alloc = portfolioAlloc(state)
   const allocOk = near100(alloc.Equity + alloc.Bonds + alloc.Alternatives + alloc.Liquidity)
-  const step: FlowStep = blocked ? 'data' : asked === 'simulation' && !allocOk ? 'allocation' : asked
+  // Preferences are optional, so the user may go straight from the data form to Component selection. Allocation and
+  // Simulation need something to allocate: at least one building block, model portfolio or instrument (cash alone is not enough).
+  const hasComponents = state.comps.added.length + state.comps.inst.length > 0
+  const needsComponents = (id: string) => (id === 'allocation' || id === 'simulation') && !hasComponents
+  const step: FlowStep = blocked ? 'data' : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
   useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
   const i = STEPS.findIndex((s) => s.id === step)
   const prev = STEPS[i - 1]
@@ -159,7 +163,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
       <div className="mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
           <TabsList variant="step" className="border-b border-line px-5">
-            {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
+            {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
             <Tab value="reporting" disabled={blocked} title={blocked ? 'Complete the model portfolio data first' : undefined}>Reporting</Tab>
           </TabsList>
         </Tabs>
@@ -176,10 +180,10 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         {/* Reporting has its own action (Generate) and is not part of the Back / forward sequence. */}
         {step !== 'reporting' && <ActionBar
           back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
-          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
+          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
           onSave={viewingCurrent ? undefined : () => save()}
           saveDisabled={blocked}
-          note={blocked ? `Still needed: ${missing.join(', ')}.` : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : step === 'simulation' ? publishBlock : undefined}
+          note={blocked ? `Still needed: ${missing.join(', ')}.` : step === 'components' && !hasComponents ? 'Select at least one component to continue.' : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : step === 'simulation' ? publishBlock : undefined}
         />}
       </div>
     </main>

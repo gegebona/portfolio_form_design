@@ -1,6 +1,8 @@
 import { Combobox as BaseCombobox } from '@base-ui/react/combobox'
 import { Check, ChevronDown, Search } from 'lucide-react'
+import { useState } from 'react'
 import { cn } from '../../lib/cn'
+import { Button } from './button'
 import { popupSurface } from './popup'
 
 export type ComboOption = { id: string; label: string; sub?: string }
@@ -10,10 +12,14 @@ export type ComboOption = { id: string; label: string; sub?: string }
  * The chosen values are NOT shown inside the field; screens render them where they belong
  * (exclusion chips under the field, instrument rows in a list), so the field stays one line.
  * Each option shows a checkbox look, driven by the item's data-selected attribute.
+ * tone: 'exclude' (red: picking means excluding, on Preferences) or 'select' (blue: picking means adding).
+ * The list closes with its own Done button, with Esc, or by clicking outside; closeOnSelect closes it after each pick.
  */
 export function MultiCombobox({
-  options, value, onValueChange, placeholder, className, showTrigger = true, id, 'aria-label': ariaLabel,
+  options, value, onValueChange, placeholder, className, showTrigger = true, id, tone = 'exclude', closeOnSelect, 'aria-label': ariaLabel,
 }: {
+  tone?: 'exclude' | 'select'
+  closeOnSelect?: boolean
   options: ComboOption[]
   value: string[]
   onValueChange: (v: string[]) => void
@@ -24,12 +30,15 @@ export function MultiCombobox({
   'aria-label'?: string
 }) {
   const byId = new Map(options.map((o) => [o.id, o]))
+  const [open, setOpen] = useState(false)
   return (
     <BaseCombobox.Root
       items={options.map((o) => o.id)}
       multiple
+      open={open}
+      onOpenChange={(o) => setOpen(o)}
       value={value}
-      onValueChange={(v) => onValueChange(v as string[])}
+      onValueChange={(v) => { onValueChange(v as string[]); if (closeOnSelect) setOpen(false) }}
       itemToStringLabel={(id: string) => byId.get(id)?.label ?? id}
     >
       <BaseCombobox.InputGroup
@@ -58,9 +67,9 @@ export function MultiCombobox({
                   <BaseCombobox.Item
                     key={id}
                     value={id}
-                    className="group flex min-h-8 cursor-pointer items-center gap-2 px-2.5 outline-none select-none data-highlighted:bg-surface-muted data-selected:bg-excluded-subtle data-selected:data-highlighted:bg-excluded"
+                    className={cn('group flex min-h-8 cursor-pointer items-center gap-2 px-2.5 outline-none select-none data-highlighted:bg-surface-muted', tone === 'exclude' && 'data-selected:bg-excluded-subtle data-selected:data-highlighted:bg-excluded')}
                   >
-                    <span className="flex size-3.5 shrink-0 items-center justify-center rounded-xs border border-control bg-surface text-on-accent group-data-selected:border-error group-data-selected:bg-error">
+                    <span className={cn('flex size-3.5 shrink-0 items-center justify-center rounded-xs border border-control bg-surface text-on-accent', tone === 'exclude' ? 'group-data-selected:border-error group-data-selected:bg-error' : 'group-data-selected:border-selected group-data-selected:bg-selected')}>
                       <BaseCombobox.ItemIndicator><Check className="size-2.5" strokeWidth={3.5} /></BaseCombobox.ItemIndicator>
                     </span>
                     <span>{o.label}</span>
@@ -69,6 +78,9 @@ export function MultiCombobox({
                 )
               }}
             </BaseCombobox.List>
+            <div className="flex justify-end border-t border-line px-2 py-1.5">
+              <Button size="xs" onClick={() => setOpen(false)}>Done</Button>
+            </div>
           </BaseCombobox.Popup>
         </BaseCombobox.Positioner>
       </BaseCombobox.Portal>

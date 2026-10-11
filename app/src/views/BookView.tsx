@@ -13,7 +13,7 @@ import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ASSET_CLASSES, BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, CLASS_COLOR, type AssetClass, type BookEntry, type BookStatus } from '../data/data'
 import { cn } from '../lib/cn'
 import { getBook, setBook } from '../state/book'
-import { f2, usePortfolio } from '../state/portfolio'
+import { f2, restoreSample, startNew, usePortfolio } from '../state/portfolio'
 import { MiniTable } from './ComponentDetail'
 import { Swatch } from './Overview'
 
@@ -148,6 +148,7 @@ export function BookView() {
 
   /** Opening a portfolio lands on its Simulation; editing a draft starts at the first step. */
   const open = (e: BookEntry, step = 'simulation') => { update((s) => {
+      restoreSample(s)
       s.data.name = e.name
       s.data.code = 'MP_' + e.id
       const task = e.tasks?.[0] ?? null
@@ -161,7 +162,7 @@ export function BookView() {
     })
     location.hash = step
   }
-  const create = () => { update((s) => { s.data.name = ''; s.data.code = ''; s.data.description = ''; s.data.ccy = 'EUR'; s.data.benchmark = ''; s.comps = { added: [], inst: [], cash: [{ ccy: 'EUR', w: 0 }] }; s.weights = {}; s.book = { id: '', task: null } }); location.hash = 'data' }
+  const create = () => { update(startNew); location.hash = 'data' }
   const add = (src: BookEntry, change: Partial<BookEntry>) =>
     setList((l) => {
       const copy: BookEntry = { ...src, tasks: undefined, perf1y: undefined, ...change, id: nextId(l), status: 'Draft', creator: BOOK_USER, editedBy: BOOK_USER, modified: today() }

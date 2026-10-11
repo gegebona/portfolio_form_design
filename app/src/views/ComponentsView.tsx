@@ -135,9 +135,7 @@ function LearnMore({ id, onClose, conflicts }: { id: string | null; onClose: (th
           {on && <span className="mr-auto inline-flex items-center gap-1.5 text-xs text-fg-muted"><Check className="size-3 text-selected" strokeWidth={3} />In this portfolio</span>}
           <Button onClick={() => onClose()}>Close</Button>
           {/* Same transition: the card collapses back and its row slides into (or out of) the sidebar. */}
-          <Button variant={on ? 'secondary' : 'primary'} onClick={() => onClose(() => toggle(c.id, !on))}>
-            {on ? 'Remove ' : 'Add '}{kind}
-          </Button>
+          {!on && <Button variant="primary" onClick={() => onClose(() => toggle(c.id, true))}>Add {kind}</Button>}
         </>
       }
     >
@@ -183,6 +181,8 @@ function Basket() {
             placeholder="Add by ISIN or instrument name…"
             aria-label="Add instrument"
             showTrigger={false}
+            tone="select"
+            closeOnSelect
           />
         }
         rows={state.comps.inst.map((isin) => {
