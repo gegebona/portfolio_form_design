@@ -180,6 +180,24 @@ const POOLS: Record<string, [string, string][]> = {
     ['Alphabet Class C', 'US02079K1079'], ['Broadcom', 'US11135F1012'], ['Tesla', 'US88160R1014'], ['JPMorgan Chase', 'US46625H1005'], ['Eli Lilly', 'US5324571083']],
 }
 export const TOP_WEIGHTS = [8.4, 7.9, 7.1, 6.6, 6.2, 5.4, 5.1, 4.7, 4.2, 3.6]
+
+/** One instrument held inside a building block or model portfolio (illustrative look-through). */
+export type Holding = { name: string; isin: string; cls: AssetClass; ccy: string; w: number }
+const ISIN_CCY: Record<string, string> = { US: 'USD', BM: 'USD', CH: 'CHF', GB: 'GBP', DK: 'DKK', HK: 'HKD', KY: 'HKD', CN: 'HKD' }
+/**
+ * The instruments a component holds, with weights that add up to exactly 100%: its ten sample instruments on 98%
+ * and a 2% cash account. Multi-asset and flexible components split their instruments between Equity and Bonds.
+ */
+export function componentHoldings(c: Component): Holding[] {
+  const mixed = c.area === 'Multi-asset' || c.area === 'Flexible'
+  const total = TOP_WEIGHTS.reduce((t, w) => t + w, 0)
+  const list: Holding[] = poolFor(c).map(([name, isin], i) => ({
+    name, isin, cls: mixed ? (i < 6 ? 'Equity' : 'Bonds') : AREA_CLASS[c.area], ccy: ISIN_CCY[isin.slice(0, 2)] ?? 'EUR',
+    w: Math.round((TOP_WEIGHTS[i] / total) * 9800) / 100,
+  }))
+  list[0].w = Math.round((98 - list.slice(1).reduce((t, h) => t + h.w, 0)) * 100) / 100
+  return [...list, { name: 'EUR account', isin: '', cls: 'Liquidity', ccy: 'EUR', w: 2 }]
+}
 export function poolFor(c: Component) { return c.region === 'Europe' ? POOLS.europe : c.region === 'Emerging markets' ? POOLS.em : POOLS.global }
 
 // ---- Simulation positions (existing portfolio, weights add up to 100%) ----

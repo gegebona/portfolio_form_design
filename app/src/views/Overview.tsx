@@ -205,7 +205,7 @@ export function AllocationBlock({ rows, focus, showChange }: { rows: [AllocRow, 
 }
 
 /** Compact donut (96px) with 2px gaps between segments and the largest class in the centre. Colours come from the chart tokens. */
-function Donut({ alloc, label }: { alloc: Alloc; label: string }) {
+export function Donut({ alloc, label }: { alloc: Alloc; label: string }) {
   const R = 42
   const C = 2 * Math.PI * R
   const inUse = ASSET_CLASSES.filter((c) => alloc[c] > 0.004)
