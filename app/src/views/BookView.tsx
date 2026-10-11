@@ -204,11 +204,12 @@ export function BookView() {
           actions={<Button variant="primary" onClick={create}>Create new model portfolio</Button>}
           className="pb-0"
         >
-          <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-2">
-            <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID…" aria-label="Find model portfolio" className="w-75 max-w-full" />
-            <Select aria-label="Status" value={status} onValueChange={setStatus} items={options('All statuses', BOOK_STATUSES)} className="w-36" />
-            <Select aria-label="Asset class" value={area} onValueChange={setArea} items={options('All asset classes', ASSET_CLASSES.filter((c) => list.some((e) => (e.alloc[c] ?? 0) > 0)))} className="w-40" />
-            <Select aria-label="Created by" value={creator} onValueChange={setCreator} items={options('All creators', uniq(list.map((e) => e.creator)))} className="w-36" />
+          {/* Filters, type tabs and paging use the table's own 12px text, so the controls do not outweigh the list they filter. */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2">
+            <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID…" aria-label="Find model portfolio" className="h-7 w-75 max-w-full text-xs" />
+            <Select aria-label="Status" value={status} onValueChange={setStatus} items={options('All statuses', BOOK_STATUSES)} className="h-7 w-36 text-xs" />
+            <Select aria-label="Asset class" value={area} onValueChange={setArea} items={options('All asset classes', ASSET_CLASSES.filter((c) => list.some((e) => (e.alloc[c] ?? 0) > 0)))} className="h-7 w-40 text-xs" />
+            <Select aria-label="Created by" value={creator} onValueChange={setCreator} items={options('All creators', uniq(list.map((e) => e.creator)))} className="h-7 w-36 text-xs" />
             <label className="ml-2 flex cursor-pointer items-center gap-2 text-xs">
               <Checkbox checked={mine} onCheckedChange={setMine} />
               My portfolios
@@ -219,8 +220,8 @@ export function BookView() {
           <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
             <Tabs value={type} onValueChange={(v) => { setType(v as string); setPage(0) }}>
               <TabsList variant="sub" aria-label="Portfolio type">
-                <Tab value="all">All types <TabCount>{list.length}</TabCount></Tab>
-                {TYPES.map((t) => <Tab key={t} value={t}>{t} <TabCount>{list.filter((e) => e.type === t).length}</TabCount></Tab>)}
+                <Tab value="all" className="text-xs">All types <TabCount>{list.length}</TabCount></Tab>
+                {TYPES.map((t) => <Tab key={t} value={t} className="text-xs">{t} <TabCount>{list.filter((e) => e.type === t).length}</TabCount></Tab>)}
               </TabsList>
             </Tabs>
             <div className="pb-1.5 text-xs text-fg-muted" aria-live="polite">
@@ -290,10 +291,10 @@ export function BookView() {
           </span>
           <div className="flex items-center gap-2.5">
             <span className="text-fg-muted">Rows per page</span>
-            <Select aria-label="Rows per page" value={size} onValueChange={(v) => { setSize(v); setPage(0) }} items={['10', '25', '50'].map((v) => ({ value: v, label: v }))} className="w-18" />
+            <Select aria-label="Rows per page" value={size} onValueChange={(v) => { setSize(v); setPage(0) }} items={['10', '25', '50'].map((v) => ({ value: v, label: v }))} className="h-7 w-18 text-xs" />
             <span className="tabular-nums">Page {p + 1} of {pages}</span>
-            <Button size="sm" disabled={p === 0} onClick={() => setPage(p - 1)}>Previous</Button>
-            <Button size="sm" disabled={p >= pages - 1} onClick={() => setPage(p + 1)}>Next</Button>
+            <Button size="xs" disabled={p === 0} onClick={() => setPage(p - 1)}>Previous</Button>
+            <Button size="xs" disabled={p >= pages - 1} onClick={() => setPage(p + 1)}>Next</Button>
           </div>
         </div>
       </div>
