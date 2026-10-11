@@ -19,7 +19,7 @@ export function Checkbox({ className, ...props }: CheckboxProps) {
   return (
     <BaseCheckbox.Root
       className={cn(
-        'flex size-4 shrink-0 cursor-pointer items-center justify-center border border-control bg-surface text-on-accent',
+        'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-xs border border-control bg-surface text-on-accent',
         'data-checked:border-selected data-checked:bg-selected data-disabled:cursor-default data-disabled:opacity-50',
         className,
       )}

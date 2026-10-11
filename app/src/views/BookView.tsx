@@ -20,7 +20,7 @@ import { Swatch } from './Overview'
 /** Same table look as the Simulation positions table: muted sticky header, 12px rows, hairline dividers. */
 const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg-muted'
 const td = 'border-b border-line px-2.5 py-1.5 align-middle'
-const tagBase = 'inline-block px-1.5 text-xs/4.5 whitespace-nowrap'
+const tagBase = 'inline-block rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap'
 /** Portfolio type reads at a glance: grey fill = Standard, lavender fill = Multi, outline = Customized. */
 const TYPE_TAG: Record<BookEntry['type'], string> = {
   Standard: 'bg-surface-strong',
@@ -197,7 +197,7 @@ export function BookView() {
 
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
-      <div className="my-4 flex min-h-0 flex-1 flex-col border border-line-strong bg-surface">
+      <div className="my-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
         <Section
           title="Model portfolio book"
           description="All model portfolios and their customized versions."

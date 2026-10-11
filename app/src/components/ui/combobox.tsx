@@ -34,7 +34,7 @@ export function MultiCombobox({
     >
       <BaseCombobox.InputGroup
         className={cn(
-          'flex h-8 items-center gap-1.5 border border-control bg-surface pl-2 text-sm text-fg data-popup-open:border-control-active has-[input:focus]:border-control-active',
+          'flex h-8 items-center gap-1.5 rounded-sm border border-control bg-surface pl-2 text-sm text-fg data-popup-open:border-control-active has-[input:focus]:border-control-active',
           showTrigger ? 'pr-0.5' : 'pr-2',
           className,
         )}
@@ -60,7 +60,7 @@ export function MultiCombobox({
                     value={id}
                     className="group flex min-h-8 cursor-pointer items-center gap-2 px-2.5 outline-none select-none data-highlighted:bg-surface-muted data-selected:bg-excluded-subtle data-selected:data-highlighted:bg-excluded"
                   >
-                    <span className="flex size-3.5 shrink-0 items-center justify-center border border-control bg-surface text-on-accent group-data-selected:border-error group-data-selected:bg-error">
+                    <span className="flex size-3.5 shrink-0 items-center justify-center rounded-xs border border-control bg-surface text-on-accent group-data-selected:border-error group-data-selected:bg-error">
                       <BaseCombobox.ItemIndicator><Check className="size-2.5" strokeWidth={3.5} /></BaseCombobox.ItemIndicator>
                     </span>
                     <span>{o.label}</span>

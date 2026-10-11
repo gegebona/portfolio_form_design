@@ -4,9 +4,12 @@ import { Search } from 'lucide-react'
 import type { ComponentProps, ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 
-/** Shared look of every boxed control: 32px, 1px control border, darker border while focused. */
+/**
+ * Shared look of every boxed control: 32px, 1px control border, darker border while focused.
+ * Corners: a subtle 4px radius (rounded-sm) on controls, buttons, cards and panels; 2px (rounded-xs) on tags and checkboxes.
+ */
 export const controlBox =
-  'flex h-8 items-center border border-control bg-surface text-sm text-fg has-[input:focus]:border-control-active data-popup-open:border-control-active'
+  'flex h-8 items-center rounded-sm border border-control bg-surface text-sm text-fg has-[input:focus]:border-control-active data-popup-open:border-control-active'
 
 type InputProps = Omit<ComponentProps<typeof BaseInput>, 'className'> & { className?: string }
 
@@ -15,7 +18,7 @@ export function Input({ className, ...props }: InputProps) {
   return (
     <BaseInput
       className={cn(
-        'h-8 border border-control bg-surface px-2.5 text-sm text-fg outline-none placeholder:text-fg-subtle focus:border-control-active disabled:bg-surface-muted disabled:text-fg-disabled',
+        'h-8 rounded-sm border border-control bg-surface px-2.5 text-sm text-fg outline-none placeholder:text-fg-subtle focus:border-control-active disabled:bg-surface-muted disabled:text-fg-disabled',
         className,
       )}
       {...props}

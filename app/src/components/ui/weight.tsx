@@ -40,7 +40,7 @@ export function WeightField({
       <NumberField.Group
         title={whole ? WHOLE_HINT : STEP_HINT}
         className={cn(
-          'flex items-center border border-control bg-surface has-[input:focus]:border-control-active',
+          'flex items-center rounded-sm border border-control bg-surface has-[input:focus]:border-control-active',
           size === 'md' ? 'h-8 w-24' : 'h-7 w-22',
         )}
       >

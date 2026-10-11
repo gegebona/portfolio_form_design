@@ -149,14 +149,14 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         <h1 className="text-2xl">{state.data.name || 'New model portfolio'}</h1>
         <span className="text-xs text-fg-muted">{[state.data.code, state.data.ccy].filter(Boolean).join(' · ')}</span>
         {step === 'simulation' && (
-          <span className={cn('self-center px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control text-fg-muted' : 'bg-surface-strong')}>
+          <span className={cn('self-center rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control text-fg-muted' : 'bg-surface-strong')}>
             {viewingCurrent ? 'Current version · published, read-only' : 'New version · working copy'}
           </span>
         )}
       </div>
 
       {/* Panel: tabs and action bar stay put; only the view scrolls (or its inner lists). */}
-      <div className="mb-4 flex min-h-0 flex-1 flex-col border border-line-strong bg-surface">
+      <div className="mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
           <TabsList variant="step" className="border-b border-line px-5">
             {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}

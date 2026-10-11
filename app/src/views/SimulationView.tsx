@@ -209,7 +209,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             <Fragment key={r.id}>
             <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>
-                {t && <span className="mb-0.75 block w-fit bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
+                {t && <span className="mb-0.75 block w-fit rounded-xs bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
                 {r.cls}
               </td>
               <td className={td}>

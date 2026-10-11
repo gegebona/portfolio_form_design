@@ -56,7 +56,7 @@ export function ExpandedCard({
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-4rem)] w-225 max-w-[calc(100vw-2rem)] -translate-1/2 flex-col border border-line-strong bg-surface text-fg shadow-pop"
+          className="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-4rem)] w-225 max-w-[calc(100vw-2rem)] -translate-1/2 flex-col rounded-sm border border-line-strong bg-surface text-fg shadow-pop"
         >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-6 pt-5 pb-4">
             <div className="flex min-w-0 flex-col">

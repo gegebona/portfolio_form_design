@@ -13,7 +13,7 @@ import { cn } from '../../lib/cn'
 
 export function ConflictTag({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex items-start gap-1.25 self-start bg-excluded-subtle px-1.75 py-0.75 text-xs/snug text-conflict', className)}>
+    <span className={cn('inline-flex items-start gap-1.25 self-start rounded-xs bg-excluded-subtle px-1.75 py-0.75 text-xs/snug text-conflict', className)}>
       <TriangleAlert className="mt-px size-3 shrink-0" strokeWidth={1.75} aria-hidden />
       <span>{children}</span>
     </span>
@@ -32,7 +32,7 @@ export function ConflictNote({ children, className }: { children: ReactNode; cla
 export function CurrencyTag({ ccy, portfolioCcy }: { ccy: string; portfolioCcy: string }) {
   return (
     <Tooltip.Root>
-      <Tooltip.Trigger render={<span />} className="shrink-0 border border-line-strong px-1.5 text-xs/4.5 whitespace-nowrap text-fg-muted">
+      <Tooltip.Trigger render={<span />} className="shrink-0 rounded-xs border border-line-strong px-1.5 text-xs/4.5 whitespace-nowrap text-fg-muted">
         in {ccy}
       </Tooltip.Trigger>
       <TooltipPopup>Benchmark currency differs from the portfolio currency ({portfolioCcy})</TooltipPopup>
@@ -45,7 +45,7 @@ export function TooltipPopup({ children }: { children: ReactNode }) {
   return (
     <Tooltip.Portal>
       <Tooltip.Positioner sideOffset={6} className="z-50">
-        <Tooltip.Popup className="bg-surface-inverse px-2 py-0.75 text-xs text-fg-inverse transition-opacity duration-100 data-ending-style:opacity-0 data-starting-style:opacity-0">
+        <Tooltip.Popup className="rounded-xs bg-surface-inverse px-2 py-0.75 text-xs text-fg-inverse transition-opacity duration-100 data-ending-style:opacity-0 data-starting-style:opacity-0">
           {children}
         </Tooltip.Popup>
       </Tooltip.Positioner>

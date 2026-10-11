@@ -35,7 +35,7 @@ const tabVariant: Record<Variant, string> = {
   step: 'pt-3 text-sm text-fg',
   sub: 'pt-2 text-sm text-fg-muted',
   version: 'pt-1.5 text-base text-fg-muted',
-  segment: '-ml-px border border-b border-control px-4 py-1.5 text-sm text-fg first:ml-0 hover:border-control hover:bg-surface-muted data-active:border-tab-active data-active:bg-tab-active data-active:font-semibold data-active:text-fg-inverse data-active:hover:bg-tab-active',
+  segment: '-ml-px first:rounded-l-sm last:rounded-r-sm border border-b border-control px-4 py-1.5 text-sm text-fg first:ml-0 hover:border-control hover:bg-surface-muted data-active:border-tab-active data-active:bg-tab-active data-active:font-semibold data-active:text-fg-inverse data-active:hover:bg-tab-active',
 }
 
 export function Tab({ className, ...props }: Omit<ComponentProps<typeof BaseTabs.Tab>, 'className'> & { className?: string }) {

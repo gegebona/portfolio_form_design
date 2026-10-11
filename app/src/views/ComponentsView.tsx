@@ -95,7 +95,7 @@ function CatalogueCard({ c, expanded, onLearnMore }: { c: Component; expanded: b
   // While expanded, the card's slot stays (keeps the grid still) but is empty and has no names: the expanded card holds them.
   const n = expanded ? undefined : cardNames(c.id)
   const card = (
-    <div id={'card-' + c.id} className={'relative flex h-34 min-w-0 border bg-surface hover:bg-surface-subtle has-[[role=checkbox]:focus-visible]:outline-2 has-[[role=checkbox]:focus-visible]:outline-offset-1 has-[[role=checkbox]:focus-visible]:outline-focus ' + (on ? 'border-selected' : 'border-line-strong')}>
+    <div id={'card-' + c.id} className={'relative flex h-34 min-w-0 rounded-sm border bg-surface hover:bg-surface-subtle has-[[role=checkbox]:focus-visible]:outline-2 has-[[role=checkbox]:focus-visible]:outline-offset-1 has-[[role=checkbox]:focus-visible]:outline-focus ' + (on ? 'border-selected' : 'border-line-strong')}>
       <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 px-4 pt-3.5 pb-10">
         <Checkbox checked={on} onCheckedChange={(v) => toggle(c.id, v)} className="mt-0.5 focus-visible:outline-none" />
         <span className="flex min-w-0 flex-col">

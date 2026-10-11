@@ -15,7 +15,7 @@ import { cn } from '../../lib/cn'
  *           sm 28px · md 32px · lg 36px (Tailwind h-7 / h-8 / h-9)
  */
 export const buttonVariants = cva(
-  'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap select-none disabled:cursor-default',
+  'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-sm whitespace-nowrap select-none disabled:cursor-default',
   {
     variants: {
       variant: {
