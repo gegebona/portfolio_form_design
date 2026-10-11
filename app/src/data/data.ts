@@ -195,3 +195,26 @@ export const POSITIONS: Position[] = [
   { id: 'mtn', cls: 'Equity', name: 'Meituan', isin: 'KYG596691041', bb: 'HOLT GEM Benchmark – ADR only', ccy: 'HKD', fx: 0.11, price: 8.74, w: 0.7, esg: '—' },
   { id: 'goog', cls: 'Equity', name: 'Alphabet Inc. Class C', isin: 'US02079K1079', bb: '—', ccy: 'USD', fx: 0.85, price: 167.2, w: 0, esg: '—' },
 ]
+
+// ---- Model portfolio book (illustrative list; names, people and figures are invented) ----
+export type BookStatus = 'Published' | 'Draft' | 'Pending'
+export type BookEntry = {
+  id: string; name: string; type: 'Standard' | 'Multi' | 'Customized'; area: string; benchmark: string
+  perf1y: number; creator: string; status: BookStatus; editedBy: string; modified: string; tasks?: number
+  /** Customized versions point at the model portfolio they derive from and are listed under it. */
+  parent?: string
+}
+export const MODEL_PORTFOLIOS: BookEntry[] = [
+  { id: '001', name: 'Growth Focus Portfolio', type: 'Standard', area: 'Equity', benchmark: 'S&P 500 (USA)', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '11/10/2025' },
+  { id: '002', name: 'Balanced Allocation Portfolio', type: 'Standard', area: 'Multi-asset', benchmark: 'Dow Jones Industrial Average (USA)', perf1y: 39.55, creator: 'Wayne, B.', status: 'Draft', editedBy: 'Wayne, B.', modified: '06/03/2026' },
+  { id: '003', name: 'Conservative Income Portfolio', type: 'Standard', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', tasks: 1 },
+  { id: '011', name: 'Conservative Income Portfolio A', type: 'Customized', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
+  { id: '012', name: 'Conservative Income Portfolio B', type: 'Customized', area: 'Fixed income', benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
+  { id: '004', name: 'Global Equity Portfolio', type: 'Multi', area: 'Equity', benchmark: 'FTSE 100 (UK)', perf1y: 12.42, creator: 'Wayne, B.', status: 'Pending', editedBy: 'Wayne, B.', modified: '06/03/2026' },
+  { id: '005', name: 'Sustainable Future Portfolio', type: 'Multi', area: 'Equity', benchmark: 'DAX (Germany)', perf1y: 12.01, creator: 'Stark, T.', status: 'Published', editedBy: 'Stark, T.', modified: '28/08/2025' },
+  { id: '006', name: 'Dynamic Opportunities Portfolio', type: 'Standard', area: 'Multi-asset', benchmark: 'CAC 40 (France)', perf1y: 11.2, creator: 'Jones, I.', status: 'Pending', editedBy: 'Jones, I.', modified: '06/03/2026' },
+  { id: '007', name: 'Defensive Strategy Portfolio', type: 'Standard', area: 'Fixed income', benchmark: 'MSCI World Index (Global)', perf1y: 11.34, creator: 'Smith, J.', status: 'Published', editedBy: 'Smith, J.', modified: '27/08/2025' },
+  { id: '008', name: 'Emerging Markets Portfolio', type: 'Multi', area: 'Equity', benchmark: 'Custom', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '04/08/2025' },
+  { id: '009', name: 'Dividend Yield Portfolio', type: 'Multi', area: 'Equity', benchmark: 'Custom', perf1y: 15.09, creator: 'Smith, J.', status: 'Published', editedBy: 'Smith, J.', modified: '04/08/2025' },
+  { id: '010', name: 'Technology Leaders Portfolio', type: 'Standard', area: 'Equity', benchmark: 'Custom', perf1y: 4.65, creator: 'Wayne, B.', status: 'Published', editedBy: 'Wayne, B.', modified: '04/08/2025' },
+]

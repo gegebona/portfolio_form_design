@@ -17,6 +17,7 @@ A React app built on a Tailwind CSS 4 design system with [Base UI](https://base-
 
 | Tab | Link | What it does |
 |---|---|---|
+| Model portfolio book | [#book](https://gegebona.github.io/portfolio_form_design/#book) | Landing list of all model portfolios with search; customized versions listed under their parent; Create model portfolio opens the flow |
 | Model portfolio data | [#data](https://serhiihaniuk.github.io/portfolio_form_design/#data) | Code, name, currency; benchmark picked from a searchable list with a joined details panel |
 | Preferences | [#preferences](https://serhiihaniuk.github.io/portfolio_form_design/#preferences) | Exclusions: search + suggestion chips, threshold scales for rating and ESG, excluded instruments |
 | Component selection | [#components](https://serhiihaniuk.github.io/portfolio_form_design/#components) | Catalogue cards with live conflict tags and Learn more; portfolio components column with instruments and cash |

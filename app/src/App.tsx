@@ -6,6 +6,7 @@ import { Checkbox } from './components/ui/selection'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
 import { PortfolioProvider } from './state/portfolio'
+import { BookView } from './views/BookView'
 import { DataView } from './views/DataView'
 import { DesignSystemPage } from './design-system/DesignSystemPage'
 import { PreferencesView } from './views/PreferencesView'
@@ -21,11 +22,11 @@ const STEPS = [
   { id: 'simulation', label: 'Simulation' },
 ] as const
 type StepId = (typeof STEPS)[number]['id']
-type Route = StepId | 'design'
+type Route = StepId | 'design' | 'book'
 
 function readHash(): Route {
   const h = location.hash.slice(1)
-  return h === 'design' || STEPS.some((s) => s.id === h) ? (h as Route) : 'data'
+  return h === 'design' || STEPS.some((s) => s.id === h) ? (h as Route) : 'book'
 }
 
 export default function App() {
@@ -53,7 +54,7 @@ export default function App() {
       <Tooltip.Provider delay={300}>
         <div className="flex h-dvh flex-col overflow-hidden">
           <AppHeader route={route} onNavigate={go} />
-          {route === 'design' ? <DesignSystemPage /> : <Flow step={route} onStep={go} />}
+          {route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} />}
         </div>
       </Tooltip.Provider>
     </PortfolioProvider>
@@ -62,7 +63,7 @@ export default function App() {
 
 function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route) => void }) {
   const links = [
-    { id: 'book', label: 'Model portfolio book', active: route !== 'design', to: 'data' as Route },
+    { id: 'book', label: 'Model portfolio book', active: route !== 'design', to: 'book' as Route },
     { id: 'design', label: 'Design system', active: route === 'design', to: 'design' as Route },
   ]
   return (
@@ -95,7 +96,7 @@ function Flow({ step, onStep }: { step: StepId; onStep: (r: StepId) => void }) {
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
       <nav aria-label="Breadcrumb" className="my-3.5 flex items-center gap-1.5 text-xs">
-        <a href="#data" className="text-link hover:text-link-hover">Model portfolio book</a>
+        <a href="#book" className="text-link hover:text-link-hover">Model portfolio book</a>
         <span aria-hidden className="text-fg-subtle">›</span>
         <span>NEW Model portfolio</span>
       </nav>
