@@ -30,8 +30,8 @@
   /* Barely rounded, so shapes stop looking cut with a ruler without reading as "rounded". The two steps the components
      use are set here, so the amount is tuned in one place: rounded-sm (controls, buttons, cards, panels) and
      rounded-xs (tags, checkboxes). */
-  --radius-sm: 2px;
-  --radius-xs: 1px;
+  --radius-sm: 3px;
+  --radius-xs: 1.5px;
 
   /* ---- Elevation ---- */
   /* UBS pop shadow (--col-opacity-shadow = rgba(28, 28, 28, 0.10)) — used by every floating surface: shadow-pop */
