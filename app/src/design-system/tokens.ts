@@ -60,6 +60,7 @@ export const SEMANTIC_GROUPS: { title: string; note: string; rows: TokenRow[] }[
       { token: 'excluded-subtle', primitive: 'red-50 (Tailwind — edge case)', use: 'Conflict tags, conflict rows, chosen options in a list', classes: 'bg-excluded-subtle' },
       { token: 'suggested', primitive: 'ubs-background-tags-01', use: 'Suggestion chips', classes: 'bg-suggested' },
       { token: 'suggested-border', primitive: 'ubs-border-illustrative', use: 'Their border', classes: 'border-suggested-border' },
+      { token: 'tab-active', primitive: 'ubs-focus-ring', use: 'Line under the active tab and the active header link', classes: 'bg-tab-active · border-tab-active' },
       { token: 'status-published', primitive: 'ubs-background-tags-06', use: 'Published tag in the Model portfolio book', classes: 'bg-status-published' },
       { token: 'type-multi', primitive: 'ubs-background-tags-05', use: 'Multi type tag in the Model portfolio book', classes: 'bg-type-multi' },
       { token: 'task', primitive: 'ubs-background-tags-08', use: 'Open position task tags (book and Simulation)', classes: 'bg-task' },

@@ -7,11 +7,11 @@ import { cn } from '../../lib/cn'
  * One look for every tab type; only label size and the colour of inactive labels differ:
  *   step     screens of the flow          14px, inactive labels in normal ink
  *   sub      content inside a screen      14px, inactive labels muted
- *   segment  Current / New in Simulation  joined boxes, the active one filled dark — for a choice that changes
- *            what the whole screen means and must stay obvious
+ *   segment  Current / New in Simulation  two large tabs side by side: the active one is white and joined to the
+ *            content below, the other is grey — for a choice that changes what the whole screen means
  *   version  (older look of Current / New)  16px, inactive labels muted
  * Shared: 24px between tabs (gap-6), label 6px above the line, 3px line.
- * The red line is Tabs.Indicator, positioned by Base UI's --active-tab-left / --active-tab-width
+ * The blue line is Tabs.Indicator, positioned by Base UI's --active-tab-left / --active-tab-width
  * variables, so it slides between tabs. Hover shows a light line on the tab itself.
  */
 
@@ -23,9 +23,9 @@ export const Tabs = BaseTabs.Root
 export function TabsList({ variant = 'step', className, children, ...props }: Omit<ComponentProps<typeof BaseTabs.List>, 'className'> & { variant?: Variant; className?: string; children: ReactNode }) {
   return (
     <VariantContext.Provider value={variant}>
-      <BaseTabs.List className={cn('relative z-0 flex gap-6', variant === 'segment' && 'gap-0', className)} {...props}>
+      <BaseTabs.List className={cn('relative z-0 flex gap-6', variant === 'segment' && 'gap-1', className)} {...props}>
         {children}
-        {variant !== 'segment' && <BaseTabs.Indicator className="absolute bottom-0 left-0 h-0.75 w-(--active-tab-width) translate-x-(--active-tab-left) bg-accent transition-[translate,width] duration-200 ease-out" />}
+        {variant !== 'segment' && <BaseTabs.Indicator className="absolute bottom-0 left-0 h-0.75 w-(--active-tab-width) translate-x-(--active-tab-left) bg-tab-active transition-[translate,width] duration-200 ease-out" />}
       </BaseTabs.List>
     </VariantContext.Provider>
   )
@@ -35,7 +35,7 @@ const tabVariant: Record<Variant, string> = {
   step: 'pt-3 text-sm text-fg',
   sub: 'pt-2 text-sm text-fg-muted',
   version: 'pt-1.5 text-base text-fg-muted',
-  segment: '-ml-px border border-b border-control px-4 py-1.5 text-sm text-fg first:ml-0 hover:border-control hover:bg-surface-muted data-active:border-surface-inverse data-active:bg-surface-inverse data-active:font-semibold data-active:text-fg-inverse',
+  segment: '-mb-px min-w-44 justify-between gap-6 border border-b border-transparent bg-surface-muted px-3.5 py-2 text-lg text-fg-secondary hover:border-transparent hover:bg-surface-strong data-active:border-line-strong data-active:border-b-surface data-active:bg-surface data-active:text-fg data-active:hover:bg-surface',
 }
 
 export function Tab({ className, ...props }: Omit<ComponentProps<typeof BaseTabs.Tab>, 'className'> & { className?: string }) {

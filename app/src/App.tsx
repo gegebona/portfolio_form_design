@@ -82,7 +82,7 @@ function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route)
               href={'#' + l.to}
               onClick={(e) => { e.preventDefault(); onNavigate(l.to) }}
               aria-current={l.active ? 'page' : undefined}
-              className="flex items-center border-b-3 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-accent"
+              className="flex items-center border-b-3 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-tab-active"
             >
               {l.label}
             </a>
@@ -149,7 +149,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         <h1 className="text-2xl">{state.data.name || 'New model portfolio'}</h1>
         <span className="text-xs text-fg-muted">{[state.data.code, state.data.ccy].filter(Boolean).join(' · ')}</span>
         {step === 'simulation' && (
-          <span className={cn('self-center px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control' : 'bg-surface-inverse text-fg-inverse')}>
+          <span className={cn('self-center px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control text-fg-muted' : 'bg-surface-strong')}>
             {viewingCurrent ? 'Current version · published, read-only' : 'New version · working copy'}
           </span>
         )}
@@ -186,23 +186,23 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   )
 }
 
-/** Dark action bar: Back + Cancel on the left, Save as draft + the forward step (the one primary) on the right. */
+/** Action bar (light, with a top rule): Back + Cancel on the left, Save as draft + the forward step (the one primary) on the right. */
 function ActionBar({ back, next, onSave, saveDisabled, note }: { saveDisabled?: boolean; back?: { label: string; onClick: () => void }; next: { label: string; onClick: () => void; disabled?: boolean }; /** Omitted where nothing can be saved (the read-only Current version). */ onSave?: () => void; /** Short status next to the actions: what is still needed, or why saving is unavailable. */ note?: string }) {
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 bg-surface-inverse px-6 py-3">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-t border-line-strong bg-surface px-6 py-3">
       <div className="flex items-center gap-2.5">
         {back && (
-          <Button variant="secondary" tone="onDark" size="lg" onClick={back.onClick}>
+          <Button variant="secondary" size="lg" onClick={back.onClick}>
             <ChevronLeft className="size-3.5" strokeWidth={2} />
             {back.label}
           </Button>
         )}
-        <Button variant="link" tone="onDark" className="h-9 px-2">Cancel</Button>
+        <Button variant="link" className="h-9 px-2">Cancel</Button>
       </div>
       <div className="flex items-center gap-2.5">
-        {note && <span role="status" className="mr-1.5 text-xs text-surface-strong">{note}</span>}
-        {onSave && <Button variant="secondary" tone="onDark" size="lg" disabled={saveDisabled} onClick={onSave}>Save as draft</Button>}
-        <Button variant="primary" tone="onDark" size="lg" disabled={next.disabled} onClick={next.onClick}>
+        {note && <span role="status" className="mr-1.5 text-xs text-fg-muted">{note}</span>}
+        {onSave && <Button variant="secondary" size="lg" disabled={saveDisabled} onClick={onSave}>Save as draft</Button>}
+        <Button variant="primary" size="lg" disabled={next.disabled} onClick={next.onClick}>
           {next.label}
           <ChevronRight className="size-3.5" strokeWidth={2} />
         </Button>

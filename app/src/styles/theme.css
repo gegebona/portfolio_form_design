@@ -127,6 +127,7 @@
   --color-suggested-border: var(--color-ubs-border-illustrative);
 
   /* Domain: model portfolio status tags (the label always carries the meaning; colour only speeds up scanning) */
+  --color-tab-active: var(--color-ubs-focus-ring);                /* line under the active tab and nav item (blue; red stays for the main action and problems) */
   --color-status-published: var(--color-ubs-background-tags-06);  /* green tag */
   --color-status-draft: var(--color-ubs-background-tags-10);      /* yellow tag */
   --color-type-multi: var(--color-ubs-background-tags-05);        /* lavender tag: Multi portfolios */

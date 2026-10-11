@@ -204,7 +204,7 @@ Rules:
 text   fg · fg-secondary · fg-muted · fg-subtle · fg-disabled · fg-inverse · link
 bg     page · surface · surface-subtle · surface-muted · surface-strong · surface-inverse
 lines  line · line-strong · control · control-active · focus
-brand  accent · accent-hover · error · conflict
+brand  accent · accent-hover · error · conflict · tab-active
 domain excluded · excluded-border · excluded-subtle · suggested · suggested-border · status-published · status-draft · type-multi · task
 charts chart-1 (Equity) · chart-2 (Bonds) · chart-3 (Alternatives) · chart-4 (Liquidity) · chart-neutral
 ubs    ubs-<UBS token name>, e.g. ubs-text-subtle, ubs-background-tags-21 (only to define semantic tokens)
