@@ -1,11 +1,38 @@
 import { createContext, startTransition, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import {
-  AREA_CLASS, BENCHMARKS, CATEGORIES, COMPONENTS, COMPONENT_INSTRUMENTS, EXCLUDABLE_INSTRUMENTS, POSITIONS, RATINGS, ESG_SCORES,
-  type AssetClass, type BookTask, type CategoryId, type Component, type Position,
+  AREA_CLASS, BENCHMARKS, CATEGORIES, COMPONENTS, COMPONENT_INSTRUMENTS, EXCLUDABLE_INSTRUMENTS, PARENT_UPDATE, POSITIONS, RATINGS, ESG_SCORES,
+  type AssetClass, type AutoUpdate, type BookEntry, type BookTask, type CategoryId, type Component, type Position,
 } from '../data/data'
 
 /** kept: the user decided to keep a position that breaches a preference; keptOn records when (shown with the warning icon). */
-export type SimRow = Position & { nw: number; removed: boolean; kept: boolean; keptOn?: string }
+export type SimRow = Position & {
+  nw: number; removed: boolean; kept: boolean; keptOn?: string
+  /** Customized automatic update: what the update did to this position, and the parent's target for an added one. */
+  auto?: 'added' | 'reduced' | 'protected'; target?: number
+}
+/** Preferences a customized portfolio can set itself (minimum position size and maximum instruments are always inherited). */
+export type PrefKey = CategoryId | 'rating' | 'esg' | 'inst'
+export const PREF_KEYS: PrefKey[] = ['geography', 'sector', 'currency', 'category', 'rating', 'esg', 'inst']
+/**
+ * A customized portfolio: linked to its parent STANDARD portfolio, whose values it inherits except where it has its
+ * own value (an override). Parent changes reach its NEW automatically; CURRENT changes only when NEW is published.
+ */
+export type CustomState = {
+  parentId: string; parentName: string
+  /** Outcome of the latest automatic update, or null when none is pending. */
+  auto: AutoUpdate | null
+  /** Whether a NEW version exists (it does not after an update that could not be applied, until a preference is edited). */
+  hasNew: boolean
+  version: number; published: string
+  /** Preferences with the child's own value. */
+  overrides: PrefKey[]
+  /** The parent's current values (what an inherited preference shows, and what reset brings back). */
+  parentPrefs: PortfolioState['prefs']
+  /** Parent preference changes in the latest update: applied (inherited) or skipped (own value kept). */
+  applied: PrefKey[]; skipped: PrefKey[]
+  /** Inherited limits the latest update changed. */
+  limits: { label: string; from: string; to: string }[]
+}
 export type CashEntry = { ccy: string; w: number }
 
 export type PortfolioState = {
@@ -28,6 +55,8 @@ export type PortfolioState = {
   sim: { rows: SimRow[]; mode: 'current' | 'new' }
   /** Which book entry is open in the flow, and its open position task (shown at the top of Simulation). */
   book: { id: string; task: BookTask | null }
+  /** Set when the open portfolio is a customized version. */
+  custom: CustomState | null
 }
 
 const INITIAL: PortfolioState = {
@@ -49,6 +78,7 @@ const INITIAL: PortfolioState = {
   },
   sim: { rows: POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false })), mode: 'new' },
   book: { id: '', task: null },
+  custom: null,
 }
 
 type Recipe = (draft: PortfolioState) => void
@@ -102,6 +132,7 @@ export function startNew(s: PortfolioState) {
   s.comps = { added: [], inst: [], cash: [{ ccy: 'EUR', w: 0 }] }
   s.weights = {}
   s.book = { id: '', task: null }
+  s.custom = null
   s.sim.mode = 'new'
 }
 /** Opening an existing portfolio from the book shows the illustrative content again (the prototype stores one sample). */
@@ -111,6 +142,112 @@ export function restoreSample(s: PortfolioState) {
   s.prefs = fresh.prefs
   s.comps = fresh.comps
   s.weights = fresh.weights
+  s.sim.rows = fresh.sim.rows
+  s.custom = null
+}
+
+/**
+ * Opens a customized version with its sample automatic update (prototype data, the same parent change for every child):
+ *   - the parent adds Latin America to its geography exclusions (inherited here, so it reaches NEW at once), changes its
+ *     sector exclusions (the child has its own value, so the parent value is skipped) and lowers its maximum number of
+ *     instruments (an inherited limit, always applied);
+ *   - after the next data load the parent requires a new instrument at its target weight, funded by reducing every
+ *     eligible position proportionally, cash included; protected positions are left as they are.
+ * CURRENT is the last published child version and never changes here.
+ */
+export function openCustomized(s: PortfolioState, e: BookEntry, parent: BookEntry | undefined) {
+  restoreSample(s)
+  s.data.name = e.name
+  s.data.code = 'MP_' + e.id
+  s.book = { id: e.id, task: null }
+  // Apple is on the inherited excluded list, so the child does not hold it: that weight sits in cash.
+  s.sim.rows = s.sim.rows.filter((r) => r.id !== 'aapl').map((r) => (r.id === 'eur' ? { ...r, w: 3.5, nw: 3.5 } : r))
+  const parentPrefs = structuredClone(s.prefs)
+  // Child's own values (published in CURRENT): sector exclusions narrowed to Energy only.
+  s.prefs.sel.sector = ['energy']
+  const held = s.sim.rows.filter((r) => r.w > 0).length
+  const custom: CustomState = {
+    parentId: parent?.id ?? '', parentName: parent?.name ?? '', auto: e.auto ?? null, hasNew: !!e.auto && e.auto !== 'invalid',
+    version: e.version ?? 1, published: e.modified, overrides: ['sector'], parentPrefs,
+    applied: [], skipped: [], limits: [],
+  }
+  if (e.auto) {
+    // Parent preference changes: geography (inherited → applied), sector (own value → skipped).
+    parentPrefs.sel.geography = [...parentPrefs.sel.geography, 'latam']
+    parentPrefs.sel.sector = [...parentPrefs.sel.sector, 'fin']
+    if (e.auto === 'invalid') {
+      // Nothing is applied, not even the preference changes (no partial update): the parent's new maximum equals what the
+      // portfolio already holds, so the required instrument cannot be added.
+      parentPrefs.maxInst = String(held)
+    } else {
+      custom.skipped = ['sector']
+      custom.applied = ['geography']
+      s.prefs.sel.geography = [...parentPrefs.sel.geography]
+      custom.limits = [{ label: 'Maximum number of instruments', from: s.prefs.maxInst, to: '120' }]
+      parentPrefs.maxInst = '120'
+      s.prefs.maxInst = '120'
+      if (e.auto === 'ready') fundRequired(s.sim.rows)
+    }
+  }
+  s.custom = custom
+  s.sim.mode = custom.hasNew ? 'new' : 'current'
+}
+
+/** Positions the automatic update may reduce: held, not protected. */
+export const eligibleForReduction = (r: SimRow) => r.w > 0 && r.id !== PARENT_UPDATE.protectedId
+
+/**
+ * Adds the parent's required instrument at the parent's target weight and funds it by reducing every eligible position
+ * by the same share of its weight (cash included). Weights are rounded to 2 decimals; the rounding rest goes to the
+ * largest eligible position so the total is exactly 100.00%.
+ */
+function fundRequired(rows: SimRow[]) {
+  const { instrument: inst } = PARENT_UPDATE
+  const pool = rows.filter(eligibleForReduction)
+  const poolW = pool.reduce((t, r) => t + r.w, 0)
+  const keep = 1 - inst.target / poolW
+  rows.forEach((r) => {
+    if (eligibleForReduction(r)) { r.nw = round2(r.w * keep); r.auto = 'reduced' }
+    else if (r.id === PARENT_UPDATE.protectedId) r.auto = 'protected'
+  })
+  const { target, ...pos } = inst
+  rows.unshift({ ...pos, nw: target, removed: false, kept: false, auto: 'added', target })
+  const rest = round2(100 - rows.reduce((t, r) => t + r.nw, 0))
+  if (rest) { const big = [...pool].sort((a, b) => b.w - a.w)[0]; big.nw = round2(big.nw + rest) }
+}
+/** Share of its weight each eligible position gives up (same for all), for the update summary. */
+export function reductionShare(rows: SimRow[]) {
+  const poolW = rows.filter(eligibleForReduction).reduce((t, r) => t + r.w, 0)
+  return poolW ? (PARENT_UPDATE.instrument.target / poolW) * 100 : 0
+}
+
+/** Editing a preference of a customized portfolio gives it its own value and creates or refreshes NEW. */
+export function setOwnValue(s: PortfolioState, k: PrefKey) {
+  if (!s.custom) return
+  if (!s.custom.overrides.includes(k)) s.custom.overrides.push(k)
+  s.custom.hasNew = true
+}
+/** Reset to inherit: the parent's current value goes into NEW and future parent changes flow again. */
+export function resetToInherit(s: PortfolioState, k: PrefKey) {
+  if (!s.custom) return
+  const pp = s.custom.parentPrefs
+  if (k === 'rating') { s.prefs.rating = pp.rating; s.prefs.unrated = pp.unrated }
+  else if (k === 'esg') s.prefs.esg = pp.esg
+  else if (k === 'inst') s.prefs.inst = [...pp.inst]
+  else s.prefs.sel[k] = [...pp.sel[k]]
+  s.custom.overrides = s.custom.overrides.filter((x) => x !== k)
+  s.custom.hasNew = true
+}
+/** A preference's value as short text (for parent-vs-own comparisons). */
+export function prefText(p: PortfolioState['prefs'], k: PrefKey) {
+  if (k === 'rating') return [p.rating < RATINGS.length ? RATINGS[p.rating] + ' and below' : '', p.unrated ? 'not rated' : ''].filter(Boolean).join(', ') || 'None'
+  if (k === 'esg') return p.esg > 0 ? `Score ${ESG_SCORES[p.esg - 1]} and below` : 'None'
+  if (k === 'inst') return p.inst.map((x) => instrumentByIsin(x).name).join(', ') || 'None'
+  return p.sel[k].map((id) => optionLabel(k, id)).join(', ') || 'None'
+}
+export const PREF_LABEL: Record<PrefKey, string> = {
+  geography: 'Geography exclusions', sector: 'Sector exclusions', currency: 'Currency exclusions', category: 'Instrument category exclusions',
+  rating: 'Credit rating exclusions', esg: 'ESG exclusions', inst: 'Excluded instruments',
 }
 
 export const componentById = (id: string) => COMPONENTS.find((c) => c.id === id)!

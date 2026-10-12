@@ -1,4 +1,4 @@
-import { Ban } from 'lucide-react'
+import { Ban, Lock } from 'lucide-react'
 import { useState, ViewTransition } from 'react'
 import { Button } from '../components/ui/button'
 import { EmptySlot, ExclusionChip, RemoveButton, SuggestionChip } from '../components/ui/chip'
@@ -7,28 +7,42 @@ import { AffixInput, Field, Input } from '../components/ui/input'
 import { GroupLabel, Section } from '../components/ui/layout'
 import { Checkbox } from '../components/ui/selection'
 import { ThresholdScale } from '../components/ui/threshold-scale'
-import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, RATINGS, type ExclusionCategory } from '../data/data'
-import { instrumentByIsin, optionLabel, usePortfolio } from '../state/portfolio'
+import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, PARENT_UPDATE, RATINGS, type ExclusionCategory } from '../data/data'
+import { cn } from '../lib/cn'
+import { instrumentByIsin, optionLabel, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
 
 const SHOW = 4 // suggestions shown before "+N more"
 
 export function PreferencesView() {
   const { state, update } = usePortfolio()
   const p = state.prefs
+  const custom = state.custom
   const clearAll = () => update((s) => {
     CATEGORIES.forEach((c) => { s.prefs.sel[c.id] = [] })
     s.prefs.rating = RATINGS.length; s.prefs.unrated = false; s.prefs.esg = 0; s.prefs.inst = []
+    PREF_KEYS.forEach((k) => setOwnValue(s, k))
   })
+  // Customized: the two limits always come from the parent and cannot be changed here.
+  const limit = (label: string) => custom?.limits.find((l) => l.label === label)
+  const lockNote = (label: string) => {
+    const l = limit(label)
+    return custom && (
+      <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+        <Lock className="size-3" strokeWidth={1.75} aria-hidden />
+        Locked · inherited from the parent{l && ` · changed ${l.from} → ${l.to} on ${PARENT_UPDATE.changed}`}
+      </span>
+    )
+  }
 
   return (
     <>
-      <Section screenHeading title="Preferences" description="Please configure the preferences specific to the model portfolio in the fields below." className="border-b border-line">
+      <Section screenHeading title="Preferences" description={custom ? 'Every preference is inherited from the parent model portfolio unless you give it your own value. Parent changes reach inherited preferences automatically and skip your own values.' : 'Please configure the preferences specific to the model portfolio in the fields below.'} className="border-b border-line">
         <div className="mt-4 flex flex-wrap items-end gap-x-10 gap-y-4">
-          <Field label="Minimum position size">
-            <AffixInput value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className="w-37.5" />
+          <Field label="Minimum position size" description={lockNote('Minimum position size')}>
+            <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-37.5', custom && 'bg-surface-muted text-fg-muted')} />
           </Field>
-          <Field label="Maximum number of instruments">
-            <Input value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-67.5" />
+          <Field label="Maximum number of instruments" description={lockNote('Maximum number of instruments')}>
+            <Input disabled={!!custom} value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-67.5" />
           </Field>
         </div>
       </Section>
@@ -58,13 +72,14 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   const { state, animate } = usePortfolio()
   const [more, setMore] = useState(false)
   const sel = state.prefs.sel[cat.id]
-  const setSel = (next: string[]) => animate((s) => { s.prefs.sel[cat.id] = next })
+  const setSel = (next: string[]) => animate((s) => { s.prefs.sel[cat.id] = next; setOwnValue(s, cat.id) })
   const sugg = cat.suggested.filter((id) => !sel.includes(id))
   const visible = more ? sugg : sugg.slice(0, SHOW)
 
   return (
     <div className={rowClass}>
       <GroupLabel htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : undefined}>{cat.label}</GroupLabel>
+      <Source k={cat.id} />
       <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
         <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="w-55 shrink-0" />
         {sugg.length > 0 && (
@@ -100,17 +115,18 @@ function RatingRow() {
   return (
     <div className={rowClass}>
       <GroupLabel id="rating-label" count={limited ? `${RATINGS[p.rating]} and below excluded` : 'Click a grade to exclude it and everything below'}>Credit rating exclusions</GroupLabel>
+      <Source k="rating" />
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <ThresholdScale
           aria-labelledby="rating-label"
           labels={RATINGS}
           isExcluded={(i) => i >= p.rating}
           cutAt={p.rating}
-          onPick={(i) => update((s) => { s.prefs.rating = i === s.prefs.rating ? RATINGS.length : i })}
+          onPick={(i) => update((s) => { s.prefs.rating = i === s.prefs.rating ? RATINGS.length : i; setOwnValue(s, 'rating') })}
           className="flex-[0_1_33rem]"
         />
         <label className="inline-flex cursor-pointer items-center gap-1.5">
-          <Checkbox checked={p.unrated} onCheckedChange={(v) => update((s) => { s.prefs.unrated = v })} />
+          <Checkbox checked={p.unrated} onCheckedChange={(v) => update((s) => { s.prefs.unrated = v; setOwnValue(s, 'rating') })} />
           Also exclude not rated
         </label>
       </div>
@@ -124,12 +140,13 @@ function EsgRow() {
   return (
     <div className={rowClass}>
       <GroupLabel id="esg-label" count={p.esg > 0 ? `Score ${ESG_SCORES[p.esg - 1]} and below excluded` : 'Click a score to exclude it and everything below'}>ESG exclusions</GroupLabel>
+      <Source k="esg" />
       <ThresholdScale
         aria-labelledby="esg-label"
         labels={ESG_SCORES.map((s) => 'Score ' + s)}
         isExcluded={(i) => i < p.esg}
         cutAt={p.esg}
-        onPick={(i) => update((s) => { s.prefs.esg = i === s.prefs.esg - 1 ? 0 : i + 1 })}
+        onPick={(i) => update((s) => { s.prefs.esg = i === s.prefs.esg - 1 ? 0 : i + 1; setOwnValue(s, 'esg') })}
         className="max-w-85"
       />
     </div>
@@ -140,10 +157,11 @@ function EsgRow() {
 function InstrumentsColumn() {
   const { state, animate } = usePortfolio()
   const inst = state.prefs.inst
-  const setInst = (next: string[]) => animate((s) => { s.prefs.inst = next })
+  const setInst = (next: string[]) => animate((s) => { s.prefs.inst = next; setOwnValue(s, 'inst') })
   return (
     <div className="min-w-0 flex-[1_1_23.75rem] border-l border-line py-3.5 pr-1.5 pl-7">
       <GroupLabel htmlFor="inst-q" count={inst.length ? `${inst.length} excluded` : undefined}>Excluded instruments</GroupLabel>
+      <Source k="inst" />
       <MultiCombobox
         id="inst-q"
         options={EXCLUDABLE_INSTRUMENTS.map((x) => ({ id: x.isin, label: x.name, sub: x.isin }))}
@@ -167,6 +185,32 @@ function InstrumentsColumn() {
         })}
         {!inst.length && <span className="text-fg-subtle">No instruments excluded</span>}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Customized only: where a preference's value comes from. Inherited (follows the parent, parent changes flow in) or
+ * own value (parent changes are skipped, never a conflict), with the parent's value when they differ and a reset.
+ */
+function Source({ k }: { k: PrefKey }) {
+  const { state, update } = usePortfolio()
+  const c = state.custom
+  if (!c) return null
+  const own = c.overrides.includes(k)
+  const parent = prefText(c.parentPrefs, k)
+  const differs = parent !== prefText(state.prefs, k)
+  return (
+    <div className="-mt-0.5 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+      <span className={cn('rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', own ? 'bg-selected/10 text-fg' : 'border border-line-strong text-fg-muted')}>{own ? 'Own value' : 'Inherited'}</span>
+      <span className="text-fg-muted">
+        {own ? 'Parent changes are skipped' : 'Follows the parent'}
+        {own && differs && <> · Parent: <span className="text-fg">{parent}</span></>}
+        {!own && differs && <> · The parent now has <span className="text-fg">{parent}</span>, not applied yet</>}
+        {c.skipped.includes(k) && ` · The parent changed this on ${PARENT_UPDATE.changed}; your value is kept`}
+        {c.applied.includes(k) && ` · Updated from the parent on ${PARENT_UPDATE.changed}`}
+      </span>
+      {own && <Button variant="link" className="text-xs" onClick={() => update((s) => resetToInherit(s, k))}>Reset to inherit</Button>}
     </div>
   )
 }

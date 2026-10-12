@@ -108,15 +108,22 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   // Simulation need something to allocate: at least one building block, model portfolio or instrument (cash alone is not enough).
   const hasComponents = state.comps.added.length + state.comps.inst.length > 0
   const needsComponents = (id: string) => (id === 'allocation' || id === 'simulation') && !hasComponents
-  const step: FlowStep = blocked ? 'data' : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
+  // A customized portfolio has no Component selection or Component allocation: its components, instruments and weights
+  // come from the parent, and only its preferences can be edited.
+  const custom = state.custom
+  const steps = custom ? STEPS.filter((s) => s.id !== 'components' && s.id !== 'allocation') : STEPS
+  const step: FlowStep = custom
+    ? (asked === 'components' || asked === 'allocation' ? 'simulation' : asked)
+    : blocked ? 'data' : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
   useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
-  const i = STEPS.findIndex((s) => s.id === step)
-  const prev = STEPS[i - 1]
-  const next = STEPS[i + 1]
+  const i = steps.findIndex((s) => s.id === step)
+  const prev = steps[i - 1]
+  const next = steps[i + 1]
   // Publication gates: a decision on every open task and a total of exactly 100.00%. Deferred tasks do not block.
   const openTask = state.book.task?.status === 'Open'
   const simTotalOk = near100(state.sim.rows.filter((r) => !r.removed).reduce((t, r) => t + r.nw, 0))
-  const publishBlock = viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.'
+  const publishBlock = custom && !custom.hasNew ? 'There is no new version to publish. Current stays active.'
+    : viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.'
     : openTask ? 'To publish, accept, reject or defer the open position task.'
     : !simTotalOk ? 'To publish, the total weight must be exactly 100.00%.'
     : undefined
@@ -134,7 +141,11 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
       modified: new Date().toLocaleDateString('en-GB'),
     }
     const l = getBook()
-    if (l.some((e) => e.id === state.book.id)) {
+    if (custom) {
+      // Publishing NEW replaces CURRENT: the version number goes up and the pending automatic update is settled.
+      // Saving keeps NEW pending; the published CURRENT is untouched.
+      if (publish) setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : { ...e, ...fields, name: e.name, auto: undefined, version: custom.version + 1 })))
+    } else if (l.some((e) => e.id === state.book.id)) {
       setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : publish
         ? { ...e, ...fields, status: 'Published', tasks: e.tasks?.filter((t) => t.status === 'Deferred') }
         : { ...e, ...fields })))
@@ -152,9 +163,15 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
       <div className="mb-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h1 className="text-2xl">{state.data.name || 'New model portfolio'}</h1>
         <span className="text-xs text-fg-muted">{[state.data.code, state.data.ccy].filter(Boolean).join(' · ')}</span>
+        {custom && (
+          <span className="self-center text-xs text-fg-muted">
+            <span className="mr-1.5 rounded-xs border border-control px-1.5 text-xs/4.5 text-fg">Customized</span>
+            of <a href="#book" className="text-link hover:text-link-hover hover:underline">{custom.parentName}</a>
+          </span>
+        )}
         {step === 'simulation' && (
           <span className={cn('self-center rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control text-fg-muted' : 'bg-surface-strong')}>
-            {viewingCurrent ? 'Current version · published, read-only' : 'New version · working copy'}
+            {viewingCurrent ? (custom ? `Current version ${custom.version} · published, read-only` : 'Current version · published, read-only') : custom ? 'New version · pending, not published' : 'New version · working copy'}
           </span>
         )}
       </div>
@@ -163,7 +180,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
       <div className="mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
           <TabsList variant="step" className="border-b border-line px-5">
-            {STEPS.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
+            {steps.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
             <Tab value="reporting" disabled={blocked} title={blocked ? 'Complete the model portfolio data first' : undefined}>Reporting</Tab>
           </TabsList>
         </Tabs>
@@ -181,9 +198,9 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         {step !== 'reporting' && <ActionBar
           back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
           next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
-          onSave={viewingCurrent ? undefined : () => save()}
+          onSave={viewingCurrent || custom ? undefined : () => save()}
           saveDisabled={blocked}
-          note={blocked ? `Still needed: ${missing.join(', ')}.` : step === 'components' && !hasComponents ? 'Select at least one component to continue.' : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : step === 'simulation' ? publishBlock : undefined}
+          note={custom && step === 'simulation' ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : blocked ? `Still needed: ${missing.join(', ')}.` : step === 'components' && !hasComponents ? 'Select at least one component to continue.' : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : step === 'simulation' ? publishBlock : undefined}
         />}
       </div>
     </main>

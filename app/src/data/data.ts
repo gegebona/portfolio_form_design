@@ -266,17 +266,42 @@ export type BookEntry = {
   creator: string; status: BookStatus; editedBy: string; modified: string; tasks?: BookTask[]
   /** Customized versions point at the model portfolio they derive from and are listed under it. */
   parent?: string
+  /** Customized only: outcome of the latest automatic update from the parent (none when nothing is pending). */
+  auto?: AutoUpdate
+  /** Customized only: published version number of CURRENT. */
+  version?: number
+}
+/**
+ * Automatic update of a customized portfolio after its parent changed. Never a task and never a status of its own:
+ *   ready    NEW was created or refreshed with the parent's changes and waits to be published
+ *   pending  preference changes are in NEW; the parent's allocation change waits for a data load that is late
+ *   invalid  no valid allocation was possible: nothing was applied, CURRENT stays, the next data load retries
+ */
+export type AutoUpdate = 'ready' | 'pending' | 'invalid'
+/** Illustrative parent change used by every automatic-update sample. */
+export const PARENT_UPDATE = {
+  changed: '09/10/2026',
+  /** Data load that carried the allocation change into the child (ready). */
+  loaded: '10/10/2026',
+  /** Last successful data load when today's load is late (pending). */
+  lastLoad: '08/10/2026',
+  /** Instrument the parent now requires, at the parent's target weight. */
+  instrument: { id: 'msft', cls: 'Equity' as AssetClass, name: 'Microsoft Corp.', isin: 'US5949181045', bb: 'From parent model portfolio', ccy: 'USD', fx: 0.85, price: 415.3, w: 0, esg: '4.1', target: 3 },
+  /** Position that may not be reduced to fund it. */
+  protectedId: 'gbond',
+  protectedWhy: 'Mandatory position',
 }
 export const MODEL_PORTFOLIOS: BookEntry[] = [
   { id: '001', name: 'Growth Focus Portfolio', type: 'Standard', alloc: { Equity: 90, Liquidity: 10 }, benchmark: 'S&P 500 (USA)', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '11/10/2025' },
   { id: '002', name: 'Balanced Allocation Portfolio', type: 'Standard', alloc: { Equity: 50, Bonds: 35, Alternatives: 10, Liquidity: 5 }, benchmark: 'Dow Jones Industrial Average (USA)', creator: 'Inbona, E.', status: 'Draft', editedBy: 'Inbona, E.', modified: '06/03/2026' },
   { id: '003', name: 'Conservative Income Portfolio', type: 'Standard', alloc: { Bonds: 70, Equity: 20, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', tasks: [{ rowId: 'anto', instrument: 'Antofagasta plc', isin: 'GB0000456144', component: 'Systematic Allocation Portfolio Equity', current: 0.51, next: 1, status: 'Open' }] },
-  { id: '011', name: 'Conservative Income Portfolio A', type: 'Customized', alloc: { Bonds: 75, Equity: 15, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
-  { id: '012', name: 'Conservative Income Portfolio B', type: 'Customized', alloc: { Bonds: 65, Equity: 25, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003' },
+  { id: '011', name: 'Conservative Income Portfolio A', type: 'Customized', alloc: { Bonds: 75, Equity: 15, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003', auto: 'ready', version: 3 },
+  { id: '012', name: 'Conservative Income Portfolio B', type: 'Customized', alloc: { Bonds: 65, Equity: 25, Liquidity: 10 }, benchmark: 'NASDAQ Composite (USA)', perf1y: 11.1, creator: 'Jones, I.', status: 'Published', editedBy: 'Jones, I.', modified: '16/09/2025', parent: '003', auto: 'pending', version: 2 },
   { id: '004', name: 'Global Equity Portfolio', type: 'Multi', alloc: { Equity: 95, Liquidity: 5 }, benchmark: 'FTSE 100 (UK)', perf1y: 12.42, creator: 'Inbona, E.', status: 'Draft', editedBy: 'Inbona, E.', modified: '06/03/2026' },
   { id: '005', name: 'Sustainable Future Portfolio', type: 'Multi', alloc: { Equity: 70, Bonds: 20, Alternatives: 10 }, benchmark: 'DAX (Germany)', perf1y: 12.01, creator: 'Stark, T.', status: 'Published', editedBy: 'Stark, T.', modified: '28/08/2025' },
   { id: '006', name: 'Dynamic Opportunities Portfolio', type: 'Standard', alloc: { Equity: 45, Bonds: 25, Alternatives: 25, Liquidity: 5 }, benchmark: 'CAC 40 (France)', creator: 'Jones, I.', status: 'Draft', editedBy: 'Jones, I.', modified: '06/03/2026' },
   { id: '007', name: 'Defensive Strategy Portfolio', type: 'Standard', alloc: { Bonds: 60, Liquidity: 25, Equity: 15 }, benchmark: 'MSCI World Index (Global)', perf1y: 11.34, creator: 'Smith, J.', status: 'Published', editedBy: 'Smith, J.', modified: '27/08/2025', tasks: [{ rowId: 'anto', instrument: 'Antofagasta plc', isin: 'GB0000456144', component: 'Systematic Allocation Portfolio Equity', current: 0.51, next: 1, status: 'Open' }] },
+  { id: '014', name: 'Defensive Strategy Portfolio CH', type: 'Customized', alloc: { Bonds: 60, Liquidity: 25, Equity: 15 }, benchmark: 'MSCI World Index (Global)', perf1y: 10.87, creator: 'Inbona, E.', status: 'Published', editedBy: 'Inbona, E.', modified: '02/09/2025', parent: '007', auto: 'invalid', version: 4 },
   { id: '008', name: 'Emerging Markets Portfolio', type: 'Multi', alloc: { Equity: 85, Bonds: 10, Liquidity: 5 }, benchmark: 'Custom', perf1y: 8.56, creator: 'Hobbs, L.', status: 'Published', editedBy: 'Hobbs, L.', modified: '04/08/2025' },
   { id: '009', name: 'Dividend Yield Portfolio', type: 'Multi', alloc: { Equity: 80, Bonds: 15, Liquidity: 5 }, benchmark: 'Custom', perf1y: 15.09, creator: 'Smith, J.', status: 'Published', editedBy: 'Smith, J.', modified: '04/08/2025' },
   { id: '010', name: 'Technology Leaders Portfolio', type: 'Standard', alloc: { Equity: 100 }, benchmark: 'Custom', perf1y: 4.65, creator: 'Inbona, E.', status: 'Published', editedBy: 'Inbona, E.', modified: '04/08/2025' },

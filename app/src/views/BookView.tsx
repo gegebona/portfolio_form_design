@@ -13,7 +13,7 @@ import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ASSET_CLASSES, BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, CLASS_COLOR, type AssetClass, type BookEntry, type BookStatus } from '../data/data'
 import { cn } from '../lib/cn'
 import { getBook, setBook } from '../state/book'
-import { f2, restoreSample, startNew, usePortfolio } from '../state/portfolio'
+import { f2, openCustomized, restoreSample, startNew, usePortfolio } from '../state/portfolio'
 import { MiniTable } from './ComponentDetail'
 import { Swatch } from './Overview'
 
@@ -33,6 +33,12 @@ const STATUS_TAG: Record<BookStatus, string> = {
   Draft: 'bg-status-draft text-fg',
 }
 const TYPES: BookEntry['type'][] = ['Standard', 'Multi', 'Customized']
+/** Customized versions: what the latest automatic update from the parent left behind. */
+const AUTO_LINE: Record<NonNullable<BookEntry['auto']>, string> = {
+  ready: 'New version from parent update, not published',
+  pending: 'Parent update waiting for the data load',
+  invalid: 'Parent update not applied, retried at next data load',
+}
 
 type SortKey = 'id' | 'name' | 'type' | 'area' | 'benchmark' | 'perf1y' | 'creator' | 'status' | 'modified'
 type Sort = { key: SortKey; dir: 'asc' | 'desc' }
@@ -147,7 +153,13 @@ export function BookView() {
   })
 
   /** Opening a portfolio lands on its Simulation; editing a draft starts at the first step. */
-  const open = (e: BookEntry, step = 'simulation') => { update((s) => {
+  const open = (e: BookEntry, step = 'simulation') => {
+    if (e.type === 'Customized') {
+      update((s) => openCustomized(s, e, list.find((x) => x.id === e.parent)))
+      location.hash = step
+      return
+    }
+    update((s) => {
       restoreSample(s)
       s.data.name = e.name
       s.data.code = 'MP_' + e.id
@@ -254,6 +266,8 @@ export function BookView() {
                       ) : <span className="w-5.5 shrink-0" />}
                       <a href="#simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="text-link hover:text-link-hover hover:underline">{e.name}</a>
                       {kids > 0 && <span className="whitespace-nowrap text-fg-muted">{kids} customized</span>}
+                      {/* Automatic parent update: information, not a task (no tag, no action, no status of its own). */}
+                      {e.auto && <span className="whitespace-nowrap text-fg-muted">· {AUTO_LINE[e.auto]}</span>}
                     </div>
                   </td>
                   <td className={td}><span className={cn(tagBase, TYPE_TAG[e.type])}>{e.type}</span></td>

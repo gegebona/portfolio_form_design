@@ -1,16 +1,17 @@
 import { Info } from 'lucide-react'
-import { useState, ViewTransition } from 'react'
+import { useState, ViewTransition, type ReactNode } from 'react'
 import { Field, Input } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
 import { Select } from '../components/ui/select'
-import { BENCHMARKS, PORTFOLIO_CURRENCIES } from '../data/data'
-import { usePortfolio } from '../state/portfolio'
+import { BENCHMARKS, PARENT_UPDATE, PORTFOLIO_CURRENCIES } from '../data/data'
+import { benchmarkById, PREF_KEYS, usePortfolio } from '../state/portfolio'
 
 export function DataView() {
   // "Required" shows only on a field the user has been in and left empty, so a new form starts clean.
   const [touched, setTouched] = useState({ code: false, name: false })
   const { state, update } = usePortfolio()
   const d = state.data
+  if (state.custom) return <CustomDataView />
   return (
     <div className="flex flex-wrap">
       <Section screenHeading title="Model portfolio data" description="Please enter the data specific to the model portfolio." className="w-75 shrink-0 border-r border-line">
@@ -80,7 +81,7 @@ function BenchmarkPicker({ showError }: { showError?: boolean }) {
   )
 }
 
-function Row({ head, total, children }: { head?: boolean; total?: boolean; children: React.ReactNode }) {
+function Row({ head, total, children }: { head?: boolean; total?: boolean; children: ReactNode }) {
   return (
     <div
       role="row"
@@ -91,5 +92,56 @@ function Row({ head, total, children }: { head?: boolean; total?: boolean; child
     >
       {children}
     </div>
+  )
+}
+
+/**
+ * Customized version: the data is inherited from the parent and read-only. The page doubles as the version overview:
+ * which version is live, whether a new one is pending, and what the latest automatic update from the parent did.
+ * An automatic update is information here, never a task.
+ */
+function CustomDataView() {
+  const { state } = usePortfolio()
+  const d = state.data
+  const c = state.custom!
+  const own = c.overrides.length
+  const pending = { ready: 'Created from the parent update · waiting to be published', pending: 'Parent preference changes applied · allocation change waiting for the data load', invalid: 'Not created · the parent update could not be applied' }
+  const newLine = c.auto ? pending[c.auto] : c.hasNew ? 'Created from your preference changes · waiting to be published' : 'None'
+  const load = c.auto === 'ready' ? `${PARENT_UPDATE.loaded} · successful` : c.auto === 'pending' ? `${PARENT_UPDATE.lastLoad} · today's load is late` : c.auto === 'invalid' ? `${PARENT_UPDATE.loaded} · update not applied, retried at the next load` : '—'
+  const rows: [string, ReactNode][][] = [
+    [
+      ['Model portfolio code', d.code], ['Model portfolio name', d.name], ['Currency', d.ccy], ['Benchmark', benchmarkById(d.benchmark)?.name ?? '—'],
+    ],
+    [
+      ['Parent model portfolio', <a href="#book" className="text-link hover:text-link-hover hover:underline">{c.parentName}</a>],
+      ['Current version', `Version ${c.version} · published ${c.published} · active`],
+      ['New version', newLine],
+      ['Latest parent change', c.auto ? PARENT_UPDATE.changed : '—'],
+      ['Latest data load', load],
+      ['Preferences', `${PREF_KEYS.length - own} inherited · ${own} own ${own === 1 ? 'value' : 'values'} · 2 locked limits`],
+    ],
+  ]
+  return (
+    <div className="flex flex-wrap">
+      <Section screenHeading title="Model portfolio data" description="Inherited from the parent model portfolio and read-only. Only preferences can be changed in a customized version." className="min-w-0 flex-[1_1_22rem] border-r border-line">
+        <Dl rows={rows[0]} />
+      </Section>
+      <Section title="Customized version" description="Parent changes reach the new version automatically. The current version changes only when you publish." className="min-w-0 flex-[2_1_34rem]">
+        <Dl rows={rows[1]} />
+      </Section>
+    </div>
+  )
+}
+
+function Dl({ rows }: { rows: [string, ReactNode][] }) {
+  return (
+    <dl className="mt-4 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-8 text-sm">
+      {rows.map(([k, v]) => (
+        <div key={k} className="contents">
+          <dt className="border-b border-line py-2 text-xs text-fg-muted">{k}</dt>
+          <dd className="border-b border-line py-2">{v}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }

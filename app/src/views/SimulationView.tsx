@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Info, MoreHorizontal, TriangleAlert } from 'lucide-react'
+import { ChevronDown, ChevronRight, Info, Lock, MoreHorizontal, TriangleAlert } from 'lucide-react'
 import { addTransitionType, Fragment, startTransition, useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
@@ -8,10 +8,10 @@ import { Radio, RadioGroup, Switch } from '../components/ui/selection'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
-import { ASSET_CLASSES, BOOK_USER, CLASS_COLOR, type AssetClass } from '../data/data'
+import { ASSET_CLASSES, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
 import { cn } from '../lib/cn'
 import { setBookTaskStatus } from '../state/book'
-import { f2, near100, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
+import { f2, near100, PREF_LABEL, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { Overview, Swatch } from './Overview'
 
 type Mode = 'current' | 'new'
@@ -31,6 +31,7 @@ export function SimulationView() {
   // Changing view or version swaps the table in a transition tagged 'positions' (see the table boundary below).
   const switchTable = (fn: () => void) => startTransition(() => { addTransitionType('positions'); fn() })
   const cur = mode === 'current'
+  const custom = state.custom
   const changes = rows.filter((r) => r.removed || Math.abs(r.nw - r.w) >= 0.005).length
   const total = cur ? rows.reduce((s, r) => s + r.w, 0) : rows.filter((r) => !r.removed).reduce((s, r) => s + r.nw, 0)
 
@@ -52,24 +53,25 @@ export function SimulationView() {
         <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))} className="pb-2.5">
           <TabsList variant="segment" aria-label="Portfolio version">
             <Tab value="current">Current</Tab>
-            <Tab value="new">New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
+            <Tab value="new" disabled={!!custom && !custom.hasNew} title={custom && !custom.hasNew ? 'No new version: the parent update could not be applied' : undefined}>New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
           </TabsList>
         </Tabs>
         {!cur && (
           <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
             <Info className="size-3.5" strokeWidth={1.5} />
-            Working version — changes stay here until you publish.
+            {custom ? 'Pending, not published — Current stays active until you publish.' : 'Working version — changes stay here until you publish.'}
           </div>
         )}
         {cur && (
           <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
             <Info className="size-3.5" strokeWidth={1.5} />
             Read-only — the portfolio as it is today.
-            <Button variant="link" className="text-xs" onClick={() => switchTable(() => setMode('new'))}>Switch to New</Button>
+            {(!custom || custom.hasNew) && <Button variant="link" className="text-xs" onClick={() => switchTable(() => setMode('new'))}>Switch to New</Button>}
           </div>
         )}
       </div>
       <Overview rows={[{ label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} onToggleCompact={() => setCompact(!compact)} />
+      {custom?.auto && <AutoUpdate />}
 
       <div className="mt-2 flex min-h-0 flex-1 flex-col">
         <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line">
@@ -79,7 +81,7 @@ export function SimulationView() {
             </TabsList>
           </Tabs>
           <div className="flex items-center gap-4.5 pb-1.5">
-            {!cur && <Button size="sm" onClick={() => { location.hash = 'components' }}>+ Add component</Button>}
+            {!cur && !custom && <Button size="sm" onClick={() => { location.hash = 'components' }}>+ Add component</Button>}
             <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
               <Switch checked={showZero} onCheckedChange={setShowZero} />
               Show zero-weighted positions
@@ -97,7 +99,7 @@ export function SimulationView() {
         <div className="flex shrink-0 items-center justify-end gap-3 border-t border-line-strong px-2.5 pt-1.5 text-xs">
           <span className="text-fg-muted">{cur ? 'Total weight' : 'Total new weight'}</span>
           <strong className={cn('text-sm font-semibold tabular-nums', !near100(total) && 'text-error')}>{f2(total)}%</strong>
-          {!cur && <Button size="xs" disabled={near100(total)} onClick={redistribute}>Redistribute to 100%</Button>}
+          {!cur && !custom && <Button size="xs" disabled={near100(total)} onClick={redistribute}>Redistribute to 100%</Button>}
         </div>
       </div>
     </Section>
@@ -147,6 +149,8 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const [onlyWarnings, setOnlyWarnings] = useState(false)
   const { state, update } = usePortfolio()
   const cur = mode === 'current'
+  // Customized: weights come from the parent, so New is read-only and its last column says what the automatic update did.
+  const custom = !!state.custom
   // The open position task of this portfolio sits on its instrument's row, first in the table (New only).
   const task = cur ? null : state.book.task
   const excluded = (r: SimRow) => !!r.isin && state.prefs.inst.includes(r.isin)
@@ -157,7 +161,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
     // Rows that need a decision first (an undecided warning or an open task), then cash (set apart visually), then every
     // other position by descending weight. The order uses the current weight so rows do not jump while a new weight
     // is being typed; new positions (no current weight) follow by new weight.
-    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a))) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
+    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a)) || Number(b.auto === 'added') - Number(a.auto === 'added')) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
   // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
   const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
   const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
@@ -190,13 +194,13 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
       </div>
     )}
     <table className="w-full table-fixed border-collapse text-xs">
-      <Cols w={cur ? [10, 28, 26, 9, 9, 7, 11] : [9, 17, 18, 8, 8, 6, 8, 9, 6, 11]} />
+      <Cols w={cur ? [10, 28, 26, 9, 9, 7, 11] : custom ? [8, 17, 16, 7, 7, 5, 7, 7, 6, 20] : [9, 17, 18, 8, 8, 6, 8, 9, 6, 11]} />
       <thead>
         <tr>
           <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
           <th className={cn(th, 'text-right')}>Price</th><th className={cn(th, 'text-right')}>ESG</th><th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
-          {!cur && <th className={th}><span className="sr-only">Actions</span></th>}
+          {!cur && <th className={th}>{custom ? 'Automatic update' : <span className="sr-only">Actions</span>}</th>}
         </tr>
       </thead>
       <tbody>
@@ -239,13 +243,15 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.w)}</td>
               {!cur && (
                 <td className={td}>
-                  <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />
+                  {custom
+                    ? <span className={cn('block text-right tabular-nums', edited && 'font-semibold')}>{f2(r.nw)}</span>
+                    : <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />}
                 </td>
               )}
               {!cur && <td className={cn(td, 'text-right tabular-nums')}>{Math.abs(r.nw - r.w) < 0.005 ? <span className="text-fg-subtle">—</span> : (r.nw > r.w ? '+' : '') + f2(r.nw - r.w)}</td>}
               {!cur && (
-                <td className={cn(td, 'text-right whitespace-nowrap')}>
-                  {t ? (
+                <td className={cn(td, custom ? 'text-left' : 'text-right whitespace-nowrap')}>
+                  {custom ? <UpdateNote r={r} /> : t ? (
                     <span className="inline-flex gap-1">
                       {(['Accepted', 'Rejected', 'Deferred'] as const).map((st) => (
                         <Button key={st} size="xs" aria-pressed={t.status === st} className={cn(t.status === st && 'border-control-active bg-surface-strong font-semibold')} onClick={() => decide(st)}>
@@ -270,7 +276,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                 </td>
               )}
             </tr>
-            {plan && removing && (
+            {plan && removing && !custom && (
               <tr>
                 <td colSpan={10} className="border-b border-line border-l-2 border-l-selected bg-surface px-6 py-4">
                   <div className="max-w-180">
@@ -417,5 +423,73 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
         {!keys.length && <tr><td colSpan={10} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
+  )
+}
+
+/** Customized, New: what the automatic update did to a position. */
+function UpdateNote({ r }: { r: SimRow }) {
+  if (r.auto === 'added') return <span><span className="rounded-xs bg-selected/10 px-1.5 text-xs/4.5">Added</span> <span className="text-fg-muted">parent target {f2(r.target ?? 0)}%</span></span>
+  if (r.auto === 'reduced') return <span className="text-fg-muted">{r.cls === 'Liquidity' ? 'Reduced proportionally · cash' : 'Reduced proportionally'}</span>
+  if (r.auto === 'protected') return <span className="inline-flex items-center gap-1 text-fg-muted"><Lock className="size-3" strokeWidth={1.75} aria-hidden />Protected · {PARENT_UPDATE.protectedWhy.toLowerCase()}</span>
+  return <span className="text-fg-subtle">—</span>
+}
+
+/**
+ * Customized: summary of the latest automatic update from the parent, above the positions. Information only: no task,
+ * no Accept / Reject / Defer. The user reviews New and publishes it like any other change.
+ */
+function AutoUpdate() {
+  const { state } = usePortfolio()
+  const c = state.custom!
+  const inst = PARENT_UPDATE.instrument
+  const rows = state.sim.rows
+  const reduced = rows.filter((r) => r.auto === 'reduced').length
+  const prot = rows.find((r) => r.id === PARENT_UPDATE.protectedId)
+  const total = rows.filter((r) => !r.removed).reduce((t, r) => t + r.nw, 0)
+  const held = rows.filter((r) => r.w > 0).length
+  const sec = 'min-w-0 px-5 py-2 first:pl-2.5 [&+&]:border-l [&+&]:border-line'
+  const title = 'mb-0.5 text-fg-muted'
+  if (c.auto === 'invalid') {
+    return (
+      <div role="status" className="mt-2 border border-excluded-border bg-excluded-subtle px-3 py-2 text-xs text-conflict">
+        <strong className="mr-1.5 inline-flex items-center gap-1.5 font-semibold"><TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />Automatic update not applied</strong>
+        {c.parentName} changed on {PARENT_UPDATE.changed} and now requires {inst.name} at {f2(inst.target)}% (parent target).
+        No valid allocation was possible: the portfolio already holds {held} instruments, the parent's new maximum ({c.parentPrefs.maxInst}).
+        Nothing was applied, not even the parent's preference changes. Current version {c.version} stays active; the next data load will try again.
+      </div>
+    )
+  }
+  const pending = c.auto === 'pending'
+  return (
+    <div role="status" className="mt-2 grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1.2fr)] border border-line border-l-2 border-l-selected text-xs leading-relaxed">
+      <div className={sec}>
+        <div className={title}>Automatic update from the parent</div>
+        <div>{c.parentName} · changed {PARENT_UPDATE.changed}</div>
+        <div className="text-fg-muted">
+          {pending ? <>Last data load {PARENT_UPDATE.lastLoad} · <span className="text-fg">today's load is late</span></> : <>Data load {PARENT_UPDATE.loaded}</>} · based on Current version {c.version}
+        </div>
+      </div>
+      <div className={sec}>
+        <div className={title}>Preferences</div>
+        {c.applied.map((k) => <div key={k}>Applied: {PREF_LABEL[k]}</div>)}
+        {c.skipped.map((k) => <div key={k} className="text-fg-muted">Skipped, own value kept: {PREF_LABEL[k]}</div>)}
+        {c.limits.map((l) => <div key={l.label}><Lock className="mr-1 inline size-3 align-[-1px]" strokeWidth={1.75} aria-hidden />{l.label}: {l.from} → {l.to}</div>)}
+      </div>
+      <div className={sec}>
+        <div className={title}>Allocation</div>
+        {pending ? (
+          <>
+            <div>Waiting for the data load: {inst.name} will be added at {f2(inst.target)}% (parent target).</div>
+            <div className="text-fg-muted">Weights stay as in Current until then.</div>
+          </>
+        ) : (
+          <>
+            <div>Added {inst.name} at {f2(inst.target)}% (parent target)</div>
+            <div className="text-fg-muted">{reduced} positions reduced by {reductionShare(rows).toFixed(2)}% of their weight, cash included</div>
+            <div className="text-fg-muted">{prot ? `Protected: ${prot.name} (${PARENT_UPDATE.protectedWhy.toLowerCase()})` : ''} · Total {f2(total)}%</div>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
