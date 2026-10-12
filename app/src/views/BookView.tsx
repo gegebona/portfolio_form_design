@@ -12,8 +12,8 @@ import { TooltipPopup } from '../components/ui/tag'
 import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ASSET_CLASSES, BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, CLASS_COLOR, type AssetClass, type BookEntry, type BookStatus } from '../data/data'
 import { cn } from '../lib/cn'
-import { getBook, setBook } from '../state/book'
-import { f2, openCustomized, restoreSample, startNew, usePortfolio } from '../state/portfolio'
+import { getBook } from '../state/book'
+import { f2, openEntry, startCustomized, startNew, usePortfolio } from '../state/portfolio'
 import { MiniTable } from './ComponentDetail'
 import { Swatch } from './Overview'
 
@@ -100,8 +100,6 @@ function sortValue(e: BookEntry, k: SortKey): string | number {
   return e[k]
 }
 
-const today = () => new Date().toLocaleDateString('en-GB')
-const nextId = (l: BookEntry[]) => String(Math.max(0, ...l.map((e) => Number(e.id) || 0)) + 1).padStart(3, '0')
 const uniq = (v: string[]) => [...new Set(v)].sort()
 
 
@@ -112,8 +110,7 @@ const uniq = (v: string[]) => [...new Set(v)].sort()
  */
 export function BookView() {
   const { update } = usePortfolio()
-  const [list, setListState] = useState(getBook)
-  const setList = (fn: (l: BookEntry[]) => BookEntry[]) => setListState((l) => setBook(fn(l)))
+  const [list] = useState(getBook)
 
   const [q, setQ] = useState('')
   const [type, setType] = useState('all')
@@ -153,39 +150,13 @@ export function BookView() {
   })
 
   /** Opening a portfolio lands on its Simulation; editing a draft starts at the first step. */
-  const open = (e: BookEntry, step = 'simulation') => {
-    if (e.type === 'Customized') {
-      update((s) => openCustomized(s, e, list.find((x) => x.id === e.parent)))
-      location.hash = step
-      return
-    }
-    update((s) => {
-      restoreSample(s)
-      s.data.name = e.name
-      s.data.code = 'MP_' + e.id
-      const task = e.tasks?.[0] ?? null
-      s.book = { id: e.id, task }
-      s.sim.mode = 'new'
-      // The task proposes a change; start from the current weight each time the portfolio is opened.
-      if (task) {
-        const r = s.sim.rows.find((x) => x.id === task.rowId)
-        if (r) r.nw = task.status === 'Accepted' ? task.next : r.w
-      }
-    })
-    location.hash = step
-  }
+  const open = (e: BookEntry, step = 'simulation') => { update((s) => openEntry(s, e)); location.hash = step }
   const create = () => { update(startNew); location.hash = 'data' }
-  const add = (src: BookEntry, change: Partial<BookEntry>) =>
-    setList((l) => {
-      const copy: BookEntry = { ...src, tasks: undefined, perf1y: undefined, ...change, id: nextId(l), status: 'Draft', creator: BOOK_USER, editedBy: BOOK_USER, modified: today() }
-      const at = l.findIndex((e) => e.id === src.id)
-      return [...l.slice(0, at + 1), copy, ...l.slice(at + 1)]
-    })
   /** Row actions. A customized version can only be created from a published STANDARD portfolio. */
   const actions = (e: BookEntry) => [
     { label: 'Open', onClick: () => open(e) },
     ...(e.status === 'Draft' ? [{ label: 'Edit', onClick: () => open(e, 'data') }] : []),
-    ...(e.status === 'Published' && e.type === 'Standard' ? [{ label: 'Create customized version', onClick: () => add(e, { name: e.name + ' – customized', type: 'Customized', parent: e.id }) }] : []),
+    ...(e.status === 'Published' && e.type === 'Standard' ? [{ label: 'Create customized version', onClick: () => { update((s) => startCustomized(s, e)); location.hash = 'data' } }] : []),
   ]
 
   const toggle = (id: string) => setExpanded((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })

@@ -52,7 +52,7 @@ export function SimulationView() {
         <h2 className="pb-2.5 text-xl">Simulation</h2>
         <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))} className="pb-2.5">
           <TabsList variant="segment" aria-label="Portfolio version">
-            <Tab value="current">Current</Tab>
+            <Tab value="current" disabled={custom?.version === 0} title={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined}>Current</Tab>
             <Tab value="new" disabled={!!custom && !custom.hasNew} title={custom && !custom.hasNew ? 'No new version: the parent update could not be applied' : undefined}>New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
           </TabsList>
         </Tabs>

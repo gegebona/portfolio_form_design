@@ -1,14 +1,15 @@
 import { Tooltip } from '@base-ui/react/tooltip'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { addTransitionType, startTransition, useEffect, useRef, useState, ViewTransition } from 'react'
+import { addTransitionType, startTransition, useEffect, useLayoutEffect, useRef, useState, ViewTransition } from 'react'
 import { Button } from './components/ui/button'
 import { Checkbox } from './components/ui/selection'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
 import { BOOK_USER, type BookEntry } from './data/data'
 import { getBook, nextBookId, setBook } from './state/book'
-import { benchmarkById, missingData, near100, portfolioAlloc, PortfolioProvider, usePortfolio } from './state/portfolio'
+import { benchmarkById, missingData, near100, openEntry, portfolioAlloc, PortfolioProvider, usePortfolio } from './state/portfolio'
 import { BookView } from './views/BookView'
+import { ParentLink } from './views/ParentLink'
 import { DataView } from './views/DataView'
 import { DesignSystemPage } from './design-system/DesignSystemPage'
 import { PreferencesView } from './views/PreferencesView'
@@ -56,6 +57,7 @@ export default function App() {
 
   return (
     <PortfolioProvider>
+      <HashOpener onOpen={go} />
       <Tooltip.Provider delay={300}>
         <div className="flex h-dvh flex-col overflow-hidden">
           <AppHeader route={route} onNavigate={go} />
@@ -64,6 +66,22 @@ export default function App() {
       </Tooltip.Provider>
     </PortfolioProvider>
   )
+}
+
+/**
+ * Deep link #open/<book id>/<current|new>: opens that portfolio's Simulation on the given version (used by the parent
+ * link of a customized version, which opens in a new tab).
+ */
+function HashOpener({ onOpen }: { onOpen: (r: Route) => void }) {
+  const { update } = usePortfolio()
+  useLayoutEffect(() => {
+    const m = location.hash.match(/^#open\/(\w+)\/(current|new)$/)
+    const e = m && getBook().find((x) => x.id === m[1])
+    if (!m || !e) return
+    update((s) => openEntry(s, e, m[2] as 'current' | 'new'))
+    onOpen('simulation')
+  }, [])
+  return null
 }
 
 function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route) => void }) {
@@ -112,9 +130,9 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   // come from the parent, and only its preferences can be edited.
   const custom = state.custom
   const steps = custom ? STEPS.filter((s) => s.id !== 'components' && s.id !== 'allocation') : STEPS
-  const step: FlowStep = custom
+  const step: FlowStep = blocked ? 'data' : custom
     ? (asked === 'components' || asked === 'allocation' ? 'simulation' : asked)
-    : blocked ? 'data' : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
+    : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
   useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
   const i = steps.findIndex((s) => s.id === step)
   const prev = steps[i - 1]
@@ -142,10 +160,20 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
     }
     const l = getBook()
     if (custom) {
-      // Publishing NEW replaces CURRENT: the version number goes up and the pending automatic update is settled.
-      // Saving keeps NEW pending; the published CURRENT is untouched.
-      // An update that could not be applied stays pending (the next data load retries), even if a preference change is published.
-      if (publish) setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : { ...e, editedBy: fields.editedBy, modified: fields.modified, auto: e.auto === 'invalid' ? 'invalid' : undefined, version: custom.version + 1 })))
+      const own = { name: fields.name, editedBy: fields.editedBy, modified: fields.modified }
+      if (!l.some((e) => e.id === state.book.id)) {
+        // New customized version: listed under its parent, with the parent's benchmark and the inherited allocation.
+        const parent = l.find((e) => e.id === custom.parentId)
+        const entry: BookEntry = { id: nextBookId(l), type: 'Customized', parent: custom.parentId, creator: BOOK_USER, status: publish ? 'Published' : 'Draft', ...fields, benchmark: parent?.benchmark ?? fields.benchmark, version: publish ? 1 : undefined }
+        const at = l.reduce((last, e, i) => (e.id === custom.parentId || e.parent === custom.parentId ? i : last), l.length - 1)
+        setBook([...l.slice(0, at + 1), entry, ...l.slice(at + 1)])
+      } else {
+        // Publishing NEW replaces CURRENT: the version number goes up and a pending automatic update is settled (one that
+        // could not be applied stays: the next data load retries). Saving a draft keeps everything else as it is.
+        setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : publish
+          ? { ...e, ...own, status: 'Published', auto: e.auto === 'invalid' ? 'invalid' : undefined, version: custom.version + 1 }
+          : { ...e, ...own })))
+      }
     } else if (l.some((e) => e.id === state.book.id)) {
       setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : publish
         ? { ...e, ...fields, status: 'Published', tasks: e.tasks?.filter((t) => t.status === 'Deferred') }
@@ -158,16 +186,16 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
       <nav aria-label="Breadcrumb" className="mt-3.5 mb-1.5 flex items-center gap-1.5 text-xs">
         <a href="#book" className="text-link hover:text-link-hover">Model portfolio book</a>
         <span aria-hidden className="text-fg-subtle">›</span>
-        <span>{state.data.name || 'New model portfolio'}</span>
+        <span>{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</span>
       </nav>
       {/* The portfolio is the subject of every step: its name leads, its facts follow, and in Simulation a tag says which version is on screen. */}
       <div className="mb-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 className="text-2xl">{state.data.name || 'New model portfolio'}</h1>
+        <h1 className="text-2xl">{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</h1>
         <span className="text-xs text-fg-muted">{[state.data.code, state.data.ccy].filter(Boolean).join(' · ')}</span>
         {custom && (
           <span className="self-center text-xs text-fg-muted">
             <span className="mr-1.5 rounded-xs border border-control px-1.5 text-xs/4.5 text-fg">Customized</span>
-            of <a href="#book" className="text-link hover:text-link-hover hover:underline">{custom.parentName}</a>
+            of <ParentLink />
           </span>
         )}
         {step === 'simulation' && (
@@ -199,7 +227,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         {step !== 'reporting' && <ActionBar
           back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
           next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
-          onSave={viewingCurrent || custom ? undefined : () => save()}
+          onSave={viewingCurrent || (custom && custom.version > 0) ? undefined : () => save()}
           saveDisabled={blocked}
           note={custom && step === 'simulation' ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : blocked ? `Still needed: ${missing.join(', ')}.` : step === 'components' && !hasComponents ? 'Select at least one component to continue.' : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : step === 'simulation' ? publishBlock : undefined}
         />}

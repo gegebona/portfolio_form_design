@@ -3,6 +3,7 @@ import {
   AREA_CLASS, BENCHMARKS, CATEGORIES, COMPONENTS, COMPONENT_INSTRUMENTS, EXCLUDABLE_INSTRUMENTS, PARENT_UPDATE, POSITIONS, RATINGS, ESG_SCORES,
   type AssetClass, type AutoUpdate, type BookEntry, type BookTask, type CategoryId, type Component, type Position,
 } from '../data/data'
+import { getBook } from './book'
 
 /** kept: the user decided to keep a position that breaches a preference; keptOn records when (shown with the warning icon). */
 export type SimRow = Position & {
@@ -166,9 +167,10 @@ export function openCustomized(s: PortfolioState, e: BookEntry, parent: BookEntr
   // Child's own values (published in CURRENT): sector exclusions narrowed to Energy only.
   s.prefs.sel.sector = ['energy']
   const held = s.sim.rows.filter((r) => r.w > 0).length
+  const draft = e.status === 'Draft'
   const custom: CustomState = {
-    parentId: parent?.id ?? '', parentName: parent?.name ?? '', auto: e.auto ?? null, hasNew: !!e.auto && e.auto !== 'invalid',
-    version: e.version ?? 1, published: e.modified, overrides: ['sector'], parentPrefs,
+    parentId: parent?.id ?? '', parentName: parent?.name ?? '', auto: e.auto ?? null, hasNew: draft || (!!e.auto && e.auto !== 'invalid'),
+    version: e.version ?? (draft ? 0 : 1), published: e.modified, overrides: ['sector'], parentPrefs,
     applied: [], skipped: [], limits: [],
   }
   if (e.auto) {
@@ -191,6 +193,46 @@ export function openCustomized(s: PortfolioState, e: BookEntry, parent: BookEntr
   }
   s.custom = custom
   s.sim.mode = custom.hasNew ? 'new' : 'current'
+}
+
+/**
+ * Opens a book entry in the flow. Standard: the sample portfolio with the entry's name and its first position task.
+ * Customized: see openCustomized. `mode` picks the version Simulation shows first.
+ */
+export function openEntry(s: PortfolioState, e: BookEntry, mode: 'current' | 'new' = 'new') {
+  if (e.type === 'Customized') {
+    openCustomized(s, e, getBook().find((x) => x.id === e.parent))
+    if (mode === 'current' && s.custom && s.custom.version > 0) s.sim.mode = 'current'
+    return
+  }
+  restoreSample(s)
+  s.data.name = e.name
+  s.data.code = 'MP_' + e.id
+  const task = e.tasks?.[0] ?? null
+  s.book = { id: e.id, task }
+  s.sim.mode = mode
+  // The task proposes a change; start from the current weight each time the portfolio is opened.
+  if (task) {
+    const r = s.sim.rows.find((x) => x.id === task.rowId)
+    if (r) r.nw = task.status === 'Accepted' ? task.next : r.w
+  }
+}
+
+/**
+ * Starts a new customized version of a published STANDARD portfolio: everything is inherited from the parent (its
+ * preferences, components, weights, currency and benchmark); only a code and a name are needed. Nothing is published yet.
+ */
+export function startCustomized(s: PortfolioState, parent: BookEntry) {
+  restoreSample(s)
+  s.data.name = ''
+  s.data.code = ''
+  s.book = { id: '', task: null }
+  s.sim.rows = s.sim.rows.filter((r) => r.id !== 'aapl').map((r) => (r.id === 'eur' ? { ...r, w: 3.5, nw: 3.5 } : r))
+  s.custom = {
+    parentId: parent.id, parentName: parent.name, auto: null, hasNew: true, version: 0, published: '',
+    overrides: [], parentPrefs: structuredClone(s.prefs), applied: [], skipped: [], limits: [],
+  }
+  s.sim.mode = 'new'
 }
 
 /** Positions the automatic update may reduce: held, not protected. */
