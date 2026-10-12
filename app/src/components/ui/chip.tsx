@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 
 /*
- * Chips (28px, square).
+ * Chips (24px, square, 12px text)
  *   SuggestionChip  grey fill + "+": one click to exclude. Grey always means "suggested, not chosen".
  *   ExclusionChip   red tint + "×": a chosen exclusion.
  *   EmptySlot       dashed placeholder where exclusion chips go, so suggestions are never read as values.
@@ -15,7 +15,7 @@ export function SuggestionChip({ children, onClick, 'aria-label': ariaLabel }: {
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-sm border border-suggested-border bg-suggested pr-2.5 pl-2 hover:bg-surface-strong"
+      className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-sm border border-suggested-border bg-suggested pr-2 pl-1.5 text-xs hover:bg-surface-strong"
     >
       <Plus className="size-2.5 text-fg-secondary" strokeWidth={2.5} aria-hidden />
       {children}
@@ -25,7 +25,7 @@ export function SuggestionChip({ children, onClick, 'aria-label': ariaLabel }: {
 
 export function ExclusionChip({ children, onRemove, removeLabel }: { children: ReactNode; onRemove: () => void; removeLabel: string }) {
   return (
-    <span className="inline-flex h-7 items-center gap-1 rounded-sm border border-excluded-border bg-excluded pr-0.75 pl-2.5">
+    <span className="inline-flex h-6 items-center gap-0.5 rounded-sm border border-excluded-border bg-excluded pr-0.5 pl-2 text-xs">
       {children}
       <RemoveButton onClick={onRemove} label={removeLabel} className="hover:bg-excluded-border" />
     </span>
@@ -33,7 +33,7 @@ export function ExclusionChip({ children, onRemove, removeLabel }: { children: R
 }
 
 export function EmptySlot({ children }: { children: ReactNode }) {
-  return <span className="inline-flex h-7 items-center rounded-sm border border-dashed border-line-strong px-2.5 text-xs text-fg-muted">{children}</span>
+  return <span className="inline-flex h-6 items-center rounded-sm border border-dashed border-line-strong px-2.5 text-xs text-fg-muted">{children}</span>
 }
 
 /** Small "×" used on chips and list rows (22px target). */

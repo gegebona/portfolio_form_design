@@ -1,7 +1,7 @@
 import { Ban, Lock } from 'lucide-react'
-import { useState, ViewTransition } from 'react'
+import { useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
-import { EmptySlot, ExclusionChip, RemoveButton, SuggestionChip } from '../components/ui/chip'
+import { ExclusionChip, RemoveButton, SuggestionChip } from '../components/ui/chip'
 import { MultiCombobox } from '../components/ui/combobox'
 import { AffixInput, Field, Input } from '../components/ui/input'
 import { GroupLabel, Section } from '../components/ui/layout'
@@ -32,8 +32,8 @@ export function PreferencesView() {
 
   return (
     <>
-      <Section screenHeading title="Preferences" description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'} className="border-b border-line">
-        <div className="mt-4 flex flex-wrap items-end gap-x-10 gap-y-4">
+      <Section screenHeading className="border-b border-line pt-4 pb-4" title="Preferences" description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'}>
+        <div className="mt-3 flex flex-wrap items-end gap-x-10 gap-y-3">
           <Field label="Minimum position size" description={lockNote}>
             <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-37.5', custom && 'bg-surface-muted text-fg-muted')} />
           </Field>
@@ -47,8 +47,9 @@ export function PreferencesView() {
         title="Exclusions"
         description="Please configure the exclusionary preferences specific to the model portfolio in the fields below."
         actions={<Button variant="link" onClick={clearAll}>Clear all</Button>}
+        className="pt-4"
       >
-        <div className="mt-2 flex flex-wrap gap-x-7">
+        <div className="mt-1 flex flex-wrap gap-x-7">
           <div className="min-w-0 flex-[999_1_45rem]">
             {CATEGORIES.map((c) => <CategoryRow key={c.id} cat={c} />)}
             <RatingRow />
@@ -61,9 +62,27 @@ export function PreferencesView() {
   )
 }
 
-const rowClass = 'border-b border-line py-3.5 last:border-b-0'
+/**
+ * Compact row: the preference's name (and what is excluded) in a fixed left column, its controls on the right, so
+ * each preference takes one or two lines and the whole list fits on screen.
+ */
+function Row({ label, htmlFor, labelId, count, k, children }: { label: string; htmlFor?: string; labelId?: string; count?: string; k: PrefKey; children: ReactNode }) {
+  const Label = htmlFor ? 'label' : 'span'
+  return (
+    <div className="grid grid-cols-[11rem_minmax(0,1fr)] gap-x-5 border-b border-line py-2.5 last:border-b-0">
+      <div className="pt-1">
+        <Label htmlFor={htmlFor} id={labelId} className="block text-sm">{label}</Label>
+        {count && <span className="block text-xs text-fg-muted">{count}</span>}
+      </div>
+      <div className="min-w-0">
+        <Source k={k} />
+        {children}
+      </div>
+    </div>
+  )
+}
 
-/** One exclusion category: search field + suggestions on one line, chosen exclusions underneath. */
+/** One exclusion category on one line: search field, chosen exclusions, then suggestions to add with one click. */
 function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   const { state, animate } = usePortfolio()
   const [more, setMore] = useState(false)
@@ -71,36 +90,32 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   const setSel = (next: string[]) => animate((s) => { s.prefs.sel[cat.id] = next; setOwnValue(s, cat.id) })
   const sugg = cat.suggested.filter((id) => !sel.includes(id))
   const visible = more ? sugg : sugg.slice(0, SHOW)
-
   return (
-    <div className={rowClass}>
-      <GroupLabel htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : undefined}>{cat.label}</GroupLabel>
-      <Source k={cat.id} />
-      <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="w-55 shrink-0" />
-        {sugg.length > 0 && (
-          <div className="flex min-h-8 min-w-0 flex-[1_1_18.75rem] flex-wrap items-center gap-x-2 gap-y-1.5">
-            {visible.map((id) => {
-              const l = optionLabel(cat.id, id)
-              return <SuggestionChip key={id} onClick={() => setSel([...sel, id])} aria-label={'Exclude ' + l}>{l}</SuggestionChip>
-            })}
-            {sugg.length > SHOW && (
-              <Button variant="link" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${sugg.length - SHOW} more`}</Button>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-        {sel.length ? sel.map((id) => {
+    <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} k={cat.id}>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="mr-1.5 w-48 shrink-0" />
+        {sel.map((id) => {
           const l = optionLabel(cat.id, id)
           return (
             <ViewTransition key={id} enter="item-in" exit="item-out" update="item-move">
               <ExclusionChip onRemove={() => setSel(sel.filter((x) => x !== id))} removeLabel={'Remove ' + l}>{l}</ExclusionChip>
             </ViewTransition>
           )
-        }) : <EmptySlot>Nothing excluded</EmptySlot>}
+        })}
+        {sugg.length > 0 && (
+          <>
+            <span className="ml-2 text-xs text-fg-muted">Suggested</span>
+            {visible.map((id) => {
+              const l = optionLabel(cat.id, id)
+              return <SuggestionChip key={id} onClick={() => setSel([...sel, id])} aria-label={'Exclude ' + l}>{l}</SuggestionChip>
+            })}
+            {sugg.length > SHOW && (
+              <Button variant="link" className="text-xs" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${sugg.length - SHOW} more`}</Button>
+            )}
+          </>
+        )}
       </div>
-    </div>
+    </Row>
   )
 }
 
@@ -109,9 +124,7 @@ function RatingRow() {
   const p = state.prefs
   const limited = p.rating < RATINGS.length
   return (
-    <div className={rowClass}>
-      <GroupLabel id="rating-label" count={limited ? `${RATINGS[p.rating]} and below excluded` : 'Click a grade to exclude it and everything below'}>Credit rating exclusions</GroupLabel>
-      <Source k="rating" />
+    <Row label="Credit rating" labelId="rating-label" count={limited ? `${RATINGS[p.rating]} and below excluded` : 'Click a grade to exclude it and below'} k="rating">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <ThresholdScale
           aria-labelledby="rating-label"
@@ -126,7 +139,7 @@ function RatingRow() {
           Also exclude not rated
         </label>
       </div>
-    </div>
+    </Row>
   )
 }
 
@@ -134,9 +147,7 @@ function EsgRow() {
   const { state, update } = usePortfolio()
   const p = state.prefs
   return (
-    <div className={rowClass}>
-      <GroupLabel id="esg-label" count={p.esg > 0 ? `Score ${ESG_SCORES[p.esg - 1]} and below excluded` : 'Click a score to exclude it and everything below'}>ESG exclusions</GroupLabel>
-      <Source k="esg" />
+    <Row label="ESG" labelId="esg-label" count={p.esg > 0 ? `Score ${ESG_SCORES[p.esg - 1]} and below excluded` : 'Click a score to exclude it and below'} k="esg">
       <ThresholdScale
         aria-labelledby="esg-label"
         labels={ESG_SCORES.map((s) => 'Score ' + s)}
@@ -145,7 +156,7 @@ function EsgRow() {
         onPick={(i) => update((s) => { s.prefs.esg = i === s.prefs.esg - 1 ? 0 : i + 1; setOwnValue(s, 'esg') })}
         className="max-w-85"
       />
-    </div>
+    </Row>
   )
 }
 
@@ -155,7 +166,7 @@ function InstrumentsColumn() {
   const inst = state.prefs.inst
   const setInst = (next: string[]) => animate((s) => { s.prefs.inst = next; setOwnValue(s, 'inst') })
   return (
-    <div className="min-w-0 flex-[1_1_23.75rem] border-l border-line py-3.5 pr-1.5 pl-7">
+    <div className="min-w-0 flex-[1_1_23.75rem] border-l border-line py-2.5 pr-1.5 pl-7">
       <GroupLabel htmlFor="inst-q" count={inst.length ? `${inst.length} excluded` : undefined}>Excluded instruments</GroupLabel>
       <Source k="inst" />
       <MultiCombobox
