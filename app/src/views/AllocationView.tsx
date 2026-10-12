@@ -5,7 +5,6 @@ import { Section } from '../components/ui/layout'
 import { ScrollArea } from '../components/ui/scroll-area'
 import { ConflictList } from '../components/ui/tag'
 import { WeightField, WeightSlider } from '../components/ui/weight'
-import { CLASS_COLOR } from '../data/data'
 import { cn } from '../lib/cn'
 import {
   allocItems, benchmarkAlloc, conflictGroups, conflictsOf, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
@@ -99,7 +98,7 @@ function AllocRow({ it, selected, onPick, onSelect, total, setW }: { it: AllocIt
       {/* Outside the select button: the “+N more” trigger is a button of its own. */}
       {cf.length > 0 && <ConflictList items={cf} groups={it.comp && conflictGroups(it.comp, state.prefs)} className="-mt-1" />}
       {/* Pressing the slider selects its row immediately; the drag is not interrupted because the slider is not re-mounted. */}
-      <WeightSlider value={w} onValueChange={(v) => setW(it, v)} onPointerDown={onSelect} color={CLASS_COLOR[it.cls]} aria-label={`Weight of ${it.name} (slider)`} />
+      <WeightSlider value={w} onValueChange={(v) => setW(it, v)} onPointerDown={onSelect} color="var(--color-selected)" aria-label={`Weight of ${it.name} (slider)`} />
       {selected && left > 0.004 && (
         <div className="flex justify-end">
           <Button variant="link" className="text-xs" onClick={() => setW(it, w + left)}>Fill remaining (+{f2(left)}%)</Button>

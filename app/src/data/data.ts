@@ -289,7 +289,18 @@ export const BOND_PROFILE: Record<string, BondProfile> = {
   'add-chgov': { maturity: { '5–10 years': 100 }, rating: { AAA: 100 }, duration: 7.6, ytm: 0.9 },
 }
 /** Fixed income benchmark figures shown next to the portfolio's (supplied by the bank; sample values). */
-export const BOND_BENCHMARK = { name: 'Bloomberg Global Aggregate (EUR hedged)', duration: 6.6, ytm: 3.6 }
+export const BOND_BENCHMARK = {
+  name: 'Bloomberg Global Aggregate (EUR hedged)', duration: 6.6, ytm: 3.6,
+  maturity: { '< 1 year': 2, '1–3 years': 24, '3–5 years': 20, '5–10 years': 27, '> 10 years': 27 } as Record<string, number>,
+  rating: { AAA: 38, AA: 15, A: 31, BBB: 16 } as Record<string, number>,
+}
+/** The portfolio benchmark's exposures in % (MSCI World 90% + EUR cash 10%; sample values, supplied by the bank). */
+export const BENCH_EXPOSURE: Record<'sector' | 'region' | 'country' | 'currency', Record<string, number>> = {
+  sector: { 'Information technology': 22.5, Financials: 14.6, 'Health care': 10.2, Industrials: 9.8, 'Consumer discretionary': 9.5, 'Communication services': 6.8, 'Consumer staples': 5.6, Energy: 3.6, Materials: 3.2, Utilities: 2.5, 'Real estate': 1.7, Cash: 10 },
+  region: { 'North America': 65.5, Europe: 15.8, 'Asia Pacific': 8.7, Cash: 10 },
+  country: { 'United States': 63, Japan: 5.4, 'United Kingdom': 3.6, Canada: 2.9, France: 2.8, Switzerland: 2.4, Germany: 2.2, Australia: 1.8, Netherlands: 1.2, Sweden: 0.9, Denmark: 0.8, 'Other countries': 3, Cash: 10 },
+  currency: { USD: 64.2, EUR: 17.6, JPY: 5.4, GBP: 3.6, CAD: 2.9, CHF: 2.4, AUD: 1.8, SEK: 0.9, DKK: 0.8, HKD: 0.4 },
+}
 
 /** Positions a customized version may add on its own (single instruments, with a weight the user sets). */
 export const ADDABLE_POSITIONS: Position[] = [
