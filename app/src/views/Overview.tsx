@@ -1,6 +1,7 @@
 import { Ban, Check, TriangleAlert } from 'lucide-react'
 import { ViewTransition } from 'react'
 import { Button } from '../components/ui/button'
+import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { ASSET_CLASSES, CLASS_COLOR, PASS_SCORE, QUALITY_CHECKS } from '../data/data'
 import { cn } from '../lib/cn'
 import { benchmarkById, exclusionGroups, exclusionSummary, pct, usePortfolio, type Alloc } from '../state/portfolio'
@@ -81,7 +82,21 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
         {!quality && (
           <div className={sec}>
             <div className={title}><span>Exclusionary preferences</span>{editExclusions}</div>
-            <div className={cn('truncate leading-relaxed', excl.length > 0 && 'text-conflict')} title={prefLine}>{excl.length ? 'Excluded: ' + prefLine : prefLine}</div>
+            {/* Never cut off: the first three exclusion groups, the rest behind “+N more” (same pattern as conflict tags). */}
+            <div className={cn('leading-relaxed', excl.length > 0 && 'text-conflict')}>
+              {excl.length ? <>Excluded: {excl.slice(0, 3).join(' · ')}{excl.length > 3 && (
+                <Popover
+                  title="Exclusionary preferences"
+                  description="Everything excluded from this model portfolio."
+                  className="w-80"
+                  trigger={<PopoverTrigger openOnHover delay={150} className="ml-1.5 cursor-pointer font-semibold whitespace-nowrap underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">+{excl.length - 3} more</PopoverTrigger>}
+                >
+                  <ul className="text-xs">
+                    {excl.map((x) => <li key={x} className="border-t border-line py-1.5 text-conflict first:border-t-0">{x}</li>)}
+                  </ul>
+                </Popover>
+              )}</> : prefLine}
+            </div>
           </div>
         )}
         <div className={sec}>

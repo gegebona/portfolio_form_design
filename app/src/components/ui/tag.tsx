@@ -26,12 +26,12 @@ export function ConflictTag({ children, className }: { children: ReactNode; clas
  * Conflict tag that never outgrows its row: shows the first `max` exclusions and a “+N more” button that opens the full
  * list. Must not be placed inside another button.
  */
-export function ConflictList({ items, max = 2, className }: { items: string[]; max?: number; className?: string }) {
+export function ConflictList({ items, max = 2, compact, className }: { items: string[]; max?: number; /** Small spaces (cards): no lead-in text and “+N” instead of “+N more”. */ compact?: boolean; className?: string }) {
   const shown = items.slice(0, max)
   const more = items.length - shown.length
   return (
     <ConflictTag className={className}>
-      Conflicts with exclusions: {shown.join(', ')}
+      {compact ? <span className="sr-only">Conflicts with exclusions: </span> : 'Conflicts with exclusions: '}{shown.join(', ')}
       {more > 0 && (
         <Popover
           title={`Conflicts with ${items.length} exclusions`}
@@ -39,7 +39,7 @@ export function ConflictList({ items, max = 2, className }: { items: string[]; m
           className="w-72"
           trigger={
             <PopoverTrigger openOnHover delay={150} className="ml-1 cursor-pointer font-semibold whitespace-nowrap underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">
-              +{more} more
+              +{more}{!compact && ' more'}
             </PopoverTrigger>
           }
         >

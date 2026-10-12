@@ -9,7 +9,7 @@ import { GroupLabel, Section } from '../components/ui/layout'
 import { Select } from '../components/ui/select'
 import { Checkbox } from '../components/ui/selection'
 import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
-import { ConflictList, ConflictTag } from '../components/ui/tag'
+import { ConflictList } from '../components/ui/tag'
 import { AREAS, CASH_CURRENCIES, COMPONENTS, COMPONENT_INSTRUMENTS, PROVIDERS, type Component } from '../data/data'
 import { componentById, conflictsOf, f2, instrumentByIsin, usePortfolio } from '../state/portfolio'
 import { ComponentDetail } from './ComponentDetail'
@@ -106,7 +106,7 @@ function CatalogueCard({ c, expanded, onLearnMore }: { c: Component; expanded: b
       </label>
       <Button variant="link" className="absolute bottom-2 left-9.5" onClick={onLearnMore} aria-haspopup="dialog">Learn more</Button>
       {/* The conflict tag sits in the footer, beside Learn more, so every card keeps the same height. */}
-      {cf.length > 0 && <ConflictTag className="absolute right-3 bottom-2 max-w-40 [&>span]:min-w-0 [&>span]:truncate"><span className="sr-only">Conflicts with exclusions: </span><span title={cf.join(', ')}>{cf[0]}{cf.length > 1 && ` +${cf.length - 1}`}</span></ConflictTag>}
+      {cf.length > 0 && <ConflictList items={cf} max={1} compact className="absolute right-3 bottom-2 max-w-48 whitespace-nowrap" />}
     </div>
   )
   if (expanded) return <div aria-hidden className="invisible grid">{card}</div>
