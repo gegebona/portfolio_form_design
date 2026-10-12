@@ -163,11 +163,11 @@ function InsideBars({ items, compare }: { items: Item[]; compare: boolean }) {
 /** One waffle per region: 10 × 10 squares, one square per percentage point. */
 function Waffles({ items, compare }: { items: Item[]; compare: boolean }) {
   return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+    <div className="grid grid-cols-3 gap-x-4 gap-y-3">
       {items.map((it) => {
         const n = Math.round(it.value)
         return (
-          <div key={it.label} className="max-w-32 min-w-0">
+          <div key={it.label} className="max-w-28 min-w-0">
             <div role="img" aria-label={`${it.label} ${pct(it.value)}`} className="grid grid-cols-10 gap-px">
               {Array.from({ length: 100 }, (_, i) => {
                 // Filled from the bottom row up.
