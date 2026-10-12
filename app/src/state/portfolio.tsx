@@ -225,7 +225,7 @@ export function reductionShare(rows: SimRow[]) {
 export function setOwnValue(s: PortfolioState, k: PrefKey) {
   if (!s.custom) return
   if (!s.custom.overrides.includes(k)) s.custom.overrides.push(k)
-  s.custom.hasNew = true
+  if (!s.custom.hasNew) { s.custom.hasNew = true; s.sim.mode = 'new' }
 }
 /** Reset to inherit: the parent's current value goes into NEW and future parent changes flow again. */
 export function resetToInherit(s: PortfolioState, k: PrefKey) {
@@ -236,7 +236,7 @@ export function resetToInherit(s: PortfolioState, k: PrefKey) {
   else if (k === 'inst') s.prefs.inst = [...pp.inst]
   else s.prefs.sel[k] = [...pp.sel[k]]
   s.custom.overrides = s.custom.overrides.filter((x) => x !== k)
-  s.custom.hasNew = true
+  if (!s.custom.hasNew) { s.custom.hasNew = true; s.sim.mode = 'new' }
 }
 /** A preference's value as short text (for parent-vs-own comparisons). */
 export function prefText(p: PortfolioState['prefs'], k: PrefKey) {
