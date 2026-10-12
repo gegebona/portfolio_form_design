@@ -245,6 +245,15 @@ export const POSITIONS: Position[] = [
   { id: 'goog', cls: 'Equity', name: 'Alphabet Inc. Class C', isin: 'US02079K1079', bb: '—', ccy: 'USD', fx: 0.85, price: 167.2, w: 0, esg: '—' },
 ]
 
+/** Positions a customized version may add on its own (single instruments, with a weight the user sets). */
+export const ADDABLE_POSITIONS: Position[] = [
+  { id: 'add-msft', cls: 'Equity', name: 'Microsoft Corp.', isin: 'US5949181045', bb: '—', ccy: 'USD', fx: 0.85, price: 415.3, w: 0, esg: '4.1' },
+  { id: 'add-novn', cls: 'Equity', name: 'Novartis AG', isin: 'CH0012005267', bb: '—', ccy: 'CHF', fx: 1.07, price: 92.4, w: 0, esg: '4.2' },
+  { id: 'add-ulvr', cls: 'Equity', name: 'Unilever plc', isin: 'GB00B10RZP78', bb: '—', ccy: 'GBP', fx: 1.14, price: 47.9, w: 0, esg: '4.4' },
+  { id: 'add-iwda', cls: 'Equity', name: 'iShares Core MSCI World ETF', isin: 'IE00B4L5Y983', bb: '—', ccy: 'USD', fx: 0.85, price: 104.2, w: 0, esg: '3.9' },
+  { id: 'add-chgov', cls: 'Bonds', name: 'Swiss Confederation 1.5% 2034', isin: 'CH0224397171', bb: '—', ccy: 'CHF', fx: 1.07, price: 101.8, w: 0, esg: '4.5' },
+]
+
 // ---- Model portfolio book (illustrative list; names, people and figures are invented) ----
 export type BookStatus = 'Draft' | 'Published'
 /** Draft → Published. No approval step; publication happens from NEW in the flow, never from the book. */

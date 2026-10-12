@@ -2,16 +2,17 @@ import { ChevronDown, ChevronRight, Info, Lock, MoreHorizontal, TriangleAlert } 
 import { addTransitionType, Fragment, startTransition, useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
+import { Select } from '../components/ui/select'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Radio, RadioGroup, Switch } from '../components/ui/selection'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
-import { ASSET_CLASSES, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
+import { ADDABLE_POSITIONS, ASSET_CLASSES, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
 import { cn } from '../lib/cn'
 import { setBookTaskStatus } from '../state/book'
-import { f2, near100, parentCode, PREF_LABEL, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
+import { addOwnPosition, f2, near100, parentCode, PREF_LABEL, removeOwnPosition, setOwnWeight, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { Overview, Swatch } from './Overview'
 
 type Mode = 'current' | 'new'
@@ -27,6 +28,7 @@ export function SimulationView() {
   // Compact by default: the strip is context, the tables below are the work. Full view is one click away.
   const [compact, setCompact] = useState(true)
   const [showZero, setShowZero] = useState(false)
+  const [adding, setAdding] = useState(false)
   const rows = state.sim.rows
   // Changing view or version swaps the table in a transition tagged 'positions' (see the table boundary below).
   const switchTable = (fn: () => void) => startTransition(() => { addTransitionType('positions'); fn() })
@@ -82,12 +84,14 @@ export function SimulationView() {
           </Tabs>
           <div className="flex items-center gap-4.5 pb-1.5">
             {!cur && !custom && <Button size="sm" onClick={() => { location.hash = 'components' }}>+ Add component</Button>}
+            {!cur && custom && <Button size="sm" aria-expanded={adding} onClick={() => setAdding(true)}>+ Add position</Button>}
             <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
               <Switch checked={showZero} onCheckedChange={setShowZero} />
               Show zero-weighted positions
             </label>
           </div>
         </div>
+        {adding && !cur && custom && <AddPosition onClose={() => setAdding(false)} />}
         {/* The scrolling container is the boundary (its picture stays clipped): the old table fades out, the new one fades in. */}
         <ViewTransition update={{ positions: 'table-swap', default: 'none' }} default="none">
         <div className="min-h-0 flex-1 overflow-auto">
@@ -161,7 +165,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
     // Rows that need a decision first (an undecided warning or an open task), then cash (set apart visually), then every
     // other position by descending weight. The order uses the current weight so rows do not jump while a new weight
     // is being typed; new positions (no current weight) follow by new weight.
-    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a)) || Number(b.auto === 'added') - Number(a.auto === 'added')) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
+    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a)) || Number(!!b.own || b.auto === 'added') - Number(!!a.own || a.auto === 'added')) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
   // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
   const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
   const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
@@ -243,7 +247,9 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.w)}</td>
               {!cur && (
                 <td className={td}>
-                  {custom
+                  {custom && r.own
+                    ? <WeightField size="sm" strong value={r.nw} onValueChange={(v) => update((s) => setOwnWeight(s, r.id, v))} aria-label={`Weight of ${r.name} in percent`} className="ml-auto w-fit" />
+                    : custom
                     ? <span className={cn('block text-right tabular-nums', edited && 'font-semibold')}>{f2(r.nw)}</span>
                     : <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />}
                 </td>
@@ -428,7 +434,13 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
 
 /** Customized, New: what the automatic update did to a position. */
 function UpdateNote({ r }: { r: SimRow }) {
-  const { state } = usePortfolio()
+  const { state, update } = usePortfolio()
+  if (r.own) return (
+    <span className="inline-flex flex-wrap items-center gap-x-2">
+      <span className="inline-flex items-center gap-1"><Lock className="size-3" strokeWidth={1.75} aria-hidden />Own position · fixed weight</span>
+      <Button variant="link" className="text-xs" onClick={() => update((s) => removeOwnPosition(s, r.id))}>Remove</Button>
+    </span>
+  )
   if (r.auto === 'added') return <span><span className="rounded-xs bg-selected/10 px-1.5 text-xs/4.5">Added</span> <span className="text-fg-muted">target of {state.custom && parentCode(state.custom)} {f2(r.target ?? 0)}%</span></span>
   if (r.auto === 'reduced') return <span className="text-fg-muted">{r.cls === 'Liquidity' ? 'Reduced proportionally · cash' : 'Reduced proportionally'}</span>
   if (r.auto === 'protected') return <span className="inline-flex items-center gap-1 text-fg-muted"><Lock className="size-3" strokeWidth={1.75} aria-hidden />Protected · {PARENT_UPDATE.protectedWhy.toLowerCase()}</span>
@@ -490,6 +502,39 @@ function AutoUpdate() {
             <div className="text-fg-muted">{prot ? `Protected: ${prot.name} (${PARENT_UPDATE.protectedWhy.toLowerCase()})` : ''} · Total {f2(total)}%</div>
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Customized: add a single position of its own. The user sets its weight; the other positions give it up proportionally
+ * (cash included, protected ones excluded). The weight then stays fixed: only the user changes it, parent updates never do.
+ */
+function AddPosition({ onClose }: { onClose: () => void }) {
+  const { state, update } = usePortfolio()
+  const held = new Set(state.sim.rows.filter((r) => !r.removed).map((r) => r.isin))
+  const options = ADDABLE_POSITIONS.filter((p) => !held.has(p.isin) && !state.prefs.inst.includes(p.isin))
+  const [id, setId] = useState('')
+  const [w, setW] = useState(1)
+  const pick = options.find((p) => p.id === id)
+  return (
+    <div className="mt-2 border border-line border-l-2 border-l-selected px-4 py-3 text-xs">
+      <div className="text-sm font-semibold">Add a position</div>
+      <p className="text-fg-muted">Its weight is taken from the other positions proportionally, cash included. The weight then stays fixed: changes to {state.custom && parentCode(state.custom)} never move it.</p>
+      <div className="mt-2.5 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1">
+          <span className="text-fg-muted">Instrument</span>
+          <Select aria-label="Instrument" value={id} onValueChange={setId} placeholder="Select an instrument…" items={options.map((p) => ({ value: p.id, label: `${p.name} · ${p.isin}` }))} className="h-8 w-90 text-xs" />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-fg-muted">Weight</span>
+          <WeightField size="sm" value={w} onValueChange={setW} aria-label="Weight of the new position in percent" />
+        </label>
+        <span className="ml-auto inline-flex gap-2">
+          <Button size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" variant="primary" disabled={!pick || w <= 0} onClick={() => { if (pick) update((s) => addOwnPosition(s, pick, w)); onClose() }}>Add position</Button>
+        </span>
       </div>
     </div>
   )

@@ -205,7 +205,7 @@ function Source({ k }: { k: PrefKey }) {
         {own && differs && <> · {pc}: <span className="text-fg">{parent}</span></>}
         {!own && differs && <> · {pc} now has <span className="text-fg">{parent}</span>, not applied yet</>}
       </span>
-      {own && <Button variant="link" className="text-xs" onClick={() => update((s) => resetToInherit(s, k))}>Reset to inherit</Button>}
+      {own && <Button variant="link" className="text-xs" onClick={() => update((s) => resetToInherit(s, k))}>Follow {pc} again</Button>}
     </div>
   )
 }

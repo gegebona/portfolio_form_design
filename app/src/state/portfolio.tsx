@@ -10,6 +10,8 @@ export type SimRow = Position & {
   nw: number; removed: boolean; kept: boolean; keptOn?: string
   /** Customized automatic update: what the update did to this position, and the parent's target for an added one. */
   auto?: 'added' | 'reduced' | 'protected'; target?: number
+  /** Customized: a position the user added. Its weight is fixed: only the user changes it, parent updates never do. */
+  own?: boolean
 }
 /** Preferences a customized portfolio can set itself (minimum position size and maximum instruments are always inherited). */
 export type PrefKey = CategoryId | 'rating' | 'esg' | 'inst'
@@ -239,7 +241,7 @@ export function startCustomized(s: PortfolioState, parent: BookEntry) {
 export const parentCode = (c: CustomState) => 'MP_' + c.parentId
 
 /** Positions the automatic update may reduce: held, not protected. */
-export const eligibleForReduction = (r: SimRow) => r.w > 0 && r.id !== PARENT_UPDATE.protectedId
+export const eligibleForReduction = (r: SimRow) => r.w > 0 && r.id !== PARENT_UPDATE.protectedId && !r.own
 
 /**
  * Adds the parent's required instrument at the parent's target weight and funds it by reducing every eligible position
@@ -264,6 +266,39 @@ function fundRequired(rows: SimRow[]) {
 export function reductionShare(rows: SimRow[]) {
   const poolW = rows.filter(eligibleForReduction).reduce((t, r) => t + r.w, 0)
   return poolW ? (PARENT_UPDATE.instrument.target / poolW) * 100 : 0
+}
+
+/**
+ * Customized own positions. Adding one (or raising its weight) takes the weight from the other positions proportionally,
+ * cash included; lowering or removing it gives the weight back the same way. Protected positions and other own positions
+ * never move. Rounding goes to the largest position so the total stays exactly 100.00%.
+ */
+function rebalanceOthers(rows: SimRow[], amount: number) {
+  const pool = rows.filter((r) => !r.removed && r.nw > 0 && !r.own && r.id !== PARENT_UPDATE.protectedId)
+  const poolW = pool.reduce((t, r) => t + r.nw, 0)
+  if (poolW <= amount) return false
+  const before = pool.reduce((t, r) => t + r.nw, 0)
+  pool.forEach((r) => { r.nw = round2(r.nw * (1 - amount / poolW)) })
+  const rest = round2(before - amount - pool.reduce((t, r) => t + r.nw, 0))
+  if (rest) { const big = [...pool].sort((a, b) => b.nw - a.nw)[0]; big.nw = round2(big.nw + rest) }
+  return true
+}
+export function addOwnPosition(s: PortfolioState, p: Position, weight: number) {
+  if (!s.custom || !rebalanceOthers(s.sim.rows, weight)) return
+  s.sim.rows.unshift({ ...p, nw: round2(weight), removed: false, kept: false, own: true })
+  s.custom.hasNew = true
+  s.sim.mode = 'new'
+}
+export function setOwnWeight(s: PortfolioState, id: string, weight: number) {
+  const r = s.sim.rows.find((x) => x.id === id)
+  if (!r || !rebalanceOthers(s.sim.rows, weight - r.nw)) return
+  r.nw = round2(weight)
+}
+export function removeOwnPosition(s: PortfolioState, id: string) {
+  const r = s.sim.rows.find((x) => x.id === id)
+  if (!r) return
+  rebalanceOthers(s.sim.rows, -r.nw)
+  s.sim.rows = s.sim.rows.filter((x) => x.id !== id)
 }
 
 /** Editing a preference of a customized portfolio gives it its own value and creates or refreshes NEW. */
