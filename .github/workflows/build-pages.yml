@@ -14,6 +14,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Token that can write to the public preview repository (contents only). Until it is set, the copy step is skipped.
+      PREVIEW_TOKEN: ${{ secrets.PREVIEW_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,3 +34,18 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html .nojekyll
           git diff --cached --quiet || (git commit -m "Rebuild page" && git push)
+      # Copies only the built page to the public preview repository, which GitHub Pages serves. The source and its
+      # history stay here: the preview holds a single commit, replaced on every build.
+      - name: Copy the page to the public preview
+        if: env.PREVIEW_TOKEN != ''
+        run: |
+          mkdir -p "$RUNNER_TEMP/preview"
+          cp index.html "$RUNNER_TEMP/preview/"
+          touch "$RUNNER_TEMP/preview/.nojekyll"
+          cd "$RUNNER_TEMP/preview"
+          git init -q -b main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Update preview"
+          git push -qf "https://x-access-token:${PREVIEW_TOKEN}@github.com/gegebona/sma-preview.git" main
