@@ -237,7 +237,7 @@ function Columns({ items, compare }: { items: Item[]; compare: boolean }) {
         ))}
       </div>
       <div className="mt-1.5 flex gap-3 text-fg-muted">
-        {items.map((it) => <span key={it.label} className="flex-1 text-center">{it.label}</span>)}
+        {items.map((it) => <span key={it.label} className="flex-1 text-center">{it.label}{compare && delta(it) && <span className="block tabular-nums">{delta(it)}</span>}</span>)}
       </div>
     </div>
   )
