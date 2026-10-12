@@ -113,8 +113,8 @@ export function ComponentDetail({ c }: { c: Component }) {
   )
 }
 
-/** Sectors and regions carry no colour meaning of their own: one neutral bar colour; cash keeps the Liquidity colour. */
-const NEUTRAL = 'var(--color-chart-neutral)'
+/** Sectors and regions carry no colour of their own: one dark navy (UBS chart colour, distinct from the asset class colours); cash keeps the Liquidity colour. */
+const NEUTRAL = 'var(--color-ubs-chart-19)'
 
 /** Horizontal bar chart: one row per item with label, bar (scaled to 100%) and value. */
 function BarList({ rows }: { rows: [label: string, value: number, color: string][] }) {
@@ -123,7 +123,7 @@ function BarList({ rows }: { rows: [label: string, value: number, color: string]
       {rows.map(([k, v, color]) => (
         <div key={k} role="listitem" className="contents">
           <span className="max-w-36 truncate" title={k}>{k}</span>
-          <span className="block h-2 w-full bg-surface-strong" aria-hidden><span className="block h-full" style={{ width: `${Math.min(100, v)}%`, background: color }} /></span>
+          <span className="block h-2 w-full" aria-hidden><span className="block h-full" style={{ width: `${Math.min(100, v)}%`, background: color }} /></span>
           <span className="text-right font-semibold tabular-nums">{pct(v)}</span>
         </div>
       ))}

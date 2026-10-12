@@ -57,7 +57,7 @@ export function AllocationView() {
         </div>
         {/* The scrolling panel itself is the boundary, so the cross-fade stays clipped to the panel. */}
         <ViewTransition update={{ detail: 'swap', default: 'none' }} default="none">
-        <div className="min-h-0 overflow-y-auto bg-surface-muted px-7 pt-5 pb-6" aria-live="polite">
+        <div className="min-h-0 overflow-y-auto border-l border-line bg-surface px-7 pt-5 pb-6" aria-live="polite">
           {sel ? (
             <>
               <div className="flex items-start justify-between gap-4">
@@ -89,7 +89,7 @@ function AllocRow({ it, selected, onPick, onSelect, total, setW }: { it: AllocIt
   const cf = it.comp ? conflictsOf(it.comp, state.prefs) : []
   const left = 100 - total
   return (
-    <div className={cn('flex flex-col gap-2 border-b border-line pt-2.5 pr-5 pb-3 pl-3', selected ? 'bg-surface-muted' : 'bg-surface hover:bg-surface-subtle')}>
+    <div className={cn('flex flex-col gap-2 border-b border-l-2 border-b-line pt-2.5 pr-5 pb-3 pl-2.5', selected ? 'border-l-selected bg-selected/5' : 'border-l-transparent bg-surface hover:bg-surface-subtle')}>
       <div className="flex items-center gap-3">
         <button type="button" onClick={onPick} aria-pressed={selected} className="flex min-w-0 flex-1 cursor-pointer flex-col text-left">
           <span>{it.name}</span>
