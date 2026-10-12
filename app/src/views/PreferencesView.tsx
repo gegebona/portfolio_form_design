@@ -7,7 +7,7 @@ import { AffixInput, Field, Input } from '../components/ui/input'
 import { GroupLabel, Section } from '../components/ui/layout'
 import { Checkbox } from '../components/ui/selection'
 import { ThresholdScale } from '../components/ui/threshold-scale'
-import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, PARENT_UPDATE, RATINGS, type ExclusionCategory } from '../data/data'
+import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, RATINGS, type ExclusionCategory } from '../data/data'
 import { cn } from '../lib/cn'
 import { instrumentByIsin, optionLabel, parentCode, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
 
@@ -23,25 +23,21 @@ export function PreferencesView() {
     PREF_KEYS.forEach((k) => setOwnValue(s, k))
   })
   // Customized: the two limits always come from the parent and cannot be changed here.
-  const limit = (label: string) => custom?.limits.find((l) => l.label === label)
-  const lockNote = (label: string) => {
-    const l = limit(label)
-    return custom && (
-      <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
-        <Lock className="size-3" strokeWidth={1.75} aria-hidden />
-        Locked · inherited from {parentCode(custom)}{l && ` · changed ${l.from} → ${l.to} on ${PARENT_UPDATE.changed}`}
-      </span>
-    )
-  }
+  const lockNote = custom && (
+    <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+      <Lock className="size-3" strokeWidth={1.75} aria-hidden />
+      Locked · inherited from {parentCode(custom)}
+    </span>
+  )
 
   return (
     <>
       <Section screenHeading title="Preferences" description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'} className="border-b border-line">
         <div className="mt-4 flex flex-wrap items-end gap-x-10 gap-y-4">
-          <Field label="Minimum position size" description={lockNote('Minimum position size')}>
+          <Field label="Minimum position size" description={lockNote}>
             <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-37.5', custom && 'bg-surface-muted text-fg-muted')} />
           </Field>
-          <Field label="Maximum number of instruments" description={lockNote('Maximum number of instruments')}>
+          <Field label="Maximum number of instruments" description={lockNote}>
             <Input disabled={!!custom} value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-67.5" />
           </Field>
         </div>
@@ -208,8 +204,6 @@ function Source({ k }: { k: PrefKey }) {
         {own ? `Changes to ${pc} are skipped` : `Follows ${pc}`}
         {own && differs && <> · {pc}: <span className="text-fg">{parent}</span></>}
         {!own && differs && <> · {pc} now has <span className="text-fg">{parent}</span>, not applied yet</>}
-        {c.skipped.includes(k) && ` · ${pc} changed this on ${PARENT_UPDATE.changed}; your value is kept`}
-        {c.applied.includes(k) && ` · Updated from ${pc} on ${PARENT_UPDATE.changed}`}
       </span>
       {own && <Button variant="link" className="text-xs" onClick={() => update((s) => resetToInherit(s, k))}>Reset to inherit</Button>}
     </div>
