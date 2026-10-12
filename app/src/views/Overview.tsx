@@ -269,6 +269,8 @@ function ExclusionLine({ groups }: { groups: { label: string; values: string[] }
     if (el && n > 1 && el.scrollHeight > el.clientHeight + 1) setN(n - 1)
   })
   const more = items.length - n
+  // Anything not shown in full (a hidden type, or values behind "+N") is one click away.
+  const partial = more > 0 || items.some((g) => g.values.length > 2)
   return (
     // Each group reads "Label values": the label in grey, the excluded values in red; a group never breaks over two lines.
     <div ref={ref} className="line-clamp-2 leading-relaxed">
@@ -277,12 +279,12 @@ function ExclusionLine({ groups }: { groups: { label: string; values: string[] }
           <span className="text-fg-muted">{SHORT[g.label] ?? g.label}</span> <span className="text-conflict">{brief(g.values)}</span>
         </span>
       ))}
-      {more > 0 && (
+      {partial && (
         <Popover
           title="Exclusionary preferences"
           description="Everything excluded from this model portfolio."
           className="w-80"
-          trigger={<PopoverTrigger openOnHover delay={150} className="cursor-pointer font-semibold whitespace-nowrap text-conflict underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">+{more} more</PopoverTrigger>}
+          trigger={<PopoverTrigger openOnHover delay={150} className="cursor-pointer whitespace-nowrap text-link outline-none hover:text-link-hover hover:underline focus-visible:ring-2 focus-visible:ring-selected">Show all</PopoverTrigger>}
         >
           <ul className="text-xs">
             {items.map((g) => <li key={g.label} className="border-t border-line py-1.5 first:border-t-0"><span className="text-fg-muted">{g.label}</span> <span className="text-conflict">{g.values.join(', ')}</span></li>)}
