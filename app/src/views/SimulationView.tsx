@@ -2,7 +2,7 @@ import { ChevronDown, ChevronRight, Info, Lock, MoreHorizontal, TriangleAlert } 
 import { addTransitionType, Fragment, startTransition, useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
-import { Select } from '../components/ui/select'
+import { MultiCombobox } from '../components/ui/combobox'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Radio, RadioGroup, Switch } from '../components/ui/selection'
@@ -523,10 +523,27 @@ function AddPosition({ onClose }: { onClose: () => void }) {
       <div className="text-sm font-semibold">Add a position</div>
       <p className="text-fg-muted">Its weight is taken from the other positions proportionally, cash included. The weight then stays fixed: changes to {state.custom && parentCode(state.custom)} never move it.</p>
       <div className="mt-2.5 flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1">
-          <span className="text-fg-muted">Instrument</span>
-          <Select aria-label="Instrument" value={id} onValueChange={setId} placeholder="Select an instrument…" items={options.map((p) => ({ value: p.id, label: `${p.name} · ${p.isin}` }))} className="h-8 w-90 text-xs" />
-        </label>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="add-pos-q" className="text-fg-muted">Instrument</label>
+          {/* Searchable by name or ISIN (same control as on Component selection); one instrument at a time. */}
+          {pick ? (
+            <div className="flex h-8 w-90 items-center gap-2 rounded-sm border border-control px-2.5">
+              <span className="min-w-0 flex-1 truncate">{pick.name} <span className="text-fg-muted">{pick.isin}</span></span>
+              <Button variant="link" className="text-xs" onClick={() => setId('')}>Change</Button>
+            </div>
+          ) : (
+            <MultiCombobox
+              id="add-pos-q"
+              tone="select"
+              closeOnSelect
+              options={options.map((p) => ({ id: p.id, label: p.name, sub: p.isin }))}
+              value={[]}
+              onValueChange={(v) => setId(v[v.length - 1] ?? '')}
+              placeholder="Search by ISIN or instrument name…"
+              className="w-90"
+            />
+          )}
+        </div>
         <label className="flex flex-col gap-1">
           <span className="text-fg-muted">Weight</span>
           <WeightField size="sm" value={w} onValueChange={setW} aria-label="Weight of the new position in percent" />
