@@ -94,7 +94,7 @@ export function ExposureView({ mode }: { mode: Mode }) {
         <Block title="By sector"><InsideBars items={items((r) => expo(r).sector, BENCH_EXPOSURE.sector, 7)} mine={mine} theirs={theirs} /></Block>
         <Block title="By region"><Waffles items={items((r) => expo(r).region, BENCH_EXPOSURE.region, 6)} /></Block>
         <div className="col-span-3 grid grid-cols-2 gap-x-10">
-          <CountryTable items={items((r) => expo(r).country, BENCH_EXPOSURE.country, 100)} theirs={theirs} />
+          <CountryTable items={items((r) => expo(r).country, BENCH_EXPOSURE.country, 100)} mine={mine} theirs={theirs} />
           <Block title="By currency"><Bubbles items={items((r) => r.ccy, BENCH_EXPOSURE.currency, 7)} /></Block>
         </div>
       </div>
@@ -157,7 +157,7 @@ function InsideBars({ items, mine, theirs }: { items: Item[]; mine: string; thei
   const max = Math.max(1, ...items.map((i) => Math.max(i.value, i.other)))
   return (
     <table className="w-full table-fixed border-collapse">
-      <colgroup><col className="w-[40%]" /><col /><col className="w-[17%]" /><col className="w-[19%]" /></colgroup>
+      <colgroup><col className="w-[36%]" /><col /><col className="w-[14%]" /><col className="w-[18%]" /></colgroup>
       <thead>
         <tr className="border-b border-line text-fg-muted">
           <th className="pb-1.5" /><th />
@@ -256,7 +256,7 @@ const TOP = 7
  * By country: a ranked table (largest portfolio weight first) with a small bar pair, both weights and the active
  * weight (difference). The first seven countries are shown; the rest sit in an expandable "Other" row.
  */
-function CountryTable({ items, theirs }: { items: Item[]; theirs: string }) {
+function CountryTable({ items, mine, theirs }: { items: Item[]; mine: string; theirs: string }) {
   const [open, setOpen] = useState(false)
   // Ranked by the portfolio's own weight; countries only the comparison holds follow, by their weight there.
   const rows = items.filter((i) => !NO_COUNTRY.has(i.label)).sort((a, b) => b.value - a.value || b.other - a.other)
@@ -288,7 +288,7 @@ function CountryTable({ items, theirs }: { items: Item[]; theirs: string }) {
         <thead>
           <tr className="border-b border-line text-fg-muted">
             <th className="pb-1.5 text-left font-normal">Country</th><th />
-            <th className="pb-1.5 text-right font-normal">Portfolio</th>
+            <th className="pb-1.5 text-right font-normal">{mine}</th>
             <th className="pb-1.5 text-right font-normal">{theirs}</th>
             <th className="pb-1.5 text-right font-normal">Active</th>
           </tr>
