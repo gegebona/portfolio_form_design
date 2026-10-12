@@ -328,7 +328,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                       </div>
                     )}
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
-                      <span className="text-fg-muted">{plan.add ? 'The total weight stays unchanged.' : ''}</span>
+                      <span className="text-fg-muted">{plan.add ? (accepting ? 'The total weight comes back to exactly 100.00%.' : 'The total weight stays unchanged.') : ''}</span>
                       <span className="inline-flex flex-wrap items-center gap-2">
                         <Button size="sm" onClick={() => setRemoving(null)}>Cancel</Button>
                         {accepting
