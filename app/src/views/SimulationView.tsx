@@ -26,8 +26,8 @@ export function SimulationView() {
   const mode = state.sim.mode
   const setMode = (m: Mode) => update((s) => { s.sim.mode = m })
   const [view, setView] = useState<View>('instrument')
-  // Compact by default: the strip is context, the tables below are the work. Full view is one click away.
-  const [compact, setCompact] = useState(true)
+  // Open by default on Simulation: the strip explains the figures below. It folds away with one click.
+  const [compact, setCompact] = useState(false)
   const [showZero, setShowZero] = useState(false)
   const [adding, setAdding] = useState(false)
   const rows = state.sim.rows
@@ -35,7 +35,9 @@ export function SimulationView() {
   const switchTable = (fn: () => void) => startTransition(() => { addTransitionType('positions'); fn() })
   const cur = mode === 'current'
   const custom = state.custom
-  const changes = rows.filter((r) => r.removed || Math.abs(r.nw - r.w) >= 0.005).length
+  const pub = state.sim.published
+  // Changes are counted against the last published version when there is one, otherwise against Current.
+  const changes = rows.filter((r) => r.removed || Math.abs(r.nw - (pub ? (r.pw ?? 0) : r.w)) >= 0.005).length
   const total = cur ? rows.reduce((s, r) => s + r.w, 0) : rows.filter((r) => !r.removed).reduce((s, r) => s + r.nw, 0)
 
   const redistribute = () => update((s) => {
@@ -62,13 +64,13 @@ export function SimulationView() {
         {!cur && (
           <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
             <Info className="size-3.5" strokeWidth={1.5} />
-            {custom ? 'Pending, not published — Current stays active until you publish.' : 'Working version — changes stay here until you publish.'}
+            {pub ? `Working version — changes are compared with the version published on ${pub}.` : custom ? 'Pending, not published — Current stays active until you publish.' : 'Working version — changes stay here until you publish.'}
           </div>
         )}
         {cur && (
           <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
             <Info className="size-3.5" strokeWidth={1.5} />
-            Read-only — the portfolio as it is today.
+            {pub ? `Read-only — Current is the last data load; the version published on ${pub} applies from the next load.` : 'Read-only — the portfolio as it is today.'}
             {(!custom || custom.hasNew) && <Button variant="link" className="text-xs" onClick={() => switchTable(() => setMode('new'))}>Switch to New</Button>}
           </div>
         )}
@@ -162,6 +164,9 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const [onlyWarnings, setOnlyWarnings] = useState(false)
   const { state, update } = usePortfolio()
   const cur = mode === 'current'
+  // A version published since the data load gets its own column; New is then compared with it.
+  const pub = !!state.sim.published
+  const base = (r: SimRow) => (pub ? (r.pw ?? 0) : r.w)
   // Customized: weights come from the parent, so New is read-only and its last column says what the automatic update did.
   const custom = !!state.custom
   // The open position task of this portfolio sits on its instrument's row, first in the table (New only).
@@ -174,7 +179,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const conflict = (r: SimRow) => creating && excluded(r) && !r.kept
   const flagOnly = (r: SimRow) => !cur && !creating && excluded(r)
   const needsDecision = (r: SimRow) => conflict(r) || (task?.rowId === r.id && task.status === 'Open')
-  const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0)))
+  const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0 || (r.pw ?? 0) > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0 || (r.pw ?? 0) > 0)))
     .slice()
     // Rows that need a decision first (an undecided warning or an open task), then cash (set apart visually), then every
     // other position by descending weight. The order uses the current weight so rows do not jump while a new weight
@@ -216,11 +221,14 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
     )}
     <table className="w-full table-fixed border-collapse text-xs">
       {/* The last column holds the row actions: wider when a position task needs its three decision buttons. */}
-      <Cols w={cur ? [10, 28, 26, 9, 9, 7, 11] : custom ? [8, 17, 16, 7, 7, 5, 7, 7, 6, 20] : task ? [8, 18, 15, 7, 7, 5, 7, 9, 6, 18] : [9, 17, 18, 8, 8, 6, 8, 9, 6, 11]} />
+      <Cols w={cur ? (pub ? [10, 25, 24, 9, 9, 7, 8, 8] : [10, 28, 26, 9, 9, 7, 11])
+        : pub ? (custom ? [8, 15, 15, 7, 7, 5, 7, 7, 7, 6, 16] : task ? [8, 16, 14, 7, 7, 5, 7, 7, 9, 6, 14] : [9, 16, 16, 7, 7, 5, 8, 8, 9, 6, 9])
+        : custom ? [8, 17, 16, 7, 7, 5, 7, 7, 6, 20] : task ? [8, 18, 15, 7, 7, 5, 7, 9, 6, 18] : [9, 17, 18, 8, 8, 6, 8, 9, 6, 11]} />
       <thead>
         <tr>
           <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
-          <th className={cn(th, 'text-right')}>Price</th><th className={cn(th, 'text-right')}>ESG</th><th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
+          <th className={cn(th, 'text-right')}>Price</th><th className={cn(th, 'text-right')}>ESG</th><th className={cn(th, 'text-right')}>{cur && !pub ? 'Weight %' : 'Current %'}</th>
+          {pub && <th className={cn(th, 'text-right')} title={`Published on ${state.sim.published}`}>Published %</th>}
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
           {!cur && <th className={th}>{custom ? 'Automatic update' : <span className="sr-only">Actions</span>}</th>}
         </tr>
@@ -229,7 +237,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
         {shown.map((r) => {
           const c = !cur && conflict(r)
           const flag = flagOnly(r)
-          const edited = Math.abs(r.nw - r.w) >= 0.005
+          const edited = Math.abs(r.nw - base(r)) >= 0.005
           const t = task && task.rowId === r.id ? task : null
           // Accepting a task moves the position to its official target; the other positions absorb the difference.
           const accepting = removing?.kind === 'accept' && !!t
@@ -265,6 +273,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.price)}</td>
               <td className={cn(td, 'text-right tabular-nums')}>{r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg}</td>
               <td className={cn(td, 'text-right tabular-nums')}>{f2(r.w)}</td>
+              {pub && <td className={cn(td, 'text-right tabular-nums')}>{f2(r.pw ?? 0)}</td>}
               {!cur && (
                 <td className={td}>
                   {custom && r.own
@@ -274,7 +283,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     : <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />}
                 </td>
               )}
-              {!cur && <td className={cn(td, 'text-right tabular-nums')}>{Math.abs(r.nw - r.w) < 0.005 ? <span className="text-fg-subtle">—</span> : (r.nw > r.w ? '+' : '') + f2(r.nw - r.w)}</td>}
+              {!cur && <td className={cn(td, 'text-right tabular-nums')}>{!edited ? <span className="text-fg-subtle">—</span> : (r.nw > base(r) ? '+' : '') + f2(r.nw - base(r))}</td>}
               {!cur && (
                 <td className={cn(td, custom ? 'text-left' : 'text-right whitespace-nowrap')}>
                   {custom ? <UpdateNote r={r} /> : t ? (
@@ -294,7 +303,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     <Menu
                       trigger={<MenuTrigger render={<Button variant="ghost" size="icon" aria-label={`Actions for ${r.name}`} />}><MoreHorizontal className="size-4" /></MenuTrigger>}
                       items={[
-                        { label: 'Reset to current weight', onClick: () => edit(r.id, (x) => { x.nw = x.w }) },
+                        { label: pub ? 'Reset to published weight' : 'Reset to current weight', onClick: () => edit(r.id, (x) => { x.nw = pub ? (x.pw ?? 0) : x.w }) },
                         { label: 'Remove position…', onClick: () => setRemoving({ id: r.id, method: 'proportional' }) },
                       ]}
                     />
@@ -304,7 +313,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             </tr>
             {plan && removing && !custom && (
               <tr>
-                <td colSpan={10} className="border-b border-line border-l-2 border-l-selected bg-surface px-6 py-4">
+                <td colSpan={11} className="border-b border-line border-l-2 border-l-selected bg-surface px-6 py-4">
                   <div className="max-w-180">
                     <div className="text-sm font-semibold">{accepting ? `Accept the position task for ${r.name}` : `Remove ${r.name}`}</div>
                     <p className="text-fg-muted">
@@ -364,7 +373,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             </Fragment>
           )
         })}
-        {!shown.length && <tr><td colSpan={10} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
+        {!shown.length && <tr><td colSpan={11} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
     </>
@@ -383,11 +392,13 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
   const showBb = hide !== 'bb'
   const [closed, setClosed] = useState<Set<string>>(new Set())
   const cur = mode === 'current'
+  const pub = !!state.sim.published
   const wOf = (r: SimRow) => (cur ? r.w : r.nw)
+  const baseOf = (r: SimRow) => (pub ? (r.pw ?? 0) : r.w)
   const sum = (l: SimRow[], f: (r: SimRow) => number) => l.reduce((t, r) => t + f(r), 0)
   const groups = new Map<string, SimRow[]>()
   state.sim.rows
-    .filter((r) => (cur ? showZero || r.w > 0 : !r.removed && (showZero || r.w > 0 || r.nw > 0)))
+    .filter((r) => (cur ? showZero || r.w > 0 || (r.pw ?? 0) > 0 : !r.removed && (showZero || r.w > 0 || r.nw > 0 || (r.pw ?? 0) > 0)))
     .forEach((r) => { const k = keyOf(r); groups.set(k, [...(groups.get(k) ?? []), r]) })
   const keys = [...groups.keys()].sort((a, b) => (order ? order.indexOf(a) - order.indexOf(b) : sum(groups.get(b) ?? [], wOf) - sum(groups.get(a) ?? [], wOf)))
   const toggle = (k: string) => setClosed((c) => { const n = new Set(c); if (n.has(k)) n.delete(k); else n.add(k); return n })
@@ -396,7 +407,7 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
   return (
     <table className="w-full table-fixed border-collapse text-xs">
       <Cols w={(() => {
-        const raw = [...(showCls ? [12] : []), showBb ? 22 : 28, ...(showBb ? [showCls ? 20 : 24] : []), 9, 10, 8, 11, ...(cur ? [11] : [9, 9, 8])]
+        const raw = [...(showCls ? [12] : []), showBb ? 22 : 28, ...(showBb ? [showCls ? 20 : 24] : []), 9, 10, 8, 11, ...(cur ? [11, ...(pub ? [11] : [])] : [9, ...(pub ? [9] : []), 9, 8])]
         const t = raw.reduce((a, b) => a + b, 0)
         return raw.map((x) => (x / t) * 100)
       })()} />
@@ -406,7 +417,8 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
           <th className={cn(th, 'text-right')}>Price</th>
           <th className={cn(th, 'text-right')}>ESG</th>
           <th className={cn(th, 'text-right')}>Share of group %</th>
-          <th className={cn(th, 'text-right')}>{cur ? 'Weight %' : 'Current %'}</th>
+          <th className={cn(th, 'text-right')}>{cur && !pub ? 'Weight %' : 'Current %'}</th>
+          {pub && <th className={cn(th, 'text-right')}>Published %</th>}
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
         </tr>
       </thead>
@@ -416,6 +428,7 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
           const open = !closed.has(k)
           const w = sum(list, (r) => r.w)
           const nw = sum(list, (r) => r.nw)
+          const pw = sum(list, (r) => r.pw ?? 0)
           const total = sum(list, wOf)
           const mix = new Map<string, number>()
           list.forEach((r) => mix.set(r.cls, (mix.get(r.cls) ?? 0) + wOf(r)))
@@ -437,7 +450,8 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
                   </span>
                 </td>
                 {num(f2(w), true)}
-                {!cur && <>{num(f2(nw), true)}{num(change(nw - w))}</>}
+                {pub && num(f2(pw), true)}
+                {!cur && <>{num(f2(nw), true)}{num(change(nw - (pub ? pw : w)))}</>}
               </tr>
               {open && list.map((r) => (
                 <tr key={r.id} className="hover:*:bg-surface-subtle">
@@ -449,13 +463,14 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
                   {num(r.esg === '—' ? <span className="text-fg-subtle" title="No ESG score received">—</span> : r.esg)}
                   {num(total > 0 ? <span className="text-fg-muted">{f2((wOf(r) / total) * 100)}</span> : <span className="text-fg-subtle">—</span>)}
                   {num(f2(r.w))}
-                  {!cur && <>{num(f2(r.nw), Math.abs(r.nw - r.w) >= 0.005)}{num(change(r.nw - r.w))}</>}
+                  {pub && num(f2(r.pw ?? 0))}
+                  {!cur && <>{num(f2(r.nw), Math.abs(r.nw - baseOf(r)) >= 0.005)}{num(change(r.nw - baseOf(r)))}</>}
                 </tr>
               ))}
             </Fragment>
           )
         })}
-        {!keys.length && <tr><td colSpan={10} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
+        {!keys.length && <tr><td colSpan={11} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
     </table>
   )

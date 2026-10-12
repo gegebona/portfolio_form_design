@@ -12,6 +12,8 @@ export type SimRow = Position & {
   auto?: 'added' | 'reduced' | 'protected'; target?: number
   /** Customized: a position the user added. Its weight is fixed: only the user changes it, parent updates never do. */
   own?: boolean
+  /** Weight in the version last published since the data load (set only once something was published). */
+  pw?: number
 }
 /** Preferences a customized portfolio can set itself (minimum position size and maximum instruments are always inherited). */
 export type PrefKey = CategoryId | 'rating' | 'esg' | 'inst'
@@ -55,7 +57,9 @@ export type PortfolioState = {
   /** Weights per allocation key ('c:<component id>', 'i:<isin>'); cash weights live on the cash entries. */
   weights: Record<string, number>
   /** mode: which version Simulation shows. Current is the published portfolio (read-only); New is the working version. */
-  sim: { rows: SimRow[]; mode: 'current' | 'new' }
+  /** published: date of the last publication since the data load. Current stays the data-load version until the next
+   *  load; the published weights sit next to it, and New starts again from them. */
+  sim: { rows: SimRow[]; mode: 'current' | 'new'; published?: string }
   /** Which book entry is open in the flow, and its open position task (shown at the top of Simulation). */
   /** creating: a brand-new portfolio in its creation workflow (the only time preference warnings are shown). */
   book: { id: string; task: BookTask | null; creating?: boolean }
@@ -139,6 +143,7 @@ export function startNew(s: PortfolioState) {
   s.custom = null
   s.sim.mode = 'new'
   s.sim.rows = POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false }))
+  s.sim.published = undefined
 }
 /**
  * A brand-new portfolio in its creation workflow. Warning icons and conflict tags show everywhere; only the creation
@@ -155,6 +160,7 @@ export function restoreSample(s: PortfolioState) {
   s.comps = fresh.comps
   s.weights = fresh.weights
   s.sim.rows = fresh.sim.rows
+  s.sim.published = undefined
   s.custom = null
 }
 
@@ -245,6 +251,33 @@ export function startCustomized(s: PortfolioState, parent: BookEntry) {
     overrides: [], parentPrefs: structuredClone(s.prefs), applied: [], skipped: [], limits: [],
   }
   s.sim.mode = 'new'
+}
+
+/**
+ * Publishing keeps the user on the portfolio's Simulation, on Current. A portfolio that already had a Current (from the
+ * data load) keeps it until the next load: the new figures become the Published weights, shown next to Current, and New
+ * starts again from them (no pending change). A portfolio published for the first time has no data-load version yet, so
+ * what was published becomes its Current.
+ */
+export function publishSim(s: PortfolioState, id: string, hadCurrent: boolean) {
+  const today = new Date().toLocaleDateString('en-GB')
+  s.sim.rows.forEach((r) => {
+    const v = r.removed ? 0 : r.nw
+    if (hadCurrent) r.pw = v
+    else { r.w = v; r.pw = undefined }
+    r.nw = v; r.removed = false; r.auto = undefined; r.target = undefined
+  })
+  s.sim.published = hadCurrent ? today : undefined
+  s.sim.mode = 'current'
+  s.book.id = id
+  s.book.creating = false
+  if (s.book.task && s.book.task.status !== 'Deferred') s.book.task = null
+  if (s.custom) {
+    const c = s.custom
+    c.version += 1; c.published = today; c.hasNew = true
+    c.auto = c.auto === 'invalid' ? 'invalid' : null
+    c.applied = []; c.skipped = []; c.limits = []
+  }
 }
 
 /** The parent is referred to by its model portfolio code. */

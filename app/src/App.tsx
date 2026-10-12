@@ -7,7 +7,7 @@ import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
 import { BOOK_USER, type BookEntry } from './data/data'
 import { getBook, nextBookId, setBook } from './state/book'
-import { benchmarkById, missingData, near100, openEntry, portfolioAlloc, PortfolioProvider, usePortfolio } from './state/portfolio'
+import { benchmarkById, missingData, near100, openEntry, portfolioAlloc, PortfolioProvider, usePortfolio, publishSim } from './state/portfolio'
 import { BookView } from './views/BookView'
 import { ParentLink } from './views/ParentLink'
 import { DataView } from './views/DataView'
@@ -113,7 +113,7 @@ function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route)
 }
 
 function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: FlowStep) => void; onBook: () => void }) {
-  const { state } = usePortfolio()
+  const { state, update } = usePortfolio()
   // Mandatory data of the first step gates everything: later steps stay locked and the draft cannot be saved.
   const missing = missingData(state)
   const blocked = missing.length > 0
@@ -146,8 +146,9 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
     : !simTotalOk ? 'To publish, the total weight must be exactly 100.00%.'
     : undefined
   /**
-   * Writes the portfolio to the book and returns there. Save as draft keeps an existing entry's status (a new one is
-   * a Draft); Publish sets it to Published and drops task decisions that are settled (deferred ones stay).
+   * Writes the portfolio to the book. Save as draft keeps an existing entry's status (a new one is a Draft) and returns
+   * to the book; Publish sets it to Published, drops task decisions that are settled (deferred ones stay) and stays on
+   * this portfolio's Simulation, on Current.
    */
   const save = (publish?: boolean) => {
     const a = portfolioAlloc(state)
@@ -159,12 +160,15 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
       modified: new Date().toLocaleDateString('en-GB'),
     }
     const l = getBook()
+    const existing = l.find((e) => e.id === state.book.id)
+    const id = existing ? existing.id : nextBookId(l)
+    const hadCurrent = custom ? custom.version > 0 : !!existing && existing.status !== 'Draft'
     if (custom) {
       const own = { name: fields.name, editedBy: fields.editedBy, modified: fields.modified }
       if (!l.some((e) => e.id === state.book.id)) {
         // New customized version: listed under its parent, with the parent's benchmark and the inherited allocation.
         const parent = l.find((e) => e.id === custom.parentId)
-        const entry: BookEntry = { id: nextBookId(l), type: 'Customized', parent: custom.parentId, creator: BOOK_USER, status: publish ? 'Published' : 'Draft', ...fields, benchmark: parent?.benchmark ?? fields.benchmark, version: publish ? 1 : undefined }
+        const entry: BookEntry = { id, type: 'Customized', parent: custom.parentId, creator: BOOK_USER, status: publish ? 'Published' : 'Draft', ...fields, benchmark: parent?.benchmark ?? fields.benchmark, version: publish ? 1 : undefined }
         const at = l.reduce((last, e, i) => (e.id === custom.parentId || e.parent === custom.parentId ? i : last), l.length - 1)
         setBook([...l.slice(0, at + 1), entry, ...l.slice(at + 1)])
       } else {
@@ -178,8 +182,10 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
       setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : publish
         ? { ...e, ...fields, status: 'Published', tasks: e.tasks?.filter((t) => t.status === 'Deferred') }
         : { ...e, ...fields })))
-    } else setBook([...l, { id: nextBookId(l), type: 'Standard', creator: BOOK_USER, status: publish ? 'Published' : 'Draft', ...fields }])
-    onBook()
+    } else setBook([...l, { id, type: 'Standard', creator: BOOK_USER, status: publish ? 'Published' : 'Draft', ...fields }])
+    if (!publish) return onBook()
+    update((s) => publishSim(s, id, hadCurrent))
+    onStep('simulation')
   }
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
@@ -200,7 +206,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         )}
         {step === 'simulation' && (
           <span className={cn('self-center rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control text-fg-muted' : 'bg-surface-strong')}>
-            {viewingCurrent ? (custom ? `Current version ${custom.version} · published, read-only` : 'Current version · published, read-only') : custom ? 'New version · pending, not published' : 'New version · working copy'}
+            {viewingCurrent ? (state.sim.published ? 'Current · last data load, read-only' : custom ? `Current version ${custom.version} · published, read-only` : 'Current version · published, read-only') : custom ? 'New version · pending, not published' : 'New version · working copy'}
           </span>
         )}
       </div>
