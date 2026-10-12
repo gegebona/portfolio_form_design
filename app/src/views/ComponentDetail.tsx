@@ -12,7 +12,7 @@ const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 
 /**
  * Component details, used by the Allocation panel and the Learn more window.
- * A key-figure strip (asset allocation bar, currency exposure, concentration — the same strip pattern as the portfolio
+ * A key-figure strip (asset allocation, sector allocation, region allocation — the same strip pattern as the portfolio
  * overview) above a full-width list of every instrument it holds, in two views that mirror Simulation: a flat Instrument
  * view and an Asset class view with group subtotals. An instrument on the portfolio's excluded list is highlighted as a conflict.
  */
@@ -25,12 +25,16 @@ export function ComponentDetail({ c }: { c: Component }) {
   const excluded = (h: Holding) => !!h.isin && state.prefs.inst.includes(h.isin)
   const conflicts = list.filter(excluded).length
   const inUse = ASSET_CLASSES.filter((k) => alloc[k] > 0.004)
-  const ccys = new Map<string, number>()
-  list.forEach((h) => ccys.set(h.ccy, (ccys.get(h.ccy) ?? 0) + h.w))
-  const ccyList = [...ccys.entries()].sort((a, b) => b[1] - a[1])
-  const byWeight = list.filter((h) => h.cls !== 'Liquidity').sort((a, b) => b.w - a.w)
-  const top = byWeight[0]
-  const top5 = byWeight.slice(0, 5).reduce((t, h) => t + h.w, 0)
+  /** Weight per sector or region, largest first; beyond the top four (and cash) the rest is grouped as Other. */
+  const breakdown = (key: (h: Holding) => string) => {
+    const m = new Map<string, number>()
+    list.forEach((h) => m.set(key(h), (m.get(key(h)) ?? 0) + h.w))
+    const sorted = [...m.entries()].filter(([k]) => k !== 'Cash' && k !== 'Other').sort((x, y) => y[1] - x[1])
+    const rest = sorted.slice(4).reduce((t, [, v]) => t + v, 0) + (m.get('Other') ?? 0)
+    return [...sorted.slice(0, 4), ...(rest > 0.004 ? [['Other', rest] as [string, number]] : []), ...(m.has('Cash') ? [['Cash', m.get('Cash') ?? 0] as [string, number]] : [])]
+  }
+  const sectors = breakdown((h) => h.sector)
+  const regions = breakdown((h) => h.region)
   const sec = 'min-w-0 px-6 py-2.5 first:pl-0 [&+&]:border-l [&+&]:border-line'
   const title = 'mb-0.5 flex min-h-5 items-center gap-2 text-fg-muted'
 
@@ -50,7 +54,7 @@ export function ComponentDetail({ c }: { c: Component }) {
   return (
     <>
       <p className="mt-3 max-w-205 text-fg-secondary">{c.desc} The currency risk is not hedged.</p>
-      <div className="mt-4 grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)] border-y border-line text-xs">
+      <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)] border-y border-line text-xs">
         <div className={sec}>
           <div className={title}>
             <span>Asset allocation</span>
@@ -63,15 +67,15 @@ export function ComponentDetail({ c }: { c: Component }) {
           </div>
         </div>
         <div className={sec}>
-          <div className={title}>Currency exposure</div>
+          <div className={title}>Sector allocation</div>
           <div className="flex flex-wrap gap-x-4 gap-y-0.5 leading-relaxed">
-            {ccyList.map(([k, v]) => <span key={k} className="whitespace-nowrap">{k} <strong className="font-semibold">{pct(v)}</strong></span>)}
+            {sectors.map(([k, v]) => <span key={k} className="whitespace-nowrap">{k} <strong className="font-semibold">{pct(v)}</strong></span>)}
           </div>
         </div>
         <div className={sec}>
-          <div className={title}>Concentration</div>
-          <div className="leading-relaxed">
-            {top ? <>Largest: {top.name} <strong className="font-semibold">{pct(top.w)}</strong><span className="block text-fg-muted">Top 5 positions: {pct(top5)}</span></> : <span className="text-fg-subtle">—</span>}
+          <div className={title}>Region allocation</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 leading-relaxed">
+            {regions.map(([k, v]) => <span key={k} className="whitespace-nowrap">{k} <strong className="font-semibold">{pct(v)}</strong></span>)}
           </div>
         </div>
       </div>

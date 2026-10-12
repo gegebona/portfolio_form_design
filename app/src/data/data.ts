@@ -182,7 +182,20 @@ const POOLS: Record<string, [string, string][]> = {
 export const TOP_WEIGHTS = [8.4, 7.9, 7.1, 6.6, 6.2, 5.4, 5.1, 4.7, 4.2, 3.6]
 
 /** One instrument held inside a building block or model portfolio (illustrative look-through). */
-export type Holding = { name: string; isin: string; cls: AssetClass; ccy: string; w: number }
+export type Holding = { name: string; isin: string; cls: AssetClass; ccy: string; w: number; sector: string; region: string }
+/** Sample sector and region of each pool instrument (by ISIN). */
+const INSTRUMENT_PROFILE: Record<string, [sector: string, region: string]> = {
+  NL0010273215: ['Information technology', 'Eurozone'], DK0062498333: ['Health care', 'Nordics'], DE0007164600: ['Information technology', 'Eurozone'],
+  CH0038863350: ['Consumer staples', 'Switzerland'], FR0000121014: ['Consumer discretionary', 'Eurozone'], CH0012032048: ['Health care', 'Switzerland'],
+  DE0007236101: ['Industrials', 'Eurozone'], FR0000121972: ['Industrials', 'Eurozone'], DE0008404005: ['Financials', 'Eurozone'], FR0000120578: ['Health care', 'Eurozone'],
+  BMG2519Y1084: ['Financials', 'Latin America'], CNE100000296: ['Consumer discretionary', 'Asia'], CNE1000003W8: ['Energy', 'Asia'],
+  GB0000456144: ['Materials', 'Latin America'], GB00B2QPKJ12: ['Materials', 'Latin America'], GB00BNQMPN80: ['Utilities', 'Asia'],
+  GB00BRXH2664: ['Materials', 'Africa'], HK0992009065: ['Information technology', 'Asia'], KYG3472Y1199: ['Information technology', 'Asia'], KYG596691041: ['Consumer discretionary', 'Asia'],
+  US5949181045: ['Information technology', 'North America'], US0378331005: ['Information technology', 'North America'], US67066G1040: ['Information technology', 'North America'],
+  US0231351067: ['Consumer discretionary', 'North America'], US30303M1027: ['Communication services', 'North America'], US02079K1079: ['Communication services', 'North America'],
+  US11135F1012: ['Information technology', 'North America'], US88160R1014: ['Consumer discretionary', 'North America'], US46625H1005: ['Financials', 'North America'],
+  US5324571083: ['Health care', 'North America'],
+}
 const ISIN_CCY: Record<string, string> = { US: 'USD', BM: 'USD', CH: 'CHF', GB: 'GBP', DK: 'DKK', HK: 'HKD', KY: 'HKD', CN: 'HKD' }
 /**
  * The instruments a component holds, with weights that add up to exactly 100%: its ten sample instruments on 98%
@@ -193,10 +206,11 @@ export function componentHoldings(c: Component): Holding[] {
   const total = TOP_WEIGHTS.reduce((t, w) => t + w, 0)
   const list: Holding[] = poolFor(c).map(([name, isin], i) => ({
     name, isin, cls: mixed ? (i < 6 ? 'Equity' : 'Bonds') : AREA_CLASS[c.area], ccy: ISIN_CCY[isin.slice(0, 2)] ?? 'EUR',
+    sector: INSTRUMENT_PROFILE[isin]?.[0] ?? 'Other', region: INSTRUMENT_PROFILE[isin]?.[1] ?? 'Other',
     w: Math.round((TOP_WEIGHTS[i] / total) * 9800) / 100,
   }))
   list[0].w = Math.round((98 - list.slice(1).reduce((t, h) => t + h.w, 0)) * 100) / 100
-  return [...list, { name: 'EUR account', isin: '', cls: 'Liquidity', ccy: 'EUR', w: 2 }]
+  return [...list, { name: 'EUR account', isin: '', cls: 'Liquidity', ccy: 'EUR', w: 2, sector: 'Cash', region: 'Cash' }]
 }
 export function poolFor(c: Component) { return c.region === 'Europe' ? POOLS.europe : c.region === 'Emerging markets' ? POOLS.em : POOLS.global }
 

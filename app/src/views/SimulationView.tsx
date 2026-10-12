@@ -272,7 +272,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             </tr>
             {plan && removing && (
               <tr>
-                <td colSpan={10} className="border-b border-line bg-surface-muted px-6 py-4">
+                <td colSpan={10} className="border-b border-line border-l-2 border-l-selected bg-surface px-6 py-4">
                   <div className="max-w-180">
                     <div className="text-sm font-semibold">Remove {r.name}</div>
                     <p className="text-fg-muted">{f2(plan.amount)}% will be released. Choose how to redistribute it.</p>
