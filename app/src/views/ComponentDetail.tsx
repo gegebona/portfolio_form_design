@@ -54,7 +54,7 @@ export function ComponentDetail({ c }: { c: Component }) {
   return (
     <>
       <p className="mt-3 max-w-205 text-fg-secondary">{c.desc} The currency risk is not hedged.</p>
-      <div className="mt-4 grid grid-cols-3 border-y border-line text-xs">
+      <div className="mt-4 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.3fr)_minmax(0,1fr)] border-y border-line text-xs">
         <div className={sec}>
           <div className={title}>Asset allocation</div>
           <BarList rows={inUse.map((k) => [k, alloc[k], CLASS_COLOR[k]] as [string, number, string])} />
