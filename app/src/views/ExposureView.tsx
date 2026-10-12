@@ -1,117 +1,277 @@
-import { BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, ASSET_CLASSES, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
+import { Tooltip } from '@base-ui/react/tooltip'
+import type { ReactNode } from 'react'
+import { ASSET_CLASSES, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
+import { TooltipPopup } from '../components/ui/tag'
 import { cn } from '../lib/cn'
-import { f2, pct, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
+import { pct, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 
 type Mode = 'current' | 'new'
-type Bar = { label: string; value: number; before?: number; color: string; tip?: string }
-/** Sectors, regions, countries, maturities and ratings carry no colour meaning: one navy. Asset classes and cash keep theirs. */
-const NAVY = 'var(--color-ubs-chart-19)'
-const colorOf = (label: string) => (label === 'Cash' ? CLASS_COLOR.Liquidity : NAVY)
+/** One item of a chart: its value in the version on screen and, for New, in Current. */
+type Item = { label: string; value: number; before: number; tip?: string }
 
-/**
- * Exposure view of Simulation: the portfolio from several angles (asset class, sector, region, country, currency,
- * and for its fixed income part maturity, rating, duration and yield). Same horizontal bar charts as the building
- * block details. In New, each value shows its change against Current.
+/*
+ * Chart language shared with the team's other dashboards: open sections with a light title (no boxes), muted fills,
+ * labels inside the bars, waffles for regions and bubbles for currencies. One accent for the version on screen
+ * (navy), a pale blue for Current when New is compared with it, asset classes in their own colours, cash in green.
  */
+const ACCENT = 'var(--color-ubs-chart-19)'
+const SOFT = 'var(--color-ubs-background-tags-22)'
+const BEFORE = 'var(--color-ubs-background-tags-08)'
+
 export function ExposureView({ mode }: { mode: Mode }) {
   const { state } = usePortfolio()
   const rows = state.sim.rows
-  const cur = mode === 'current'
+  const compare = mode === 'new'
   const wOf = (r: SimRow, m: Mode) => (m === 'current' ? r.w : r.removed ? 0 : r.nw)
   const sum = (key: (r: SimRow) => string, m: Mode) => {
     const out = new Map<string, number>()
     rows.forEach((r) => { const w = wOf(r, m); if (w > 0) out.set(key(r), (out.get(key(r)) ?? 0) + w) })
     return out
   }
-  /** Largest first, at most `n` rows; the rest grouped as Other (its members on hover). Cash always last. */
-  const bars = (key: (r: SimRow) => string, n = 6): Bar[] => {
+  /** Largest first, at most `n` items; the rest grouped as Other (members on hover). Cash always last. */
+  const items = (key: (r: SimRow) => string, n = 6): Item[] => {
     const now = sum(key, mode)
     const then = sum(key, 'current')
-    const sorted = [...now.entries()].filter(([k]) => k !== 'Cash').sort((a, b) => b[1] - a[1])
-    const keep = sorted.slice(0, n - 1)
-    const rest = sorted.slice(n - 1)
-    const out: Bar[] = keep.map(([k, v]) => ({ label: k, value: v, before: then.get(k) ?? 0, color: colorOf(k) }))
-    if (rest.length === 1) out.push({ label: rest[0][0], value: rest[0][1], before: then.get(rest[0][0]) ?? 0, color: NAVY })
-    else if (rest.length) out.push({
-      label: 'Other', value: rest.reduce((t, [, v]) => t + v, 0), before: rest.reduce((t, [k]) => t + (then.get(k) ?? 0), 0), color: NAVY,
+    const sorted = [...new Set([...now.keys(), ...then.keys()])].filter((k) => k !== 'Cash').map((k) => [k, now.get(k) ?? 0] as [string, number]).sort((a, b) => b[1] - a[1])
+    const keep = sorted.slice(0, sorted.length > n ? n - 1 : n)
+    const rest = sorted.slice(keep.length)
+    const out: Item[] = keep.map(([k, v]) => ({ label: k, value: v, before: then.get(k) ?? 0 }))
+    if (rest.length) out.push({
+      label: 'Other', value: rest.reduce((t, [, v]) => t + v, 0), before: rest.reduce((t, [k]) => t + (then.get(k) ?? 0), 0),
       tip: rest.map(([k, v]) => `${k} ${pct(v)}`).join(' · '),
     })
-    if (now.has('Cash')) out.push({ label: 'Cash', value: now.get('Cash') ?? 0, before: then.get('Cash') ?? 0, color: colorOf('Cash') })
+    if (now.has('Cash') || then.has('Cash')) out.push({ label: 'Cash', value: now.get('Cash') ?? 0, before: then.get('Cash') ?? 0 })
     return out
   }
   const expo = (r: SimRow) => EXPOSURE[r.id] ?? { sector: 'Other', region: 'Other', country: 'Other' }
 
   const alloc = simAlloc(state, mode)
   const allocBefore = simAlloc(state, 'current')
-  const assetBars: Bar[] = ASSET_CLASSES.filter((c) => alloc[c] > 0.004 || allocBefore[c] > 0.004).map((c) => ({ label: c, value: alloc[c], before: allocBefore[c], color: CLASS_COLOR[c] }))
+  const classes = ASSET_CLASSES.filter((c) => alloc[c] > 0.004 || allocBefore[c] > 0.004)
 
   // Fixed income: bond positions looked through to maturity and rating, as a share of the fixed income part.
-  const bonds = rows.filter((r) => BOND_PROFILE[r.id] && wOf(r, mode) > 0)
-  const fiW = bonds.reduce((t, r) => t + wOf(r, mode), 0)
-  const split = (pick: (id: string) => Record<string, number>, buckets: string[]): Bar[] => buckets
-    .map((b) => ({ label: b, value: fiW ? bonds.reduce((t, r) => t + wOf(r, mode) * (pick(r.id)[b] ?? 0), 0) / fiW : 0, color: NAVY }))
-    .filter((b) => b.value > 0.004)
-  const avg = (f: (id: string) => number) => (fiW ? bonds.reduce((t, r) => t + wOf(r, mode) * f(r.id), 0) / fiW : 0)
-  const duration = avg((id) => BOND_PROFILE[id].duration)
-  const ytm = avg((id) => BOND_PROFILE[id].ytm)
+  const bondsIn = (m: Mode) => rows.filter((r) => BOND_PROFILE[r.id] && wOf(r, m) > 0)
+  const fiW = (m: Mode) => bondsIn(m).reduce((t, r) => t + wOf(r, m), 0)
+  const split = (pick: (id: string) => Record<string, number>, buckets: string[]): Item[] => buckets.map((b) => {
+    const share = (m: Mode) => (fiW(m) ? bondsIn(m).reduce((t, r) => t + wOf(r, m) * (pick(r.id)[b] ?? 0), 0) / fiW(m) : 0)
+    return { label: b, value: share(mode), before: share('current') }
+  })
+  const avg = (f: (id: string) => number) => (fiW(mode) ? bondsIn(mode).reduce((t, r) => t + wOf(r, mode) * f(r.id), 0) / fiW(mode) : 0)
 
-  const panel = 'min-w-0 rounded-sm border border-line px-4 pt-3 pb-3.5'
   return (
-    <div className="grid grid-cols-6 gap-3 py-3 text-xs">
-      <Panel className={cn(panel, 'col-span-2')} title="Asset allocation" bars={assetBars} cur={cur} />
-      <Panel className={cn(panel, 'col-span-2')} title="Sector allocation" bars={bars((r) => expo(r).sector)} cur={cur} />
-      <Panel className={cn(panel, 'col-span-2')} title="Region allocation" bars={bars((r) => expo(r).region)} cur={cur} />
-      <Panel className={cn(panel, 'col-span-3')} title="Country allocation" bars={bars((r) => expo(r).country, 8)} cur={cur} />
-      <Panel className={cn(panel, 'col-span-3')} title="Currency allocation" bars={bars((r) => r.ccy, 8)} cur={cur} />
-
-      <div className="col-span-6 mt-2 flex items-baseline gap-2 border-b border-line pb-1.5">
-        <h3 className="text-sm font-semibold">Fixed income</h3>
-        <span className="text-fg-muted">{fiW ? `${pct(fiW)} of the portfolio · maturity and rating as a share of the fixed income part` : 'No fixed income positions'}</span>
+    <div className="pb-6 text-xs">
+      {compare && (
+        <div className="flex justify-end gap-4 pt-3 text-fg-muted">
+          <span className="inline-flex items-center gap-1.5"><span className="size-2.5" style={{ background: ACCENT }} />New</span>
+          <span className="inline-flex items-center gap-1.5"><span className="size-2.5" style={{ background: BEFORE }} />Current</span>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-x-14 gap-y-9 pt-2">
+        <Block title="By asset class">
+          <Mosaic parts={classes.map((c) => ({ label: c, value: alloc[c], color: CLASS_COLOR[c] }))} />
+          {compare && <Mosaic thin parts={classes.map((c) => ({ label: c, value: allocBefore[c], color: CLASS_COLOR[c] }))} />}
+        </Block>
+        <Block title="By sector"><InsideBars items={items((r) => expo(r).sector)} compare={compare} /></Block>
+        <Block title="By region"><Waffles items={items((r) => expo(r).region, 5)} compare={compare} /></Block>
+        <Block title="By currency"><Bubbles items={items((r) => r.ccy, 7)} compare={compare} /></Block>
+        <Block title="By country" className="col-span-2"><InsideBars items={items((r) => expo(r).country, 9)} compare={compare} /></Block>
       </div>
-      {fiW > 0 && (
-        <>
-          <Panel className={cn(panel, 'col-span-2')} title="Maturity" bars={split((id) => BOND_PROFILE[id].maturity, MATURITY_BUCKETS)} cur />
-          <Panel className={cn(panel, 'col-span-2')} title="Rating" bars={split((id) => BOND_PROFILE[id].rating, RATING_BUCKETS)} cur />
-          <div className={cn(panel, 'col-span-2')}>
-            <div className="mb-2 font-semibold">Duration and yield to maturity</div>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-fg-muted"><th className="pb-1 text-left font-normal" /><th className="pb-1 text-right font-normal">Portfolio</th><th className="pb-1 text-right font-normal">Benchmark</th></tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-line"><td className="py-1.5">Duration</td><td className="py-1.5 text-right font-semibold tabular-nums">{duration.toFixed(1)} yrs</td><td className="py-1.5 text-right tabular-nums">{BOND_BENCHMARK.duration.toFixed(1)} yrs</td></tr>
-                <tr className="border-t border-line"><td className="py-1.5">Yield to maturity</td><td className="py-1.5 text-right font-semibold tabular-nums">{f2(ytm)}%</td><td className="py-1.5 text-right tabular-nums">{f2(BOND_BENCHMARK.ytm)}%</td></tr>
-              </tbody>
-            </table>
-            <div className="mt-2 text-fg-muted">Benchmark: {BOND_BENCHMARK.name}</div>
-          </div>
-        </>
+
+      <div className="mt-10 flex items-baseline gap-3 border-b border-line pb-2">
+        <h3 className="text-xl font-light text-fg-secondary">Fixed income</h3>
+        <span className="text-fg-muted">{fiW(mode) ? `${pct(fiW(mode))} of the portfolio · maturity and rating as a share of the fixed income part` : 'No fixed income positions'}</span>
+      </div>
+      {fiW(mode) > 0 && (
+        <div className="grid grid-cols-2 gap-x-14 gap-y-9 pt-5">
+          <Block title="Maturity"><Columns items={split((id) => BOND_PROFILE[id].maturity, MATURITY_BUCKETS)} compare={compare} /></Block>
+          <Block title="Rating"><InsideBars items={split((id) => BOND_PROFILE[id].rating, RATING_BUCKETS)} compare={compare} /></Block>
+          <Kpi title="Duration" value={avg((id) => BOND_PROFILE[id].duration)} bench={BOND_BENCHMARK.duration} scale={10} fmt={(v) => `${v.toFixed(1)} yrs`}
+            note={(d) => `The portfolio's duration is ${Math.abs(d).toFixed(1)} years ${d < 0 ? 'shorter' : 'longer'} than the benchmark's, so it is ${d < 0 ? 'less' : 'more'} sensitive to interest rate changes.`} />
+          <Kpi title="Yield to maturity" value={avg((id) => BOND_PROFILE[id].ytm)} bench={BOND_BENCHMARK.ytm} scale={6} fmt={(v) => `${v.toFixed(2)}%`}
+            note={(d) => `Held to maturity, the fixed income part would yield ${Math.abs(d).toFixed(2)} points ${d < 0 ? 'less' : 'more'} per year than the benchmark.`} />
+        </div>
       )}
     </div>
   )
 }
 
-/** One chart panel: horizontal bars (label, bar, value) and, in New, the change against Current. */
-function Panel({ title, bars, cur, className }: { title: string; bars: Bar[]; /** Hide the change column (Current, or shares of a part). */ cur?: boolean; className?: string }) {
-  const max = Math.max(1, ...bars.map((b) => b.value))
-  const chg = (b: Bar) => {
-    const d = b.value - (b.before ?? b.value)
-    return Math.abs(d) < 0.05 ? <span className="text-fg-subtle">—</span> : <span className="text-fg-muted">{(d > 0 ? '+' : '−') + Math.abs(Math.round(d * 10) / 10)}</span>
-  }
+function Block({ title, className, children }: { title: string; className?: string; children: ReactNode }) {
   return (
-    <div className={className}>
-      <div className="mb-2 font-semibold">{title}</div>
-      <div role="list" className={cn('grid items-center gap-x-2.5 gap-y-1 leading-4', cur ? 'grid-cols-[max-content_minmax(2rem,1fr)_max-content]' : 'grid-cols-[max-content_minmax(2rem,1fr)_max-content_2.5rem]')}>
-        {bars.map((b) => (
-          <div key={b.label} role="listitem" className="contents">
-            <span className={cn('max-w-40 truncate', b.tip && 'cursor-help underline decoration-dotted underline-offset-2')} title={b.tip ?? b.label}>{b.label}</span>
-            {/* Bars are scaled to the largest value of the chart, so small exposures stay readable. */}
-            <span className="block h-1.5 w-full" aria-hidden><span className="block h-full" style={{ width: `${(b.value / max) * 100}%`, background: b.color }} /></span>
-            <span className="text-right font-semibold tabular-nums">{pct(b.value)}</span>
-            {!cur && <span className="text-right tabular-nums">{chg(b)}</span>}
+    <section className={cn('min-w-0', className)}>
+      <h3 className="mb-3 text-xl font-light text-fg-secondary">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+const delta = (it: Item) => {
+  const d = it.value - it.before
+  return Math.abs(d) < 0.05 ? '' : `${d > 0 ? '+' : '−'}${Math.abs(Math.round(d * 10) / 10)}`
+}
+/** A label with its full content on hover (used for Other). */
+function Label({ it, className }: { it: Item; className?: string }) {
+  if (!it.tip) return <span className={className}>{it.label}</span>
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger render={<span />} className={cn('cursor-help underline decoration-dotted underline-offset-2', className)}>{it.label}</Tooltip.Trigger>
+      <TooltipPopup>{it.tip}</TooltipPopup>
+    </Tooltip.Root>
+  )
+}
+/** Axis maximum: the largest value rounded up to a step of 5 (or 10 above 30). */
+const niceMax = (v: number) => { const step = v > 30 ? 10 : 5; return Math.max(step, Math.ceil(v / step) * step) }
+
+/** Asset classes as one band of blocks, width = share, label and value written upwards inside each block. */
+function Mosaic({ parts, thin }: { parts: { label: string; value: number; color: string }[]; thin?: boolean }) {
+  const shown = parts.filter((p) => p.value > 0.004)
+  return (
+    <div role="img" aria-label={(thin ? 'Current: ' : '') + shown.map((p) => `${p.label} ${pct(p.value)}`).join(', ')} className={cn('flex w-full gap-0.5', thin ? 'mt-1.5 h-2 opacity-45' : 'h-28')}>
+      {shown.map((p) => (
+        <div key={p.label} className="relative min-w-0 overflow-hidden" style={{ width: `${p.value}%`, background: p.color }} title={`${p.label} ${pct(p.value)}`}>
+          {!thin && p.value >= 6 && (
+            <span className="absolute bottom-2 left-1.5 rotate-180 text-sm/tight whitespace-nowrap text-white [writing-mode:vertical-rl]">
+              {p.label}<br />{pct(p.value)}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Horizontal bars with the label inside, an axis underneath; in New a pale Current bar under each. */
+function InsideBars({ items, compare }: { items: Item[]; compare: boolean }) {
+  const max = niceMax(Math.max(...items.map((i) => Math.max(i.value, compare ? i.before : 0))))
+  const ticks = Array.from({ length: max / (max > 30 ? 10 : 5) + 1 }, (_, i) => i * (max > 30 ? 10 : 5))
+  return (
+    <div>
+      <div className="flex flex-col gap-1">
+        {items.map((it) => {
+          const w = (it.value / max) * 100
+          // The label sits inside its bar; a short bar keeps it just outside, in dark text.
+          const inside = w >= 38
+          return (
+          <div key={it.label} className="grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-2">
+            <div>
+              <div className="relative h-5">
+                <div className="absolute inset-y-0 left-0" style={{ width: `${w}%`, background: it.label === 'Cash' ? CLASS_COLOR.Liquidity : ACCENT }} />
+                <span className={cn('absolute inset-y-0 flex items-center whitespace-nowrap', inside ? 'text-white' : 'text-fg')} style={{ left: inside ? 6 : `calc(${w}% + 6px)` }}>
+                  <Label it={it} />
+                </span>
+              </div>
+              {compare && <div className="mt-px h-1.5" style={{ width: `${(it.before / max) * 100}%`, background: BEFORE }} />}
+            </div>
+            <span className="text-right tabular-nums">
+              <span className="font-semibold">{pct(it.value)}</span>
+              {compare && delta(it) && <span className="ml-1 text-fg-muted">{delta(it)}</span>}
+            </span>
+          </div>
+          )
+        })}
+      </div>
+      <div className="mt-1.5 grid grid-cols-[minmax(0,1fr)_4.5rem] gap-2">
+        <div className="relative h-4 border-t border-line-strong text-fg-muted">
+          {ticks.map((t) => <span key={t} className="absolute top-0.5 -translate-x-1/2 tabular-nums first:translate-x-0" style={{ left: `${(t / max) * 100}%` }}>{t}</span>)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** One waffle per region: 10 × 10 squares, one square per percentage point. */
+function Waffles({ items, compare }: { items: Item[]; compare: boolean }) {
+  return (
+    <div className="flex flex-wrap gap-x-6 gap-y-4">
+      {items.map((it) => {
+        const n = Math.round(it.value)
+        const b = Math.round(it.before)
+        return (
+          <div key={it.label} className="w-24">
+            <div role="img" aria-label={`${it.label} ${pct(it.value)}`} className="grid grid-cols-10 gap-px">
+              {Array.from({ length: 100 }, (_, i) => {
+                // Filled from the bottom row up; in New, squares that only Current had are shown pale.
+                const k = (9 - Math.floor(i / 10)) * 10 + (i % 10)
+                const on = k < n
+                const was = compare && !on && k < b
+                return <span key={i} className="aspect-square" style={{ background: on ? (it.label === 'Cash' ? CLASS_COLOR.Liquidity : ACCENT) : was ? BEFORE : SOFT }} />
+              })}
+            </div>
+            <div className="mt-1.5 flex items-baseline justify-between gap-1">
+              <Label it={it} className="truncate" />
+              <span className="font-semibold tabular-nums">{pct(it.value)}</span>
+            </div>
+            {compare && delta(it) && <div className="text-right text-fg-muted tabular-nums">{delta(it)}</div>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Currencies as bubbles on a line, area = share; in New a pale Current bubble beside each. */
+function Bubbles({ items, compare }: { items: Item[]; compare: boolean }) {
+  const max = Math.max(...items.map((i) => Math.max(i.value, i.before)))
+  const d = (v: number) => (v > 0 ? 14 + Math.sqrt(v / max) * 82 : 0)
+  return (
+    <div className="relative flex items-end justify-between gap-2">
+      <span aria-hidden className="absolute inset-x-0 top-[3.5rem] h-px bg-line" />
+      {items.map((it) => (
+        <div key={it.label} className="relative flex min-w-0 flex-col items-center">
+          <div className="flex h-28 items-center gap-1">
+            <span className="flex items-center justify-center rounded-full text-white tabular-nums" style={{ width: d(it.value), height: d(it.value), background: it.label === 'Cash' ? CLASS_COLOR.Liquidity : ACCENT }}>
+              {d(it.value) >= 44 && <span className={d(it.value) >= 70 ? 'text-base' : ''}>{pct(it.value)}</span>}
+            </span>
+            {compare && Math.abs(it.value - it.before) >= 0.05 && <span className="rounded-full" style={{ width: d(it.before), height: d(it.before), background: BEFORE }} />}
+          </div>
+          <Label it={it} className="mt-1" />
+          {d(it.value) < 44 && <span className="font-semibold tabular-nums">{pct(it.value)}</span>}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Vertical columns (maturity buckets), value on top; in New a pale Current column beside. */
+function Columns({ items, compare }: { items: Item[]; compare: boolean }) {
+  const max = niceMax(Math.max(...items.map((i) => Math.max(i.value, i.before))))
+  return (
+    <div>
+      <div className="flex h-36 items-end gap-3 border-b border-line-strong">
+        {items.map((it) => (
+          <div key={it.label} className="flex h-full flex-1 flex-col justify-end">
+            <span className="mb-1 text-center font-semibold tabular-nums">{pct(it.value)}</span>
+            <div className="flex items-end justify-center gap-0.5" style={{ height: `${(Math.max(it.value, it.before) / max) * 100}%` }}>
+              <span className="w-full max-w-10" style={{ height: `${it.value ? (it.value / Math.max(it.value, it.before)) * 100 : 0}%`, background: ACCENT }} />
+              {compare && Math.abs(it.value - it.before) >= 0.05 && <span className="w-2" style={{ height: `${(it.before / Math.max(it.value, it.before)) * 100}%`, background: BEFORE }} />}
+            </div>
           </div>
         ))}
       </div>
+      <div className="mt-1.5 flex gap-3 text-fg-muted">
+        {items.map((it) => <span key={it.label} className="flex-1 text-center">{it.label}</span>)}
+      </div>
     </div>
+  )
+}
+
+/** Key figure against the benchmark: title and value on one line, a track with both marked, one sentence. */
+function Kpi({ title, value, bench, scale, fmt, note }: { title: string; value: number; bench: number; scale: number; fmt: (v: number) => string; note: (diff: number) => string }) {
+  const at = (v: number) => `${Math.min(100, (v / scale) * 100)}%`
+  return (
+    <section>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-xl font-light text-fg-secondary">{title}</h3>
+        <span className="text-xl tabular-nums">{fmt(value)}</span>
+      </div>
+      <div className="relative mt-2 h-6" style={{ background: SOFT }}>
+        <div className="absolute inset-y-0 left-0" style={{ width: at(value), background: ACCENT }} />
+        <div className="absolute -inset-y-1 w-0.5 bg-fg" style={{ left: at(bench) }} title={`Benchmark ${fmt(bench)}`} />
+      </div>
+      <div className="mt-1 flex justify-between text-fg-muted">
+        <span>Portfolio {fmt(value)}</span>
+        <span>Benchmark {fmt(bench)} <span className="inline-block h-2.5 w-0.5 bg-fg align-[-1px]" /></span>
+      </div>
+      <p className="mt-2 text-sm text-fg-secondary">{note(value - bench)} Benchmark: {BOND_BENCHMARK.name}.</p>
+    </section>
   )
 }
