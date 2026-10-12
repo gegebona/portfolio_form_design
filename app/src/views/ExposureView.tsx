@@ -91,7 +91,7 @@ export function ExposureView({ mode }: { mode: Mode }) {
             ? <AllocationBlock rows={[{ label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={1} showChange />
             : <AllocationBlock rows={[{ label: mine, alloc: simAlloc(state, mode) }, { label: 'Benchmark', alloc: benchmarkAlloc(state) }]} focus={0} />}
         </Block>
-        <Block title="By sector"><InsideBars items={items((r) => expo(r).sector, BENCH_EXPOSURE.sector)} /></Block>
+        <Block title="By sector"><InsideBars items={items((r) => expo(r).sector, BENCH_EXPOSURE.sector, 7)} mine={mine} theirs={theirs} /></Block>
         <Block title="By region"><Waffles items={items((r) => expo(r).region, BENCH_EXPOSURE.region, 6)} /></Block>
         <div className="col-span-3 grid grid-cols-2 gap-x-10">
           <CountryTable items={items((r) => expo(r).country, BENCH_EXPOSURE.country, 100)} theirs={theirs} />
@@ -106,12 +106,12 @@ export function ExposureView({ mode }: { mode: Mode }) {
       {fiW(mode) > 0 && (
         <div className="grid grid-cols-3 gap-x-10 gap-y-9 pt-5">
           <Block title="Maturity"><Columns items={split((id) => BOND_PROFILE[id].maturity, BOND_BENCHMARK.maturity, MATURITY_BUCKETS)} /></Block>
-          <Block title="Rating"><InsideBars items={split((id) => BOND_PROFILE[id].rating, BOND_BENCHMARK.rating, RATING_BUCKETS)} /></Block>
+          <Block title="Rating"><InsideBars items={split((id) => BOND_PROFILE[id].rating, BOND_BENCHMARK.rating, RATING_BUCKETS)} mine={mine} theirs={theirs} /></Block>
           <Block title="Yield to maturity">
             <InsideBars items={[{
               label: 'Fixed income part', value: share(mode, (id) => BOND_PROFILE[id].ytm),
               other: against === 'benchmark' ? BOND_BENCHMARK.ytm : share('current', (id) => BOND_PROFILE[id].ytm),
-            }]} />
+            }]} mine={mine} theirs={theirs} />
             <p className="mt-2 text-fg-muted">Weighted average yield if held to maturity, in % per year.</p>
           </Block>
         </div>
@@ -149,39 +149,36 @@ function Pair({ it, className }: { it: Item; className?: string }) {
   return <span className={cn('tabular-nums whitespace-nowrap', className)}><span className="font-semibold">{pct(it.value)}</span> <span className="text-fg-muted">{pct(it.other)}</span></span>
 }
 
-/** Horizontal bars, label inside (outside when the bar is short), comparison bar underneath, axis below. */
-function InsideBars({ items }: { items: Item[] }) {
-  const max = niceMax(Math.max(...items.map((i) => Math.max(i.value, i.other))))
-  const step = max > 30 ? 10 : 5
-  const ticks = Array.from({ length: max / step + 1 }, (_, i) => i * step)
+/**
+ * Ranked bar table, same look as By country: label, a bar pair (navy = version on screen, grey = comparison, both on
+ * one scale), then both values in aligned columns.
+ */
+function InsideBars({ items, mine, theirs }: { items: Item[]; mine: string; theirs: string }) {
+  const max = Math.max(1, ...items.map((i) => Math.max(i.value, i.other)))
   return (
-    <div>
-      <div className="flex flex-col gap-1.5">
-        {items.map((it) => {
-          const w = (it.value / max) * 100
-          const inside = w >= 38
-          return (
-            <div key={it.label} className="grid grid-cols-[minmax(0,1fr)_6rem] items-center gap-2">
-              <div>
-                <div className="relative h-4.5">
-                  <div className="absolute inset-y-0 left-0" style={{ width: `${w}%`, background: mainColor(it.label) }} />
-                  <span className={cn('absolute inset-y-0 flex items-center whitespace-nowrap', inside ? 'text-white' : 'text-fg')} style={{ left: inside ? 6 : `calc(${w}% + 6px)` }}>
-                    <Label it={it} />
-                  </span>
-                </div>
-                <div className="mt-px h-1.5" style={{ width: `${(it.other / max) * 100}%`, background: OTHER }} />
-              </div>
-              <Pair it={it} className="text-right" />
-            </div>
-          )
-        })}
-      </div>
-      <div className="mt-1.5 grid grid-cols-[minmax(0,1fr)_6rem] gap-2">
-        <div className="relative h-4 border-t border-line-strong text-fg-muted">
-          {ticks.map((t) => <span key={t} className="absolute top-0.5 -translate-x-1/2 tabular-nums first:translate-x-0" style={{ left: `${(t / max) * 100}%` }}>{t}</span>)}
-        </div>
-      </div>
-    </div>
+    <table className="w-full table-fixed border-collapse">
+      <colgroup><col className="w-[40%]" /><col /><col className="w-[17%]" /><col className="w-[19%]" /></colgroup>
+      <thead>
+        <tr className="border-b border-line text-fg-muted">
+          <th className="pb-1.5" /><th />
+          <th className="pb-1.5 text-right font-normal">{mine}</th>
+          <th className="pb-1.5 text-right font-normal">{theirs}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {items.map((it) => (
+          <tr key={it.label} className="border-b border-line">
+            <td className="truncate py-1.5 pr-2"><Label it={it} /></td>
+            <td className="py-1.5 pr-3">
+              <div className="h-2" style={{ width: `${(it.value / max) * 100}%`, background: mainColor(it.label) }} />
+              <div className="mt-px h-1" style={{ width: `${(it.other / max) * 100}%`, background: OTHER }} />
+            </td>
+            <td className="py-1.5 text-right font-semibold tabular-nums">{pct(it.value)}</td>
+            <td className="py-1.5 text-right text-fg-muted tabular-nums">{pct(it.other)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 

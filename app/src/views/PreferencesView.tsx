@@ -11,7 +11,7 @@ import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, RATINGS, type Exclusion
 import { cn } from '../lib/cn'
 import { instrumentByIsin, optionLabel, parentCode, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
 
-const SHOW = 2 // suggestions shown before "+N more"
+const SHOW = 4 // suggestions shown before "+N more"
 
 export function PreferencesView() {
   const { state, update } = usePortfolio()
@@ -82,7 +82,7 @@ function Row({ label, htmlFor, labelId, count, k, children }: { label: string; h
   )
 }
 
-/** One exclusion category on one line: search field, chosen exclusions, then suggestions to add with one click. */
+/** One exclusion category: search field and one-click suggestions on the first line, chosen exclusions on the second. */
 function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   const { state, animate } = usePortfolio()
   const [more, setMore] = useState(false)
@@ -92,19 +92,12 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   const visible = more ? sugg : sugg.slice(0, SHOW)
   return (
     <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} k={cat.id}>
+      {/* Line 1: search and suggestions. Line 2: what is excluded. */}
       <div className="flex flex-wrap items-center gap-1.5">
         <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="mr-1.5 w-44 shrink-0" />
-        {sel.map((id) => {
-          const l = optionLabel(cat.id, id)
-          return (
-            <ViewTransition key={id} enter="item-in" exit="item-out" update="item-move">
-              <ExclusionChip onRemove={() => setSel(sel.filter((x) => x !== id))} removeLabel={'Remove ' + l}>{l}</ExclusionChip>
-            </ViewTransition>
-          )
-        })}
         {sugg.length > 0 && (
           <>
-            <span className="ml-2 text-xs text-fg-muted">Suggested</span>
+            <span className="ml-1 text-xs text-fg-muted">Suggested</span>
             {visible.map((id) => {
               const l = optionLabel(cat.id, id)
               return <SuggestionChip key={id} onClick={() => setSel([...sel, id])} aria-label={'Exclude ' + l}>{l}</SuggestionChip>
@@ -115,6 +108,18 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
           </>
         )}
       </div>
+      {sel.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {sel.map((id) => {
+            const l = optionLabel(cat.id, id)
+            return (
+              <ViewTransition key={id} enter="item-in" exit="item-out" update="item-move">
+                <ExclusionChip onRemove={() => setSel(sel.filter((x) => x !== id))} removeLabel={'Remove ' + l}>{l}</ExclusionChip>
+              </ViewTransition>
+            )
+          })}
+        </div>
+      )}
     </Row>
   )
 }
