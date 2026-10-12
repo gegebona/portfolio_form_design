@@ -119,8 +119,8 @@ export function ComponentDetail({ c }: { c: Component }) {
   )
 }
 
-/** Sectors and regions carry no colour of their own: charcoal (blue stays for interaction and Equity); cash keeps the Liquidity colour. */
-const NEUTRAL = 'var(--color-ubs-background-ui-80)'
+/** Sectors and regions use the one data blue (the same as Equity); cash keeps the Liquidity colour. */
+const NEUTRAL = 'var(--color-chart-1)'
 
 /** Horizontal bar chart: one row per item with label, bar (scaled to 100%) and value. */
 function BarList({ rows }: { rows: [label: string, value: number, color: string, tip?: string][] }) {

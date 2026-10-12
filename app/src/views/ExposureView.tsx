@@ -19,9 +19,8 @@ type Item = { label: string; value: number; other: number; tip?: string }
  * bars, waffles for regions, bubbles for currencies. Every chart compares two series, as in "People like you": the
  * version on screen in navy, the comparison (benchmark, or Current when New is on screen) in pale blue.
  */
-// Blue is kept for what can be clicked or is selected (and for Equity); data series use neutrals: charcoal for the
-// version on screen, warm grey for what it is compared with.
-const ACCENT = 'var(--color-ubs-background-ui-80)'
+// One data blue across all charts (the same blue as Equity), warm grey for what it is compared with.
+const ACCENT = 'var(--color-chart-1)'
 const OTHER = 'var(--color-ubs-text-disabled)'
 const SOFT = 'var(--color-ubs-background-tags-22)'
 
