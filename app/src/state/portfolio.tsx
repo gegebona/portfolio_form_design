@@ -213,6 +213,8 @@ export function openEntry(s: PortfolioState, e: BookEntry, mode: 'current' | 'ne
   const task = e.tasks?.[0] ?? null
   s.book = { id: e.id, task }
   s.sim.mode = mode
+  // A published portfolio holds no excluded instrument (preference warnings exist only while creating): Apple's weight is in cash.
+  if (e.status === 'Published') s.sim.rows = s.sim.rows.filter((r) => r.id !== 'aapl').map((r) => (r.id === 'eur' ? { ...r, w: 3.5, nw: 3.5 } : r))
   // The task proposes a change; start from the current weight each time the portfolio is opened.
   if (task) {
     const r = s.sim.rows.find((x) => x.id === task.rowId)

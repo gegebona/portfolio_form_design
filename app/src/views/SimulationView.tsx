@@ -11,7 +11,7 @@ import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
 import { ADDABLE_POSITIONS, ASSET_CLASSES, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
 import { cn } from '../lib/cn'
-import { setBookTaskStatus } from '../state/book'
+import { getBook, setBookTaskStatus } from '../state/book'
 import { addOwnPosition, f2, near100, parentCode, PREF_LABEL, removeOwnPosition, setOwnWeight, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { Overview, Swatch } from './Overview'
 
@@ -157,7 +157,10 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const custom = !!state.custom
   // The open position task of this portfolio sits on its instrument's row, first in the table (New only).
   const task = cur ? null : state.book.task
-  const excluded = (r: SimRow) => !!r.isin && state.prefs.inst.includes(r.isin)
+  // Preference warnings belong to the creation workflow (a new portfolio or a draft). A published portfolio only ever
+  // shows position tasks.
+  const creating = !state.custom && getBook().find((e) => e.id === state.book.id)?.status !== 'Published'
+  const excluded = (r: SimRow) => creating && !!r.isin && state.prefs.inst.includes(r.isin)
   const conflict = (r: SimRow) => excluded(r) && !r.kept
   const needsDecision = (r: SimRow) => conflict(r) || (task?.rowId === r.id && task.status === 'Open')
   const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0)))
@@ -198,7 +201,8 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
       </div>
     )}
     <table className="w-full table-fixed border-collapse text-xs">
-      <Cols w={cur ? [10, 28, 26, 9, 9, 7, 11] : custom ? [8, 17, 16, 7, 7, 5, 7, 7, 6, 20] : [9, 17, 18, 8, 8, 6, 8, 9, 6, 11]} />
+      {/* The last column holds the row actions: wider when a position task needs its three decision buttons. */}
+      <Cols w={cur ? [10, 28, 26, 9, 9, 7, 11] : custom ? [8, 17, 16, 7, 7, 5, 7, 7, 6, 20] : task ? [8, 18, 15, 7, 7, 5, 7, 9, 6, 18] : [9, 17, 18, 8, 8, 6, 8, 9, 6, 11]} />
       <thead>
         <tr>
           <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
@@ -216,11 +220,9 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           return (
             <Fragment key={r.id}>
             <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
+              <td className={td}>{r.cls}</td>
               <td className={td}>
                 {t && <span className="mb-0.75 block w-fit rounded-xs bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
-                {r.cls}
-              </td>
-              <td className={td}>
                 {r.name}
                 {!cur && r.kept && excluded(r) && (
                   <Popover
@@ -468,7 +470,7 @@ function AutoUpdate() {
         <strong className="mb-0.5 flex items-center gap-1.5 font-semibold"><TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />Automatic update not applied</strong>
         {parentCode(c)} changed on {PARENT_UPDATE.changed} and now requires {inst.name} at {f2(inst.target)}% (target of {parentCode(c)}).
         No valid allocation was possible: the portfolio already holds {held} instruments, the new maximum of {parentCode(c)} ({c.parentPrefs.maxInst}).
-        Nothing was applied, not even the preference changes. Current version {c.version} stays active; the next data load will try again.
+        Nothing was applied, not even the preference changes. Current version {c.version} stays active; the update will be tried again automatically.
       </div>
     )
   }
@@ -478,9 +480,7 @@ function AutoUpdate() {
       <div className={sec}>
         <div className={title}>Automatic update</div>
         <div>{parentCode(c)} changed {PARENT_UPDATE.changed}</div>
-        <div className="text-fg-muted">
-          {pending ? <>Last data load {PARENT_UPDATE.lastLoad} · <span className="text-fg">today's load is late</span></> : <>Data load {PARENT_UPDATE.loaded}</>} · based on Current version {c.version}
-        </div>
+        <div className="text-fg-muted">Based on Current version {c.version}</div>
       </div>
       <div className={sec}>
         <div className={title}>Preferences</div>
@@ -492,7 +492,7 @@ function AutoUpdate() {
         <div className={title}>Allocation</div>
         {pending ? (
           <>
-            <div>Waiting for the data load: {inst.name} will be added at {f2(inst.target)}% (target of {parentCode(c)}).</div>
+            <div>Pending: {inst.name} will be added at {f2(inst.target)}% (target of {parentCode(c)}).</div>
             <div className="text-fg-muted">Weights stay as in Current until then.</div>
           </>
         ) : (

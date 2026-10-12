@@ -82,7 +82,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
         {!quality && (
           <div className={sec}>
             <div className={title}><span>Exclusionary preferences</span>{editExclusions}</div>
-            {excl.length ? <ExclusionLine items={excl} /> : <div className="leading-relaxed">{prefLine}</div>}
+            {excl.length ? <ExclusionLine groups={exclusionGroups(state.prefs)} /> : <div className="leading-relaxed">{prefLine}</div>}
           </div>
         )}
         <div className={sec}>
@@ -243,10 +243,16 @@ export function Donut({ alloc, label }: { alloc: Alloc; label: string }) {
  * Exclusions on at most two lines, never cut off: as many groups as fit, the rest behind “+N more” (same pattern as
  * conflict tags). Measured after layout and again whenever the width changes.
  */
-function ExclusionLine({ items }: { items: string[] }) {
+/** Short group names for the strip. */
+const SHORT: Record<string, string> = { 'Instrument category': 'Category', 'Credit rating': 'Rating' }
+/** A group's values in the strip: up to two, then "+n" (all of them are in the “more” list). */
+const brief = (v: string[]) => (v.length > 2 ? `${v.slice(0, 2).join(', ')} +${v.length - 2}` : v.join(', '))
+
+function ExclusionLine({ groups }: { groups: { label: string; values: string[] }[] }) {
+  const items = groups
   const ref = useRef<HTMLDivElement>(null)
   const [n, setN] = useState(items.length)
-  const key = items.join('|')
+  const key = items.map((g) => g.label + g.values.join()).join('|')
   // Start again from the full list when the exclusions or the available width change.
   useLayoutEffect(() => {
     setN(items.length)
@@ -264,17 +270,22 @@ function ExclusionLine({ items }: { items: string[] }) {
   })
   const more = items.length - n
   return (
-    <div ref={ref} className="line-clamp-2 leading-relaxed text-conflict">
-      Excluded: {items.slice(0, n).join(' · ')}
+    // Each group reads "Label values": the label in grey, the excluded values in red; a group never breaks over two lines.
+    <div ref={ref} className="line-clamp-2 leading-relaxed">
+      {items.slice(0, n).map((g) => (
+        <span key={g.label} className="mr-3.5 inline-block whitespace-nowrap">
+          <span className="text-fg-muted">{SHORT[g.label] ?? g.label}</span> <span className="text-conflict">{brief(g.values)}</span>
+        </span>
+      ))}
       {more > 0 && (
         <Popover
           title="Exclusionary preferences"
           description="Everything excluded from this model portfolio."
           className="w-80"
-          trigger={<PopoverTrigger openOnHover delay={150} className="ml-1.5 cursor-pointer font-semibold whitespace-nowrap underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">+{more} more</PopoverTrigger>}
+          trigger={<PopoverTrigger openOnHover delay={150} className="cursor-pointer font-semibold whitespace-nowrap text-conflict underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">+{more} more</PopoverTrigger>}
         >
           <ul className="text-xs">
-            {items.map((x) => <li key={x} className="border-t border-line py-1.5 text-conflict first:border-t-0">{x}</li>)}
+            {items.map((g) => <li key={g.label} className="border-t border-line py-1.5 first:border-t-0"><span className="text-fg-muted">{g.label}</span> <span className="text-conflict">{g.values.join(', ')}</span></li>)}
           </ul>
         </Popover>
       )}
