@@ -230,7 +230,6 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? (t.status === 'Open' ? '*:bg-task/25' : '*:bg-task/10') : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>{r.cls}</td>
               <td className={td}>
-                {t && <span className="mb-0.75 block w-fit rounded-xs bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
                 {r.name}
                 {!cur && r.kept && excluded(r) && (
                   <Popover

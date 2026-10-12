@@ -1,4 +1,4 @@
-import { Ban, Check, TriangleAlert } from 'lucide-react'
+import { Ban, Check, ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react'
 import { useLayoutEffect, useRef, useState, ViewTransition } from 'react'
 import { Button } from '../components/ui/button'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
@@ -14,7 +14,7 @@ export type AllocRow = { label: string; alloc: Alloc }
  * Exclusions sit in the middle because they explain the flags in the tables below. They are plain text under a
  * ⊘ heading (the system's sign for "excluded"): clear about what they are, without competing with the tables.
  */
-type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Shows the strip's own Show / Hide details control (in its last panel), so the control sits on the thing it changes. */ onToggleCompact?: () => void; /** Show the Quality checks column. Off everywhere for now. */ quality?: boolean }
+type OverviewProps = { rows: [AllocRow, AllocRow]; focus: 0 | 1; showChange?: boolean; compact?: boolean; /** Shows the strip's Show / Hide details handle, centred under the strip. */ onToggleCompact?: () => void; /** Show the Quality checks column. Off everywhere for now. */ quality?: boolean }
 
 /**
  * The same strip sits on Component allocation and on Simulation. One fixed view-transition name makes it a
@@ -30,13 +30,28 @@ export function Overview(props: OverviewProps) {
       exit={{ forward: 'step-forward', back: 'step-back', default: 'none' }}
       update="none"
     >
-      <OverviewBody {...props} />
+      <div>
+        <OverviewBody {...props} />
+        {/* The toggle hangs from the strip's bottom edge, centred, so it reads as opening the whole strip. */}
+        {props.onToggleCompact && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              aria-expanded={!props.compact}
+              onClick={props.onToggleCompact}
+              className="-mt-px inline-flex cursor-pointer items-center gap-1 rounded-b-sm border border-t-0 border-line bg-surface px-2.5 py-0.5 text-xs text-link hover:text-link-hover focus-visible:outline-2 focus-visible:outline-selected"
+            >
+              {props.compact ? 'Show details' : 'Hide details'}
+              {props.compact ? <ChevronDown className="size-3" strokeWidth={2} aria-hidden /> : <ChevronUp className="size-3" strokeWidth={2} aria-hidden />}
+            </button>
+          </div>
+        )}
+      </div>
     </ViewTransition>
   )
 }
 
-function OverviewBody({ rows, focus, showChange, compact, quality = false, onToggleCompact }: OverviewProps) {
-  const toggle = onToggleCompact && <Button variant="link" className="text-xs" aria-expanded={!compact} onClick={onToggleCompact}>{compact ? 'Show details' : 'Hide details'}</Button>
+function OverviewBody({ rows, focus, showChange, compact, quality = false }: OverviewProps) {
   const grid = cn('grid shrink-0 border-y border-line text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)_minmax(0,0.9fr)]')
   const { state } = usePortfolio()
   const failed = QUALITY_CHECKS.filter(([, s]) => s < PASS_SCORE)
@@ -86,7 +101,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
           </div>
         )}
         <div className={sec}>
-          <div className={title}><span>Portfolio</span>{toggle}</div>
+          <div className={title}><span>Portfolio</span></div>
           <div className="truncate leading-relaxed" title={line}>{line}</div>
         </div>
       </div>
@@ -134,7 +149,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
         </div>
       )}
       <div className={sec}>
-        <div className={title}><span>Portfolio</span>{toggle}</div>
+        <div className={title}><span>Portfolio</span></div>
         <dl>
           {[
             ['Code', state.data.code], ['Type', state.custom ? 'Customized' : 'Standard'], ['Currency', state.data.ccy], ['Benchmark', bench],
