@@ -29,29 +29,38 @@ export function ConflictTag({ children, className }: { children: ReactNode; clas
 export function ConflictList({ items, groups, max = 2, compact, className }: { items: string[]; /** The same items by preference type, for the full list. */ groups?: { label: string; values: string[] }[]; max?: number; /** Small spaces (cards): no lead-in text and “+N” instead of “+N more”. */ compact?: boolean; className?: string }) {
   const shown = items.slice(0, max)
   const more = items.length - shown.length
+  // Cards (compact) show a value without its type, so there the details open even for a single conflict.
+  const details = compact || more > 0
+  const list = (
+    <ul className="text-xs">
+      {/* Same pattern as the exclusions strip: preference type in grey, the conflicting values in red. */}
+      {(groups ?? items.map((x) => ({ label: '', values: [x] }))).map((g) => (
+        <li key={g.label + g.values[0]} className="border-t border-line py-1.5 first:border-t-0">
+          <span>{g.label && <span className="text-fg-muted">{g.label} </span>}<span className="text-conflict">{g.values.join(', ')}</span></span>
+        </li>
+      ))}
+    </ul>
+  )
+  const trigger = (children: ReactNode, cls: string) => (
+    <PopoverTrigger openOnHover delay={150} className={cn('cursor-pointer whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-selected', cls)}>{children}</PopoverTrigger>
+  )
+  const pop = (t: ReactNode) => (
+    <Popover title={`Conflicts with ${items.length} ${items.length === 1 ? 'exclusion' : 'exclusions'}`} description="The component holds positions in these excluded areas." className="w-72" trigger={t}>
+      {list}
+    </Popover>
+  )
   return (
     <ConflictTag className={className}>
-      {compact ? <span className="sr-only">Conflicts with exclusions: </span> : 'Conflicts with exclusions: '}{shown.join(', ')}
-      {more > 0 && (
-        <Popover
-          title={`Conflicts with ${items.length} exclusions`}
-          description="The component holds positions in these excluded areas."
-          className="w-72"
-          trigger={
-            <PopoverTrigger openOnHover delay={150} className="ml-1 cursor-pointer font-semibold whitespace-nowrap underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">
-              +{more}{!compact && ' more'}
-            </PopoverTrigger>
-          }
-        >
-          {/* Same pattern as the exclusions strip: preference type in grey, the conflicting values in red. */}
-          <ul className="text-xs">
-            {(groups ?? items.map((x) => ({ label: '', values: [x] }))).map((g) => (
-              <li key={g.label + g.values[0]} className="border-t border-line py-1.5 first:border-t-0">
-                <span>{g.label && <span className="text-fg-muted">{g.label} </span>}<span className="text-conflict">{g.values.join(', ')}</span></span>
-              </li>
-            ))}
-          </ul>
-        </Popover>
+      {compact ? (
+        <>
+          <span className="sr-only">Conflicts with exclusions: </span>
+          {pop(trigger(<>{shown.join(', ')}{more > 0 && <span className="ml-1 font-semibold underline underline-offset-2">+{more}</span>}</>, ''))}
+        </>
+      ) : (
+        <>
+          Conflicts with exclusions: {shown.join(', ')}
+          {details && pop(trigger(`+${more} more`, 'ml-1 font-semibold underline underline-offset-2'))}
+        </>
       )}
     </ConflictTag>
   )
