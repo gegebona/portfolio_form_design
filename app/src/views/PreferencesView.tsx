@@ -9,7 +9,7 @@ import { Checkbox } from '../components/ui/selection'
 import { ThresholdScale } from '../components/ui/threshold-scale'
 import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, PARENT_UPDATE, RATINGS, type ExclusionCategory } from '../data/data'
 import { cn } from '../lib/cn'
-import { instrumentByIsin, optionLabel, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
+import { instrumentByIsin, optionLabel, parentCode, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
 
 const SHOW = 4 // suggestions shown before "+N more"
 
@@ -29,14 +29,14 @@ export function PreferencesView() {
     return custom && (
       <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
         <Lock className="size-3" strokeWidth={1.75} aria-hidden />
-        Locked · inherited from the parent{l && ` · changed ${l.from} → ${l.to} on ${PARENT_UPDATE.changed}`}
+        Locked · inherited from {parentCode(custom)}{l && ` · changed ${l.from} → ${l.to} on ${PARENT_UPDATE.changed}`}
       </span>
     )
   }
 
   return (
     <>
-      <Section screenHeading title="Preferences" description={custom ? 'Every preference is inherited from the parent model portfolio unless you give it your own value. Parent changes reach inherited preferences automatically and skip your own values.' : 'Please configure the preferences specific to the model portfolio in the fields below.'} className="border-b border-line">
+      <Section screenHeading title="Preferences" description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'} className="border-b border-line">
         <div className="mt-4 flex flex-wrap items-end gap-x-10 gap-y-4">
           <Field label="Minimum position size" description={lockNote('Minimum position size')}>
             <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-37.5', custom && 'bg-surface-muted text-fg-muted')} />
@@ -200,15 +200,16 @@ function Source({ k }: { k: PrefKey }) {
   const own = c.overrides.includes(k)
   const parent = prefText(c.parentPrefs, k)
   const differs = parent !== prefText(state.prefs, k)
+  const pc = parentCode(c)
   return (
     <div className="-mt-0.5 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
       <span className={cn('rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', own ? 'bg-selected/10 text-fg' : 'border border-line-strong text-fg-muted')}>{own ? 'Own value' : 'Inherited'}</span>
       <span className="text-fg-muted">
-        {own ? 'Parent changes are skipped' : 'Follows the parent'}
-        {own && differs && <> · Parent: <span className="text-fg">{parent}</span></>}
-        {!own && differs && <> · The parent now has <span className="text-fg">{parent}</span>, not applied yet</>}
-        {c.skipped.includes(k) && ` · The parent changed this on ${PARENT_UPDATE.changed}; your value is kept`}
-        {c.applied.includes(k) && ` · Updated from the parent on ${PARENT_UPDATE.changed}`}
+        {own ? `Changes to ${pc} are skipped` : `Follows ${pc}`}
+        {own && differs && <> · {pc}: <span className="text-fg">{parent}</span></>}
+        {!own && differs && <> · {pc} now has <span className="text-fg">{parent}</span>, not applied yet</>}
+        {c.skipped.includes(k) && ` · ${pc} changed this on ${PARENT_UPDATE.changed}; your value is kept`}
+        {c.applied.includes(k) && ` · Updated from ${pc} on ${PARENT_UPDATE.changed}`}
       </span>
       {own && <Button variant="link" className="text-xs" onClick={() => update((s) => resetToInherit(s, k))}>Reset to inherit</Button>}
     </div>

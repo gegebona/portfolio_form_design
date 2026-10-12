@@ -56,7 +56,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
     const f = rows[focus].alloc
     const other = rows[1 - focus].alloc
     const inUse = ASSET_CLASSES.filter((c) => f[c] > 0.004)
-    const line = `${state.data.code} · ${state.custom ? `Customized of ${state.custom.parentName}` : 'Standard'} · ${state.data.ccy} · ${bench}`
+    const line = `${state.data.code} · ${state.custom ? `Customized of MP_${state.custom.parentId}` : 'Standard'} · ${state.data.ccy} · ${bench}`
     const prefLine = excl.length ? excl.join(' · ') : 'No exclusions'
     return (
       <div className={grid}>

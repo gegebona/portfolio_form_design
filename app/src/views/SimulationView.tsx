@@ -11,7 +11,7 @@ import { WeightField } from '../components/ui/weight'
 import { ASSET_CLASSES, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
 import { cn } from '../lib/cn'
 import { setBookTaskStatus } from '../state/book'
-import { f2, near100, PREF_LABEL, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
+import { f2, near100, parentCode, PREF_LABEL, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { Overview, Swatch } from './Overview'
 
 type Mode = 'current' | 'new'
@@ -53,7 +53,7 @@ export function SimulationView() {
         <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))} className="pb-2.5">
           <TabsList variant="segment" aria-label="Portfolio version">
             <Tab value="current" disabled={custom?.version === 0} title={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined}>Current</Tab>
-            <Tab value="new" disabled={!!custom && !custom.hasNew} title={custom && !custom.hasNew ? 'No new version: the parent update could not be applied' : undefined}>New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
+            <Tab value="new" disabled={!!custom && !custom.hasNew} title={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined}>New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
           </TabsList>
         </Tabs>
         {!cur && (
@@ -428,7 +428,8 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
 
 /** Customized, New: what the automatic update did to a position. */
 function UpdateNote({ r }: { r: SimRow }) {
-  if (r.auto === 'added') return <span><span className="rounded-xs bg-selected/10 px-1.5 text-xs/4.5">Added</span> <span className="text-fg-muted">parent target {f2(r.target ?? 0)}%</span></span>
+  const { state } = usePortfolio()
+  if (r.auto === 'added') return <span><span className="rounded-xs bg-selected/10 px-1.5 text-xs/4.5">Added</span> <span className="text-fg-muted">target of {state.custom && parentCode(state.custom)} {f2(r.target ?? 0)}%</span></span>
   if (r.auto === 'reduced') return <span className="text-fg-muted">{r.cls === 'Liquidity' ? 'Reduced proportionally · cash' : 'Reduced proportionally'}</span>
   if (r.auto === 'protected') return <span className="inline-flex items-center gap-1 text-fg-muted"><Lock className="size-3" strokeWidth={1.75} aria-hidden />Protected · {PARENT_UPDATE.protectedWhy.toLowerCase()}</span>
   return <span className="text-fg-subtle">—</span>
@@ -453,9 +454,9 @@ function AutoUpdate() {
     return (
       <div role="status" className="mt-2 border border-excluded-border bg-excluded-subtle px-3 py-2 text-xs text-conflict">
         <strong className="mb-0.5 flex items-center gap-1.5 font-semibold"><TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />Automatic update not applied</strong>
-        {c.parentName} changed on {PARENT_UPDATE.changed} and now requires {inst.name} at {f2(inst.target)}% (parent target).
-        No valid allocation was possible: the portfolio already holds {held} instruments, the parent's new maximum ({c.parentPrefs.maxInst}).
-        Nothing was applied, not even the parent's preference changes. Current version {c.version} stays active; the next data load will try again.
+        {parentCode(c)} changed on {PARENT_UPDATE.changed} and now requires {inst.name} at {f2(inst.target)}% (target of {parentCode(c)}).
+        No valid allocation was possible: the portfolio already holds {held} instruments, the new maximum of {parentCode(c)} ({c.parentPrefs.maxInst}).
+        Nothing was applied, not even the preference changes. Current version {c.version} stays active; the next data load will try again.
       </div>
     )
   }
@@ -463,8 +464,8 @@ function AutoUpdate() {
   return (
     <div role="status" className="mt-2 grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1.2fr)] border border-line border-l-2 border-l-selected text-xs leading-relaxed">
       <div className={sec}>
-        <div className={title}>Automatic update from the parent</div>
-        <div>{c.parentName} · changed {PARENT_UPDATE.changed}</div>
+        <div className={title}>Automatic update</div>
+        <div>{parentCode(c)} changed {PARENT_UPDATE.changed}</div>
         <div className="text-fg-muted">
           {pending ? <>Last data load {PARENT_UPDATE.lastLoad} · <span className="text-fg">today's load is late</span></> : <>Data load {PARENT_UPDATE.loaded}</>} · based on Current version {c.version}
         </div>
@@ -479,12 +480,12 @@ function AutoUpdate() {
         <div className={title}>Allocation</div>
         {pending ? (
           <>
-            <div>Waiting for the data load: {inst.name} will be added at {f2(inst.target)}% (parent target).</div>
+            <div>Waiting for the data load: {inst.name} will be added at {f2(inst.target)}% (target of {parentCode(c)}).</div>
             <div className="text-fg-muted">Weights stay as in Current until then.</div>
           </>
         ) : (
           <>
-            <div>Added {inst.name} at {f2(inst.target)}% (parent target)</div>
+            <div>Added {inst.name} at {f2(inst.target)}% (target of {parentCode(c)})</div>
             <div className="text-fg-muted">{reduced} positions reduced by {reductionShare(rows).toFixed(2)}% of their weight, cash included</div>
             <div className="text-fg-muted">{prot ? `Protected: ${prot.name} (${PARENT_UPDATE.protectedWhy.toLowerCase()})` : ''} · Total {f2(total)}%</div>
           </>

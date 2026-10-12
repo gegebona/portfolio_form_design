@@ -235,6 +235,9 @@ export function startCustomized(s: PortfolioState, parent: BookEntry) {
   s.sim.mode = 'new'
 }
 
+/** The parent is referred to by its model portfolio code. */
+export const parentCode = (c: CustomState) => 'MP_' + c.parentId
+
 /** Positions the automatic update may reduce: held, not protected. */
 export const eligibleForReduction = (r: SimRow) => r.w > 0 && r.id !== PARENT_UPDATE.protectedId
 

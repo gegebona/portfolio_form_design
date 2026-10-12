@@ -4,7 +4,7 @@ import { Field, Input } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
 import { Select } from '../components/ui/select'
 import { BENCHMARKS, PORTFOLIO_CURRENCIES } from '../data/data'
-import { usePortfolio } from '../state/portfolio'
+import { parentCode, usePortfolio } from '../state/portfolio'
 import { ParentLink } from './ParentLink'
 
 export function DataView() {
@@ -135,5 +135,6 @@ function CustomDataView() {
 }
 
 function Inherited() {
-  return <span className="inline-flex items-center gap-1 text-xs text-fg-muted"><Lock className="size-3" strokeWidth={1.75} aria-hidden />Inherited from the parent</span>
+  const { state } = usePortfolio()
+  return <span className="inline-flex items-center gap-1 text-xs text-fg-muted"><Lock className="size-3" strokeWidth={1.75} aria-hidden />Inherited from {state.custom && parentCode(state.custom)}</span>
 }
