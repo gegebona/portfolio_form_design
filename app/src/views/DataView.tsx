@@ -135,11 +135,11 @@ function CustomDataView() {
 
 function Dl({ rows }: { rows: [string, ReactNode][] }) {
   return (
-    <dl className="mt-4 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-8 text-sm">
+    <dl className="mt-4 grid grid-cols-[max-content_minmax(0,1fr)] text-sm">
       {rows.map(([k, v]) => (
         <div key={k} className="contents">
-          <dt className="border-b border-line py-2 text-xs text-fg-muted">{k}</dt>
-          <dd className="border-b border-line py-2">{v}</dd>
+          <dt className="border-b border-line py-2 pr-8 text-xs/5 text-fg-muted">{k}</dt>
+          <dd className="border-b border-line py-2 leading-5">{v}</dd>
         </div>
       ))}
     </dl>

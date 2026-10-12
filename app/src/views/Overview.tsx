@@ -56,7 +56,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
     const f = rows[focus].alloc
     const other = rows[1 - focus].alloc
     const inUse = ASSET_CLASSES.filter((c) => f[c] > 0.004)
-    const line = `${state.data.code} · Standard · ${state.data.ccy} · ${bench}`
+    const line = `${state.data.code} · ${state.custom ? `Customized of ${state.custom.parentName}` : 'Standard'} · ${state.data.ccy} · ${bench}`
     const prefLine = excl.length ? excl.join(' · ') : 'No exclusions'
     return (
       <div className={grid}>
@@ -137,7 +137,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
         <div className={title}><span>Portfolio</span>{toggle}</div>
         <dl>
           {[
-            ['Code', state.data.code], ['Type', 'Standard'], ['Currency', state.data.ccy], ['Benchmark', bench],
+            ['Code', state.data.code], ['Type', state.custom ? 'Customized' : 'Standard'], ['Currency', state.data.ccy], ['Benchmark', bench],
           ].map(([k, v]) => <FactRow key={k} k={k}>{v}</FactRow>)}
         </dl>
       </div>

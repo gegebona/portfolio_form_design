@@ -264,10 +264,12 @@ export function BookView() {
                           {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                         </Button>
                       ) : <span className="w-5.5 shrink-0" />}
-                      <a href="#simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="text-link hover:text-link-hover hover:underline">{e.name}</a>
+                      <span className="flex min-w-0 flex-col">
+                        <a href="#simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="w-fit text-link hover:text-link-hover hover:underline">{e.name}</a>
+                        {/* Automatic parent update: information, not a task (no tag, no action, no status of its own). */}
+                        {e.auto && <span className="text-fg-muted">{AUTO_LINE[e.auto]}</span>}
+                      </span>
                       {kids > 0 && <span className="whitespace-nowrap text-fg-muted">{kids} customized</span>}
-                      {/* Automatic parent update: information, not a task (no tag, no action, no status of its own). */}
-                      {e.auto && <span className="whitespace-nowrap text-fg-muted">· {AUTO_LINE[e.auto]}</span>}
                     </div>
                   </td>
                   <td className={td}><span className={cn(tagBase, TYPE_TAG[e.type])}>{e.type}</span></td>

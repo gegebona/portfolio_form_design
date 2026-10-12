@@ -452,7 +452,7 @@ function AutoUpdate() {
   if (c.auto === 'invalid') {
     return (
       <div role="status" className="mt-2 border border-excluded-border bg-excluded-subtle px-3 py-2 text-xs text-conflict">
-        <strong className="mr-1.5 inline-flex items-center gap-1.5 font-semibold"><TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />Automatic update not applied</strong>
+        <strong className="mb-0.5 flex items-center gap-1.5 font-semibold"><TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />Automatic update not applied</strong>
         {c.parentName} changed on {PARENT_UPDATE.changed} and now requires {inst.name} at {f2(inst.target)}% (parent target).
         No valid allocation was possible: the portfolio already holds {held} instruments, the parent's new maximum ({c.parentPrefs.maxInst}).
         Nothing was applied, not even the parent's preference changes. Current version {c.version} stays active; the next data load will try again.
