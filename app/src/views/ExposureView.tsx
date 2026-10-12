@@ -1,11 +1,13 @@
 import { Tooltip } from '@base-ui/react/tooltip'
 import { useState, type ReactNode } from 'react'
-import { BENCH_EXPOSURE, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
+import { BENCH_EXPOSURE, BOOK_AS_OF, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
 import { Button } from '../components/ui/button'
+import { Checkbox } from '../components/ui/selection'
 import { TooltipPopup } from '../components/ui/tag'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { AllocationBlock } from './Overview'
 import { cn } from '../lib/cn'
+import { getBook } from '../state/book'
 import { benchmarkAlloc, pct, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 
 type Mode = 'current' | 'new'
@@ -19,7 +21,7 @@ type Item = { label: string; value: number; other: number; tip?: string }
  * version on screen in navy, the comparison (benchmark, or Current when New is on screen) in pale blue.
  */
 const ACCENT = 'var(--color-ubs-chart-19)'
-const OTHER = 'var(--color-ubs-background-tags-08)'
+const OTHER = 'var(--color-ubs-border-light)'
 const SOFT = 'var(--color-ubs-background-tags-22)'
 
 export function ExposureView({ mode }: { mode: Mode }) {
@@ -92,7 +94,7 @@ export function ExposureView({ mode }: { mode: Mode }) {
         </Block>
         <Block title="By sector"><InsideBars items={items((r) => expo(r).sector, BENCH_EXPOSURE.sector)} /></Block>
         <Block title="By region"><Waffles items={items((r) => expo(r).region, BENCH_EXPOSURE.region, 6)} /></Block>
-        <div className="col-span-3 grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-x-10">
+        <div className="col-span-3 grid grid-cols-2 gap-x-10">
           <CountryTable items={items((r) => expo(r).country, BENCH_EXPOSURE.country, 100)} theirs={theirs} />
           <Block title="By currency"><Bubbles items={items((r) => r.ccy, BENCH_EXPOSURE.currency, 7)} /></Block>
         </div>
@@ -103,15 +105,13 @@ export function ExposureView({ mode }: { mode: Mode }) {
         <span className="text-fg-muted">{fiW(mode) ? `${pct(fiW(mode))} of the portfolio · maturity and rating as a share of the fixed income part · benchmark: ${BOND_BENCHMARK.name}` : 'No fixed income positions'}</span>
       </div>
       {fiW(mode) > 0 && (
-        <div className="grid grid-cols-3 gap-x-10 gap-y-9 pt-5">
+        <div className="grid grid-cols-2 gap-x-10 gap-y-9 pt-5">
           <Block title="Maturity"><Columns items={split((id) => BOND_PROFILE[id].maturity, BOND_BENCHMARK.maturity, MATURITY_BUCKETS)} /></Block>
           <Block title="Rating"><InsideBars items={split((id) => BOND_PROFILE[id].rating, BOND_BENCHMARK.rating, RATING_BUCKETS)} /></Block>
-          <div className="flex flex-col gap-7">
-            <Kpi title="Duration" value={share(mode, (id) => BOND_PROFILE[id].duration)} other={against === 'benchmark' ? BOND_BENCHMARK.duration : share('current', (id) => BOND_PROFILE[id].duration)} theirs={theirs} scale={10} fmt={(v) => `${v.toFixed(1)} yrs`} />
-            <Kpi title="Yield to maturity" value={share(mode, (id) => BOND_PROFILE[id].ytm)} other={against === 'benchmark' ? BOND_BENCHMARK.ytm : share('current', (id) => BOND_PROFILE[id].ytm)} theirs={theirs} scale={6} fmt={(v) => `${v.toFixed(2)}%`} />
-          </div>
         </div>
       )}
+
+      <Performance mode={mode} />
     </div>
   )
 }
@@ -245,43 +245,22 @@ function Columns({ items }: { items: Item[] }) {
   )
 }
 
-/** Key figure: value on the right of the title, a bar for it and a marker for the comparison, one explaining line. */
-function Kpi({ title, value, other, theirs, scale, fmt }: { title: string; value: number; other: number; theirs: string; scale: number; fmt: (v: number) => string }) {
-  const at = (v: number) => `${Math.min(100, (v / scale) * 100)}%`
-  const diff = value - other
-  return (
-    <section>
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-xl font-light text-fg-secondary">{title}</h3>
-        <span className="text-xl tabular-nums">{fmt(value)}</span>
-      </div>
-      <div className="relative mt-2 h-4" style={{ background: SOFT }}>
-        <div className="absolute inset-y-0 left-0" style={{ width: at(value), background: ACCENT }} />
-        <div className="absolute inset-y-0 left-0 h-1.5 translate-y-full" style={{ width: at(other), background: OTHER }} />
-      </div>
-      <p className="mt-2 text-sm text-fg-secondary">
-        {Math.abs(diff) < 0.005 ? `Same as ${theirs.toLowerCase() === 'current' ? 'Current' : 'the benchmark'}.` : `${fmt(Math.abs(diff)).replace(' yrs', ' years')} ${diff < 0 ? 'below' : 'above'} ${theirs === 'Current' ? 'Current' : 'the benchmark'} (${fmt(other)}).`}
-      </p>
-    </section>
-  )
-}
-
 /** Rows that are not a country: funds and cash are summed in the note under the table. */
 const NO_COUNTRY = new Set(['Diversified (funds)', 'Cash', 'Other countries', 'Other'])
 const TOP = 7
 
 /**
- * By country: a ranked table (largest of the two weights first) with a small bar pair, both weights and the active
+ * By country: a ranked table (largest portfolio weight first) with a small bar pair, both weights and the active
  * weight (difference). The first seven countries are shown; the rest sit in an expandable "Other" row.
  */
 function CountryTable({ items, theirs }: { items: Item[]; theirs: string }) {
   const [open, setOpen] = useState(false)
-  const rows = items.filter((i) => !NO_COUNTRY.has(i.label)).sort((a, b) => Math.max(b.value, b.other) - Math.max(a.value, a.other))
+  // Ranked by the portfolio's own weight; countries only the comparison holds follow, by their weight there.
+  const rows = items.filter((i) => !NO_COUNTRY.has(i.label)).sort((a, b) => b.value - a.value || b.other - a.other)
   const top = rows.slice(0, TOP)
   // The benchmark's own "Other countries" line belongs with the rest.
   const rest = [...rows.slice(TOP), ...items.filter((i) => i.label === 'Other countries')]
   const max = Math.max(1, ...rows.map((i) => Math.max(i.value, i.other)))
-  const loose = items.filter((i) => NO_COUNTRY.has(i.label) && i.label !== 'Other countries')
   const sumOf = (l: Item[], f: (i: Item) => number) => l.reduce((t, i) => t + f(i), 0)
   const row = (it: Item, indent?: boolean) => {
     const d = it.value - it.other
@@ -329,7 +308,94 @@ function CountryTable({ items, theirs }: { items: Item[]; theirs: string }) {
           {open && rest.map((it) => row(it, true))}
         </tbody>
       </table>
-      {loose.length > 0 && <p className="mt-1.5 text-fg-muted">Not by country: {loose.map((i) => `${i.label === 'Diversified (funds)' ? 'funds' : i.label.toLowerCase()} ${pct(i.value)} / ${pct(i.other)}`).join(' · ')}.</p>}
+    </section>
+  )
+}
+
+/** Sample monthly returns in % (supplied by the bank in reality), 1 Oct 2025 – 30 Sep 2026. */
+const MONTHS = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']
+const RETURNS: { name: string; color: string; main?: boolean; r: number[] }[] = [
+  { name: 'Portfolio', color: ACCENT, main: true, r: [0.9, -0.4, 1.2, 0.6, -1.1, 0.8, 1.5, -0.3, 0.7, 1.1, -0.6, 1.4] },
+  { name: 'Benchmark', color: OTHER, main: true, r: [1.2, -0.8, 1.6, 0.9, -1.8, 1.1, 2.0, -0.9, 1.0, 1.4, -1.2, 1.9] },
+  { name: 'LUX KEY – EUR Equity Value', color: CLASS_COLOR.Equity, r: [1.4, -0.9, 1.8, 0.4, -1.6, 1.2, 2.2, -0.6, 0.5, 1.6, -1.1, 2.0] },
+  { name: 'LUX IM – Global Bond', color: CLASS_COLOR.Bonds, r: [0.3, 0.2, 0.4, -0.2, 0.3, 0.1, 0.2, 0.3, 0.4, -0.1, 0.2, 0.3] },
+  { name: 'LUX IM – Active Defender', color: CLASS_COLOR.Alternatives, r: [0.5, 0.1, 0.6, 0.4, -0.3, 0.5, 0.7, 0.2, 0.3, 0.6, 0.0, 0.5] },
+]
+const cumulative = (r: number[]) => r.reduce<number[]>((acc, x) => [...acc, ((1 + acc[acc.length - 1] / 100) * (1 + x / 100) - 1) * 100], [0])
+
+/**
+ * Performance over the last 12 months: cumulative return of the portfolio and its benchmark, building blocks on
+ * request, all in one chart. Only the published version (Current) has performance; figures come from the bank and
+ * are never calculated or filled in here.
+ */
+function Performance({ mode }: { mode: Mode }) {
+  const { state, update } = usePortfolio()
+  const [blocks, setBlocks] = useState(false)
+  const [period, setPeriod] = useState<'YTD' | '1Y'>('1Y')
+  const entry = getBook().find((e) => e.id === state.book.id)
+  const hasData = !state.book.creating && (!entry || entry.perf1y !== undefined)
+  const head = <h3 className="text-xl font-light text-fg-secondary">Performance</h3>
+  if (mode === 'new' || !hasData) {
+    return (
+      <section className="mt-10 border-t border-line pt-4">
+        {head}
+        <p className="mt-2 text-fg-muted">
+          {mode === 'new' ? 'Performance exists only for the published version. ' : 'No performance data has been received for this model portfolio yet.'}
+          {mode === 'new' && hasData && <Button variant="link" className="text-xs" onClick={() => update((s) => { s.sim.mode = 'current' })}>Show Current</Button>}
+        </p>
+      </section>
+    )
+  }
+  const from = period === 'YTD' ? MONTHS.indexOf('Jan') : 0
+  const series = RETURNS.filter((x) => x.main || blocks).map((x) => ({ ...x, c: cumulative(x.r.slice(from)) }))
+  const labels = ['', ...MONTHS.slice(from)]
+  const all = series.flatMap((x) => x.c)
+  const lo = Math.floor(Math.min(0, ...all) / 2) * 2
+  const hi = Math.ceil(Math.max(...all) / 2) * 2
+  const W = 1000, H = 240, L = 36, B = 22, R = 8
+  const x = (i: number) => L + (i / (labels.length - 1)) * (W - L - R)
+  const y = (v: number) => (H - B) - ((v - lo) / (hi - lo)) * (H - B - 8)
+  const ticks = Array.from({ length: (hi - lo) / 2 + 1 }, (_, i) => lo + i * 2)
+  return (
+    <section className="mt-10 border-t border-line pt-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div className="flex items-baseline gap-4">
+          {head}
+          {series.filter((s) => s.main).map((s) => (
+            <span key={s.name} className="inline-flex items-center gap-1.5">
+              <span className="h-0.5 w-4" style={{ background: s.color }} />{s.name}
+              <strong className="font-semibold tabular-nums">{(s.c[s.c.length - 1] >= 0 ? '+' : '') + s.c[s.c.length - 1].toFixed(2)}%</strong>
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-4">
+          <label className="inline-flex cursor-pointer items-center gap-1.5"><Checkbox checked={blocks} onCheckedChange={setBlocks} />Show building blocks</label>
+          <span className="inline-flex gap-1">
+            {(['YTD', '1Y'] as const).map((p) => <Button key={p} size="xs" aria-pressed={period === p} className={cn(period === p && 'border-selected bg-selected/10')} onClick={() => setPeriod(p)}>{p}</Button>)}
+          </span>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 h-auto w-full" role="img" aria-label="Cumulative performance">
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke={t === 0 ? '#8E8D83' : '#E0DFD7'} strokeWidth={t === 0 ? 1 : 0.75} />
+            <text x={L - 6} y={y(t) + 3.5} textAnchor="end" className="fill-fg-muted text-[11px]">{t}%</text>
+          </g>
+        ))}
+        {labels.map((l, i) => l && <text key={l} x={x(i)} y={H - 4} textAnchor="middle" className="fill-fg-muted text-[11px]">{l}</text>)}
+        {series.map((s) => (
+          <polyline key={s.name} fill="none" stroke={s.color} strokeWidth={s.main ? (s.name === 'Portfolio' ? 2.5 : 2) : 1.25} strokeDasharray={s.main ? undefined : '4 3'}
+            points={s.c.map((v, i) => `${x(i)},${y(v)}`).join(' ')}>
+            <title>{s.name}</title>
+          </polyline>
+        ))}
+      </svg>
+      {blocks && (
+        <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-fg-muted">
+          {series.filter((s) => !s.main).map((s) => <span key={s.name} className="inline-flex items-center gap-1.5"><span className="h-0 w-4 border-t-2 border-dashed" style={{ borderColor: s.color }} />{s.name} {(s.c[s.c.length - 1] >= 0 ? '+' : '') + s.c[s.c.length - 1].toFixed(2)}%</span>)}
+        </div>
+      )}
+      <p className="mt-2 text-fg-muted">Cumulative return, {period === 'YTD' ? 'year to date' : 'last 12 months'}, as of {BOOK_AS_OF}. Figures supplied by the bank.</p>
     </section>
   )
 }
