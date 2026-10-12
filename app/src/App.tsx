@@ -141,7 +141,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   const openTask = state.book.task?.status === 'Open'
   const simTotalOk = near100(state.sim.rows.filter((r) => !r.removed).reduce((t, r) => t + r.nw, 0))
   const publishBlock = custom && !custom.hasNew ? 'There is no new version to publish. Current stays active.'
-    : viewingCurrent ? 'Current is the published version (read-only). Switch to New to make changes.'
+    : viewingCurrent ? (state.sim.published ? 'Current is the last data load (read-only). Switch to New to make changes.' : 'Current is the published version (read-only). Switch to New to make changes.')
     : openTask ? 'To publish, accept, reject or defer the open position task.'
     : !simTotalOk ? 'To publish, the total weight must be exactly 100.00%.'
     : undefined
