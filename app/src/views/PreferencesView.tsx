@@ -11,7 +11,7 @@ import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, RATINGS, type Exclusion
 import { cn } from '../lib/cn'
 import { instrumentByIsin, optionLabel, parentCode, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
 
-const SHOW = 4 // suggestions shown before "+N more"
+const SHOW = 2 // suggestions shown before "+N more"
 
 export function PreferencesView() {
   const { state, update } = usePortfolio()
@@ -69,7 +69,7 @@ export function PreferencesView() {
 function Row({ label, htmlFor, labelId, count, k, children }: { label: string; htmlFor?: string; labelId?: string; count?: string; k: PrefKey; children: ReactNode }) {
   const Label = htmlFor ? 'label' : 'span'
   return (
-    <div className="grid grid-cols-[11rem_minmax(0,1fr)] gap-x-5 border-b border-line py-2.5 last:border-b-0">
+    <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-x-4 border-b border-line py-2.5 last:border-b-0">
       <div className="pt-1">
         <Label htmlFor={htmlFor} id={labelId} className="block text-sm">{label}</Label>
         {count && <span className="block text-xs text-fg-muted">{count}</span>}
@@ -93,7 +93,7 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   return (
     <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} k={cat.id}>
       <div className="flex flex-wrap items-center gap-1.5">
-        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="mr-1.5 w-48 shrink-0" />
+        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="mr-1.5 w-44 shrink-0" />
         {sel.map((id) => {
           const l = optionLabel(cat.id, id)
           return (
@@ -132,7 +132,7 @@ function RatingRow() {
           isExcluded={(i) => i >= p.rating}
           cutAt={p.rating}
           onPick={(i) => update((s) => { s.prefs.rating = i === s.prefs.rating ? RATINGS.length : i; setOwnValue(s, 'rating') })}
-          className="flex-[0_1_33rem]"
+          className="flex-[0_1_24rem]"
         />
         <label className="inline-flex cursor-pointer items-center gap-1.5">
           <Checkbox checked={p.unrated} onCheckedChange={(v) => update((s) => { s.prefs.unrated = v; setOwnValue(s, 'rating') })} />
