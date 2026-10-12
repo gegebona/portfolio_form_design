@@ -50,7 +50,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
     </span>
   )
   const sec = cn('min-w-0 px-6 first:pl-0 [&+&]:border-l [&+&]:border-line', compact ? 'py-2.5' : 'pt-3 pb-3.5')
-  const title = cn('flex min-h-5 items-center justify-between gap-2 text-fg-muted', compact ? 'mb-0.5' : 'mb-1.5')
+  const title = cn('flex min-h-5 items-center justify-between gap-2 font-semibold text-fg', compact ? 'mb-0.5' : 'mb-1.5')
 
   if (compact) {
     const f = rows[focus].alloc

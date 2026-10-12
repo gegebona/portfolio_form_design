@@ -42,7 +42,7 @@ export function ComponentDetail({ c }: { c: Component }) {
   const sectors = breakdown((h) => h.sector)
   const regions = breakdown((h) => h.region)
   const sec = 'min-w-0 px-5 pt-2 pb-2.5 first:pl-0 [&+&]:border-l [&+&]:border-line'
-  const title = 'mb-0.5 flex min-h-5 items-center gap-2 text-fg-muted'
+  const title = 'mb-0.5 flex min-h-5 items-center gap-2 font-semibold text-fg'
 
   const row = (h: Holding, indent?: boolean) => (
     <tr key={h.name} className={excluded(h) ? '*:bg-excluded-subtle' : 'hover:*:bg-surface-subtle'}>

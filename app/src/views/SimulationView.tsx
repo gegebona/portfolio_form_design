@@ -463,7 +463,7 @@ function AutoUpdate() {
   const total = rows.filter((r) => !r.removed).reduce((t, r) => t + r.nw, 0)
   const held = rows.filter((r) => r.w > 0).length
   const sec = 'min-w-0 px-5 py-2 first:pl-2.5 [&+&]:border-l [&+&]:border-line'
-  const title = 'mb-0.5 text-fg-muted'
+  const title = 'mb-0.5 font-semibold text-fg'
   if (c.auto === 'invalid') {
     return (
       <div role="status" className="mt-2 border border-excluded-border bg-excluded-subtle px-3 py-2 text-xs text-conflict">
