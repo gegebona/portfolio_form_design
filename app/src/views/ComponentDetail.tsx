@@ -2,18 +2,19 @@ import { TriangleAlert } from 'lucide-react'
 import { Fragment, useState, type ReactNode } from 'react'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
-import { ASSET_CLASSES, componentHoldings, type Component, type Holding } from '../data/data'
+import { ASSET_CLASSES, CLASS_COLOR, componentHoldings, type Component, type Holding } from '../data/data'
 import { cn } from '../lib/cn'
 import { f2, pct, usePortfolio, type Alloc } from '../state/portfolio'
-import { Donut, Swatch } from './Overview'
+import { Swatch } from './Overview'
 
 const th = 'border-b border-line bg-surface-subtle px-2.5 py-1.5 text-left font-normal whitespace-nowrap text-fg-muted'
 const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 
 /**
  * Component details, used by the Allocation panel and the Learn more window.
- * Left: the component's asset allocation (the same donut and class colours as the portfolio overview). Right: every instrument it holds, in two views that mirror Simulation — a flat Instrument view and an
- * Asset class view with group subtotals. An instrument on the portfolio's excluded list is highlighted as a conflict.
+ * A key-figure strip (asset allocation bar, currency exposure, concentration — the same strip pattern as the portfolio
+ * overview) above a full-width list of every instrument it holds, in two views that mirror Simulation: a flat Instrument
+ * view and an Asset class view with group subtotals. An instrument on the portfolio's excluded list is highlighted as a conflict.
  */
 export function ComponentDetail({ c }: { c: Component }) {
   const { state } = usePortfolio()
@@ -23,6 +24,15 @@ export function ComponentDetail({ c }: { c: Component }) {
   list.forEach((h) => { alloc[h.cls] += h.w })
   const excluded = (h: Holding) => !!h.isin && state.prefs.inst.includes(h.isin)
   const conflicts = list.filter(excluded).length
+  const inUse = ASSET_CLASSES.filter((k) => alloc[k] > 0.004)
+  const ccys = new Map<string, number>()
+  list.forEach((h) => ccys.set(h.ccy, (ccys.get(h.ccy) ?? 0) + h.w))
+  const ccyList = [...ccys.entries()].sort((a, b) => b[1] - a[1])
+  const byWeight = list.filter((h) => h.cls !== 'Liquidity').sort((a, b) => b.w - a.w)
+  const top = byWeight[0]
+  const top5 = byWeight.slice(0, 5).reduce((t, h) => t + h.w, 0)
+  const sec = 'min-w-0 px-6 py-2.5 first:pl-0 [&+&]:border-l [&+&]:border-line'
+  const title = 'mb-0.5 flex min-h-5 items-center gap-2 text-fg-muted'
 
   const row = (h: Holding, indent?: boolean) => (
     <tr key={h.name} className={excluded(h) ? '*:bg-excluded-subtle' : 'hover:*:bg-surface-subtle'}>
@@ -40,27 +50,33 @@ export function ComponentDetail({ c }: { c: Component }) {
   return (
     <>
       <p className="mt-3 max-w-205 text-fg-secondary">{c.desc} The currency risk is not hedged.</p>
-      <div className="mt-5 flex flex-wrap items-start gap-x-10 gap-y-5">
-        <div className="shrink-0">
-          <div>
-            <div className="pb-1.5 text-xs text-fg-muted">Asset allocation</div>
-            <div className="flex items-center gap-x-6 text-xs">
-              <Donut alloc={alloc} label={c.name} />
-              <table className="border-collapse">
-                <tbody>
-                  {ASSET_CLASSES.filter((k) => alloc[k] > 0.004).map((k) => (
-                    <tr key={k} className="border-t border-line first:border-t-0">
-                      <td className="py-0.75 whitespace-nowrap"><Swatch cls={k} />{k}</td>
-                      <td className="py-0.75 pl-5 text-right font-semibold tabular-nums">{pct(alloc[k])}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      <div className="mt-4 grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)] border-y border-line text-xs">
+        <div className={sec}>
+          <div className={title}>
+            <span>Asset allocation</span>
+            <span role="img" aria-label={inUse.map((k) => `${k} ${pct(alloc[k])}`).join(', ')} className="ml-2 flex h-2 flex-1 gap-0.5 bg-surface-strong">
+              {inUse.map((k) => <span key={k} className="h-full" style={{ width: `${Math.min(100, alloc[k])}%`, background: CLASS_COLOR[k] }} />)}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 leading-relaxed">
+            {inUse.map((k) => <span key={k} className="whitespace-nowrap"><Swatch cls={k} />{k} <strong className="font-semibold">{pct(alloc[k])}</strong></span>)}
           </div>
         </div>
+        <div className={sec}>
+          <div className={title}>Currency exposure</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 leading-relaxed">
+            {ccyList.map(([k, v]) => <span key={k} className="whitespace-nowrap">{k} <strong className="font-semibold">{pct(v)}</strong></span>)}
+          </div>
+        </div>
+        <div className={sec}>
+          <div className={title}>Concentration</div>
+          <div className="leading-relaxed">
+            {top ? <>Largest: {top.name} <strong className="font-semibold">{pct(top.w)}</strong><span className="block text-fg-muted">Top 5 positions: {pct(top5)}</span></> : <span className="text-fg-subtle">—</span>}
+          </div>
+        </div>
+      </div>
 
-        <div className="min-w-70 flex-[1_1_24rem] text-xs">
+      <div className="mt-4 text-xs">
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-line">
             <Tabs value={view} onValueChange={(v) => setView(v as 'instrument' | 'class')}>
               <TabsList variant="sub" aria-label="Included instruments view">
@@ -75,7 +91,8 @@ export function ComponentDetail({ c }: { c: Component }) {
               <span className="text-fg-muted">{conflicts > 0 && '· '}{list.length} included instruments</span>
             </span>
           </div>
-          <table className="w-full border-collapse">
+          <table className="w-full table-fixed border-collapse text-xs">
+            <colgroup><col className="w-[18%]" /><col /><col className="w-[14%]" /><col className="w-[14%]" /></colgroup>
             <thead>
               <tr><th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Currency</th><th className={cn(th, 'text-right')}>Weight %</th></tr>
             </thead>
@@ -98,7 +115,6 @@ export function ComponentDetail({ c }: { c: Component }) {
                   })}
             </tbody>
           </table>
-        </div>
       </div>
     </>
   )
