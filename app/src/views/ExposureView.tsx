@@ -1,8 +1,7 @@
 import { Tooltip } from '@base-ui/react/tooltip'
 import { useState, type ReactNode } from 'react'
-import { BENCH_EXPOSURE, BOOK_AS_OF, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
+import { BENCH_EXPOSURE, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
 import { Button } from '../components/ui/button'
-import { Checkbox } from '../components/ui/selection'
 import { TooltipPopup } from '../components/ui/tag'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { AllocationBlock } from './Overview'
@@ -105,9 +104,16 @@ export function ExposureView({ mode }: { mode: Mode }) {
         <span className="text-fg-muted">{fiW(mode) ? `${pct(fiW(mode))} of the portfolio · maturity and rating as a share of the fixed income part · benchmark: ${BOND_BENCHMARK.name}` : 'No fixed income positions'}</span>
       </div>
       {fiW(mode) > 0 && (
-        <div className="grid grid-cols-2 gap-x-10 gap-y-9 pt-5">
+        <div className="grid grid-cols-3 gap-x-10 gap-y-9 pt-5">
           <Block title="Maturity"><Columns items={split((id) => BOND_PROFILE[id].maturity, BOND_BENCHMARK.maturity, MATURITY_BUCKETS)} /></Block>
           <Block title="Rating"><InsideBars items={split((id) => BOND_PROFILE[id].rating, BOND_BENCHMARK.rating, RATING_BUCKETS)} /></Block>
+          <Block title="Yield to maturity">
+            <InsideBars items={[{
+              label: 'Fixed income part', value: share(mode, (id) => BOND_PROFILE[id].ytm),
+              other: against === 'benchmark' ? BOND_BENCHMARK.ytm : share('current', (id) => BOND_PROFILE[id].ytm),
+            }]} />
+            <p className="mt-2 text-fg-muted">Weighted average yield if held to maturity, in % per year.</p>
+          </Block>
         </div>
       )}
 
@@ -312,26 +318,37 @@ function CountryTable({ items, theirs }: { items: Item[]; theirs: string }) {
   )
 }
 
-/** Sample monthly returns in % (supplied by the bank in reality), 1 Oct 2025 – 30 Sep 2026. */
-const MONTHS = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']
-const RETURNS: { name: string; color: string; main?: boolean; r: number[] }[] = [
-  { name: 'Portfolio', color: ACCENT, main: true, r: [0.9, -0.4, 1.2, 0.6, -1.1, 0.8, 1.5, -0.3, 0.7, 1.1, -0.6, 1.4] },
-  { name: 'Benchmark', color: OTHER, main: true, r: [1.2, -0.8, 1.6, 0.9, -1.8, 1.1, 2.0, -0.9, 1.0, 1.4, -1.2, 1.9] },
-  { name: 'LUX KEY – EUR Equity Value', color: CLASS_COLOR.Equity, r: [1.4, -0.9, 1.8, 0.4, -1.6, 1.2, 2.2, -0.6, 0.5, 1.6, -1.1, 2.0] },
-  { name: 'LUX IM – Global Bond', color: CLASS_COLOR.Bonds, r: [0.3, 0.2, 0.4, -0.2, 0.3, 0.1, 0.2, 0.3, 0.4, -0.1, 0.2, 0.3] },
-  { name: 'LUX IM – Active Defender', color: CLASS_COLOR.Alternatives, r: [0.5, 0.1, 0.6, 0.4, -0.3, 0.5, 0.7, 0.2, 0.3, 0.6, 0.0, 0.5] },
-]
-const cumulative = (r: number[]) => r.reduce<number[]>((acc, x) => [...acc, ((1 + acc[acc.length - 1] / 100) * (1 + x / 100) - 1) * 100], [0])
+/** Sample daily performance (supplied by the bank in reality): weekdays from 1 Oct 2024 to 30 Sep 2026. */
+type Day = { d: Date; p: number; b: number }
+const DAYS: Day[] = (() => {
+  // Deterministic pseudo-random daily returns (mulberry32), the benchmark moving with the portfolio.
+  let seed = 20240930
+  const rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+  const out: Day[] = []
+  for (let t = Date.UTC(2024, 9, 1); t <= Date.UTC(2026, 8, 30); t += 86400000) {
+    const d = new Date(t)
+    if (d.getUTCDay() === 0 || d.getUTCDay() === 6) continue
+    const market = (rnd() - 0.5) * 1.6
+    out.push({ d, p: 0.028 + market * 0.75 + (rnd() - 0.5) * 0.35, b: 0.033 + market + (rnd() - 0.5) * 0.25 })
+  }
+  return out
+})()
+const iso = (d: Date) => d.toISOString().slice(0, 10)
+const dmy = (d: Date) => d.toLocaleDateString('en-GB', { timeZone: 'UTC' })
+const FIRST = iso(DAYS[0].d)
+const LAST = iso(DAYS[DAYS.length - 1].d)
+const back = (months: number) => { const d = new Date(DAYS[DAYS.length - 1].d); d.setUTCMonth(d.getUTCMonth() - months); return iso(d) }
+const PRESETS: [string, () => string][] = [['1M', () => back(1)], ['3M', () => back(3)], ['6M', () => back(6)], ['YTD', () => `${LAST.slice(0, 4)}-01-01`], ['1Y', () => back(12)], ['Max', () => FIRST]]
 
 /**
- * Performance over the last 12 months: cumulative return of the portfolio and its benchmark, building blocks on
- * request, all in one chart. Only the published version (Current) has performance; figures come from the bank and
- * are never calculated or filled in here.
+ * Performance between two chosen dates (daily data): cumulative return of the portfolio and its benchmark. Only the
+ * published version (Current) has performance; figures come from the bank and are never calculated or filled in here.
  */
 function Performance({ mode }: { mode: Mode }) {
   const { state, update } = usePortfolio()
-  const [blocks, setBlocks] = useState(false)
-  const [period, setPeriod] = useState<'YTD' | '1Y'>('1Y')
+  const [from, setFrom] = useState(back(12))
+  const [to, setTo] = useState(LAST)
+  const [hover, setHover] = useState<number | null>(null)
   const entry = getBook().find((e) => e.id === state.book.id)
   const hasData = !state.book.creating && (!entry || entry.perf1y !== undefined)
   const head = <h3 className="text-xl font-light text-fg-secondary">Performance</h3>
@@ -346,56 +363,76 @@ function Performance({ mode }: { mode: Mode }) {
       </section>
     )
   }
-  const from = period === 'YTD' ? MONTHS.indexOf('Jan') : 0
-  const series = RETURNS.filter((x) => x.main || blocks).map((x) => ({ ...x, c: cumulative(x.r.slice(from)) }))
-  const labels = ['', ...MONTHS.slice(from)]
+  const days = DAYS.filter((x) => iso(x.d) >= from && iso(x.d) <= to)
+  // Cumulative return from the first day of the range (that day's return not counted).
+  const cum = (k: 'p' | 'b') => days.reduce<number[]>((acc, x, i) => [...acc, i === 0 ? 0 : ((1 + acc[i - 1] / 100) * (1 + x[k] / 100) - 1) * 100], [])
+  const series = [{ name: 'Portfolio', color: ACCENT, c: cum('p'), w: 2.25 }, { name: 'Benchmark', color: OTHER, c: cum('b'), w: 1.75 }]
   const all = series.flatMap((x) => x.c)
-  const lo = Math.floor(Math.min(0, ...all) / 2) * 2
-  const hi = Math.ceil(Math.max(...all) / 2) * 2
-  const W = 1000, H = 240, L = 36, B = 22, R = 8
-  const x = (i: number) => L + (i / (labels.length - 1)) * (W - L - R)
+  const step = Math.max(1, Math.ceil((Math.max(...all, 0) - Math.min(...all, 0)) / 5))
+  const lo = Math.floor(Math.min(0, ...all) / step) * step
+  const hi = Math.ceil(Math.max(0.5, ...all) / step) * step
+  const W = 1000, H = 240, L = 40, B = 22, R = 8
+  const n = Math.max(1, days.length - 1)
+  const x = (i: number) => L + (i / n) * (W - L - R)
   const y = (v: number) => (H - B) - ((v - lo) / (hi - lo)) * (H - B - 8)
-  const ticks = Array.from({ length: (hi - lo) / 2 + 1 }, (_, i) => lo + i * 2)
+  const ticks = Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, i) => lo + i * step)
+  const labels = Array.from({ length: 6 }, (_, k) => Math.round((k / 5) * n))
+  const end = (c: number[]) => c[c.length - 1] ?? 0
+  const sign = (v: number) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2) + '%'
+  const dateInput = 'h-7 rounded-sm border border-control bg-surface px-2 text-xs text-fg outline-none focus:border-control-active'
   return (
     <section className="mt-10 border-t border-line pt-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-4">
           {head}
-          {series.filter((s) => s.main).map((s) => (
+          {series.map((s) => (
             <span key={s.name} className="inline-flex items-center gap-1.5">
-              <span className="h-0.5 w-4" style={{ background: s.color }} />{s.name}
-              <strong className="font-semibold tabular-nums">{(s.c[s.c.length - 1] >= 0 ? '+' : '') + s.c[s.c.length - 1].toFixed(2)}%</strong>
+              <span className="h-0.5 w-4" style={{ background: s.color }} />{s.name}<strong className="font-semibold tabular-nums">{sign(end(s.c))}</strong>
             </span>
           ))}
         </div>
-        <div className="flex items-center gap-4">
-          <label className="inline-flex cursor-pointer items-center gap-1.5"><Checkbox checked={blocks} onCheckedChange={setBlocks} />Show building blocks</label>
+        <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex gap-1">
-            {(['YTD', '1Y'] as const).map((p) => <Button key={p} size="xs" aria-pressed={period === p} className={cn(period === p && 'border-selected bg-selected/10')} onClick={() => setPeriod(p)}>{p}</Button>)}
+            {PRESETS.map(([label, start]) => {
+              const on = from === start() && to === LAST
+              return <Button key={label} size="xs" aria-pressed={on} className={cn(on && 'border-selected bg-selected/10')} onClick={() => { setFrom(start()); setTo(LAST) }}>{label}</Button>
+            })}
           </span>
+          <label className="ml-2 inline-flex items-center gap-1.5 text-fg-muted">From
+            <input type="date" className={dateInput} value={from} min={FIRST} max={to} onChange={(e) => e.target.value && setFrom(e.target.value)} />
+          </label>
+          <label className="inline-flex items-center gap-1.5 text-fg-muted">to
+            <input type="date" className={dateInput} value={to} min={from} max={LAST} onChange={(e) => e.target.value && setTo(e.target.value)} />
+          </label>
         </div>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 h-auto w-full" role="img" aria-label="Cumulative performance">
-        {ticks.map((t) => (
-          <g key={t}>
-            <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke={t === 0 ? '#8E8D83' : '#E0DFD7'} strokeWidth={t === 0 ? 1 : 0.75} />
-            <text x={L - 6} y={y(t) + 3.5} textAnchor="end" className="fill-fg-muted text-[11px]">{t}%</text>
-          </g>
-        ))}
-        {labels.map((l, i) => l && <text key={l} x={x(i)} y={H - 4} textAnchor="middle" className="fill-fg-muted text-[11px]">{l}</text>)}
-        {series.map((s) => (
-          <polyline key={s.name} fill="none" stroke={s.color} strokeWidth={s.main ? (s.name === 'Portfolio' ? 2.5 : 2) : 1.25} strokeDasharray={s.main ? undefined : '4 3'}
-            points={s.c.map((v, i) => `${x(i)},${y(v)}`).join(' ')}>
-            <title>{s.name}</title>
-          </polyline>
-        ))}
-      </svg>
-      {blocks && (
-        <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-fg-muted">
-          {series.filter((s) => !s.main).map((s) => <span key={s.name} className="inline-flex items-center gap-1.5"><span className="h-0 w-4 border-t-2 border-dashed" style={{ borderColor: s.color }} />{s.name} {(s.c[s.c.length - 1] >= 0 ? '+' : '') + s.c[s.c.length - 1].toFixed(2)}%</span>)}
-        </div>
+      {days.length < 2 ? <p className="mt-4 text-fg-muted">Choose a range of at least two days.</p> : (
+        <svg
+          viewBox={`0 0 ${W} ${H}`} className="mt-3 h-auto w-full" role="img" aria-label="Cumulative performance"
+          onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); const px = ((e.clientX - r.left) / r.width) * W; setHover(Math.max(0, Math.min(n, Math.round(((px - L) / (W - L - R)) * n)))) }}
+          onMouseLeave={() => setHover(null)}
+        >
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke={t === 0 ? '#8E8D83' : '#E0DFD7'} strokeWidth={t === 0 ? 1 : 0.75} />
+              <text x={L - 6} y={y(t) + 3.5} textAnchor="end" className="fill-fg-muted text-[11px]">{t}%</text>
+            </g>
+          ))}
+          {labels.map((i) => <text key={i} x={x(i)} y={H - 4} textAnchor={i === 0 ? 'start' : i === n ? 'end' : 'middle'} className="fill-fg-muted text-[11px]">{dmy(days[i].d)}</text>)}
+          {series.map((s) => <polyline key={s.name} fill="none" stroke={s.color} strokeWidth={s.w} strokeLinejoin="round" points={s.c.map((v, i) => `${x(i)},${y(v)}`).join(' ')} />)}
+          {hover !== null && (
+            <g>
+              <line x1={x(hover)} x2={x(hover)} y1={8} y2={H - B} stroke="#404040" strokeDasharray="3 3" strokeWidth={0.75} />
+              <g transform={`translate(${Math.min(x(hover) + 8, W - 190)}, 12)`}>
+                <rect width={180} height={52} rx={2} fill="#fff" stroke="#E0DFD7" />
+                <text x={8} y={16} className="fill-fg text-[11px] font-semibold">{dmy(days[hover].d)}</text>
+                {series.map((s, k) => <text key={s.name} x={8} y={31 + k * 14} className="text-[11px]" fill={s.name === 'Portfolio' ? '#1C1C1C' : '#5A5D5C'}>{s.name} {sign(s.c[hover])}</text>)}
+              </g>
+            </g>
+          )}
+        </svg>
       )}
-      <p className="mt-2 text-fg-muted">Cumulative return, {period === 'YTD' ? 'year to date' : 'last 12 months'}, as of {BOOK_AS_OF}. Figures supplied by the bank.</p>
+      <p className="mt-2 text-fg-muted">Cumulative return from {dmy(new Date(from))} to {dmy(new Date(to))}. Daily figures supplied by the bank, available from {dmy(DAYS[0].d)}.</p>
     </section>
   )
 }
