@@ -25,17 +25,23 @@ export function ComponentDetail({ c }: { c: Component }) {
   const excluded = (h: Holding) => !!h.isin && state.prefs.inst.includes(h.isin)
   const conflicts = list.filter(excluded).length
   const inUse = ASSET_CLASSES.filter((k) => alloc[k] > 0.004)
-  /** Weight per sector or region, largest first; beyond the top four (and cash) the rest is grouped as Other. */
-  const breakdown = (key: (h: Holding) => string) => {
+  /**
+   * Weight per sector or region, largest first, in at most four rows: up to three items of 10% or more, and everything
+   * smaller (cash included) grouped as Other, whose members are listed on hover.
+   */
+  const breakdown = (key: (h: Holding) => string): [string, number, string?][] => {
     const m = new Map<string, number>()
     list.forEach((h) => m.set(key(h), (m.get(key(h)) ?? 0) + h.w))
-    const sorted = [...m.entries()].filter(([k]) => k !== 'Cash' && k !== 'Other').sort((x, y) => y[1] - x[1])
-    const rest = sorted.slice(4).reduce((t, [, v]) => t + v, 0) + (m.get('Other') ?? 0)
-    return [...sorted.slice(0, 4), ...(rest > 0.004 ? [['Other', rest] as [string, number]] : []), ...(m.has('Cash') ? [['Cash', m.get('Cash') ?? 0] as [string, number]] : [])]
+    const sorted = [...m.entries()].sort((x, y) => y[1] - x[1])
+    const keep = sorted.filter(([k, v]) => k !== 'Cash' && k !== 'Other' && v >= 10).slice(0, 3)
+    const rest = sorted.filter((e) => !keep.includes(e))
+    const restW = rest.reduce((t, [, v]) => t + v, 0)
+    if (rest.length === 1) return [...keep, rest[0]]
+    return [...keep, ...(restW > 0.004 ? [['Other', restW, rest.map(([k, v]) => `${k} ${pct(v)}`).join(' · ')] as [string, number, string]] : [])]
   }
   const sectors = breakdown((h) => h.sector)
   const regions = breakdown((h) => h.region)
-  const sec = 'min-w-0 px-6 pt-2.5 pb-3 first:pl-0 [&+&]:border-l [&+&]:border-line'
+  const sec = 'min-w-0 px-5 pt-2 pb-2.5 first:pl-0 [&+&]:border-l [&+&]:border-line'
   const title = 'mb-0.5 flex min-h-5 items-center gap-2 text-fg-muted'
 
   const row = (h: Holding, indent?: boolean) => (
@@ -61,11 +67,11 @@ export function ComponentDetail({ c }: { c: Component }) {
         </div>
         <div className={sec}>
           <div className={title}>Sector allocation</div>
-          <BarList rows={sectors.map(([k, v]) => [k, v, k === 'Cash' ? CLASS_COLOR.Liquidity : NEUTRAL] as [string, number, string])} />
+          <BarList rows={sectors.map(([k, v, tip]) => [k, v, k === 'Cash' ? CLASS_COLOR.Liquidity : NEUTRAL, tip] as [string, number, string, string?])} />
         </div>
         <div className={sec}>
           <div className={title}>Region allocation</div>
-          <BarList rows={regions.map(([k, v]) => [k, v, k === 'Cash' ? CLASS_COLOR.Liquidity : NEUTRAL] as [string, number, string])} />
+          <BarList rows={regions.map(([k, v, tip]) => [k, v, k === 'Cash' ? CLASS_COLOR.Liquidity : NEUTRAL, tip] as [string, number, string, string?])} />
         </div>
       </div>
 
@@ -117,13 +123,13 @@ export function ComponentDetail({ c }: { c: Component }) {
 const NEUTRAL = 'var(--color-ubs-chart-19)'
 
 /** Horizontal bar chart: one row per item with label, bar (scaled to 100%) and value. */
-function BarList({ rows }: { rows: [label: string, value: number, color: string][] }) {
+function BarList({ rows }: { rows: [label: string, value: number, color: string, tip?: string][] }) {
   return (
-    <div role="list" className="grid grid-cols-[max-content_minmax(2rem,1fr)_max-content] items-center gap-x-2.5 gap-y-1">
-      {rows.map(([k, v, color]) => (
+    <div role="list" className="grid grid-cols-[max-content_minmax(2rem,1fr)_max-content] items-center gap-x-2.5 gap-y-0.5 leading-4">
+      {rows.map(([k, v, color, tip]) => (
         <div key={k} role="listitem" className="contents">
-          <span className="max-w-36 truncate" title={k}>{k}</span>
-          <span className="block h-2 w-full" aria-hidden><span className="block h-full" style={{ width: `${Math.min(100, v)}%`, background: color }} /></span>
+          <span className={cn('max-w-36 truncate', tip && 'cursor-help underline decoration-dotted underline-offset-2')} title={tip ?? k}>{k}</span>
+          <span className="block h-1.5 w-full" aria-hidden><span className="block h-full" style={{ width: `${Math.min(100, v)}%`, background: color }} /></span>
           <span className="text-right font-semibold tabular-nums">{pct(v)}</span>
         </div>
       ))}

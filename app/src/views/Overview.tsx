@@ -82,14 +82,14 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
         {!quality && (
           <div className={sec}>
             <div className={title}><span>Exclusionary preferences</span>{editExclusions}</div>
-            {/* Never cut off: the first three exclusion groups, the rest behind “+N more” (same pattern as conflict tags). */}
+            {/* Never cut off: the first five exclusion groups (two lines), the rest behind “+N more” (same pattern as conflict tags). */}
             <div className={cn('leading-relaxed', excl.length > 0 && 'text-conflict')}>
-              {excl.length ? <>Excluded: {excl.slice(0, 3).join(' · ')}{excl.length > 3 && (
+              {excl.length ? <>Excluded: {excl.slice(0, 5).join(' · ')}{excl.length > 5 && (
                 <Popover
                   title="Exclusionary preferences"
                   description="Everything excluded from this model portfolio."
                   className="w-80"
-                  trigger={<PopoverTrigger openOnHover delay={150} className="ml-1.5 cursor-pointer font-semibold whitespace-nowrap underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">+{excl.length - 3} more</PopoverTrigger>}
+                  trigger={<PopoverTrigger openOnHover delay={150} className="ml-1.5 cursor-pointer font-semibold whitespace-nowrap underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">+{excl.length - 5} more</PopoverTrigger>}
                 >
                   <ul className="text-xs">
                     {excl.map((x) => <li key={x} className="border-t border-line py-1.5 text-conflict first:border-t-0">{x}</li>)}
