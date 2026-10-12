@@ -4,7 +4,7 @@ import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { ASSET_CLASSES, CLASS_COLOR, componentHoldings, type Component, type Holding } from '../data/data'
 import { cn } from '../lib/cn'
-import { f2, isCreating, pct, usePortfolio, type Alloc } from '../state/portfolio'
+import { f2, pct, usePortfolio, type Alloc } from '../state/portfolio'
 import { Swatch } from './Overview'
 
 const th = 'border-b border-line bg-surface-subtle px-2.5 py-1.5 text-left font-normal whitespace-nowrap text-fg-muted'
@@ -22,8 +22,7 @@ export function ComponentDetail({ c }: { c: Component }) {
   const list = componentHoldings(c)
   const alloc: Alloc = { Equity: 0, Bonds: 0, Alternatives: 0, Liquidity: 0 }
   list.forEach((h) => { alloc[h.cls] += h.w })
-  // Excluded instruments are flagged only while a portfolio is being created.
-  const excluded = (h: Holding) => isCreating(state) && !!h.isin && state.prefs.inst.includes(h.isin)
+  const excluded = (h: Holding) => !!h.isin && state.prefs.inst.includes(h.isin)
   const conflicts = list.filter(excluded).length
   const inUse = ASSET_CLASSES.filter((k) => alloc[k] > 0.004)
   /**

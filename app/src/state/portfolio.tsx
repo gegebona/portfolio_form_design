@@ -80,8 +80,7 @@ const INITIAL: PortfolioState = {
     'c:keyeq': 18, 'c:gem': 6, 'c:gbond': 16, 'c:defender': 8, 'c:holt-world': 10, 'c:holt-spx': 9, 'c:ch-eq': 6, 'c:jp-eq': 4,
     'c:hybond': 7, 'c:gold': 3, 'c:mp-balanced': 6, 'c:mp-income': 2, 'i:US02079K1079': 3,
   },
-  // The sample portfolio as published: Apple is on its excluded list, so it is not held (its weight is in cash).
-  sim: { rows: POSITIONS.filter((p) => p.id !== 'aapl').map((p) => ({ ...p, w: p.id === 'eur' ? 3.5 : p.w, nw: p.id === 'eur' ? 3.5 : p.w, removed: false, kept: false })), mode: 'new' },
+  sim: { rows: POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false })), mode: 'new' },
   book: { id: '', task: null },
   custom: null,
 }
@@ -139,16 +138,15 @@ export function startNew(s: PortfolioState) {
   s.book = { id: '', task: null, creating: true }
   s.custom = null
   s.sim.mode = 'new'
-  // The creation sample still holds an excluded instrument, so its warning can be shown in Simulation.
   s.sim.rows = POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false }))
 }
 /**
- * Preference warnings (excluded instruments, components conflicting with exclusions) belong to the creation workflow
- * only. An existing portfolio, draft or published, only ever shows its position tasks.
+ * A brand-new portfolio in its creation workflow. Warning icons and conflict tags show everywhere; only the creation
+ * workflow asks the user to decide (Keep / Remove an excluded instrument in Simulation).
  */
 export const isCreating = (s: PortfolioState) => !!s.book.creating
-/** A component's conflicts with the exclusions, shown only while creating. */
-export const conflictsIn = (s: PortfolioState, c: Component) => (isCreating(s) ? conflictsOf(c, s.prefs) : [])
+/** A component's conflicts with the exclusions (shown for every portfolio). */
+export const conflictsIn = (s: PortfolioState, c: Component) => conflictsOf(c, s.prefs)
 /** Opening an existing portfolio from the book shows the illustrative content again (the prototype stores one sample). */
 export function restoreSample(s: PortfolioState) {
   const fresh = structuredClone(INITIAL)
@@ -224,8 +222,6 @@ export function openEntry(s: PortfolioState, e: BookEntry, mode: 'current' | 'ne
   const task = e.tasks?.[0] ?? null
   s.book = { id: e.id, task }
   s.sim.mode = mode
-  // A published portfolio holds no excluded instrument (preference warnings exist only while creating): Apple's weight is in cash.
-  if (e.status === 'Published') s.sim.rows = s.sim.rows.filter((r) => r.id !== 'aapl').map((r) => (r.id === 'eur' ? { ...r, w: 3.5, nw: 3.5 } : r))
   // An open task brings the official target into New (the rest of the portfolio is not adjusted until it is
   // accepted); a rejected or deferred one keeps the current weight.
   if (task) {

@@ -169,8 +169,10 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   // Preference warnings belong to the creation workflow (a new portfolio or a draft). A published portfolio only ever
   // shows position tasks.
   const creating = isCreating(state)
-  const excluded = (r: SimRow) => creating && !!r.isin && state.prefs.inst.includes(r.isin)
-  const conflict = (r: SimRow) => excluded(r) && !r.kept
+  const excluded = (r: SimRow) => !!r.isin && state.prefs.inst.includes(r.isin)
+  // The Keep / Remove decision belongs to the creation workflow; an existing portfolio only flags the instrument.
+  const conflict = (r: SimRow) => creating && excluded(r) && !r.kept
+  const flagOnly = (r: SimRow) => !cur && !creating && excluded(r)
   const needsDecision = (r: SimRow) => conflict(r) || (task?.rowId === r.id && task.status === 'Open')
   const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0)))
     .slice()
@@ -181,7 +183,9 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
   const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
   const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
-  const shown = onlyWarnings && !cur && toReview + keptN > 0 ? rows.filter((r) => excluded(r)) : rows
+  const flagged = cur || creating ? 0 : rows.filter(flagOnly).length
+  const summary = creating ? toReview + keptN > 0 : flagged > 0
+  const shown = onlyWarnings && !cur && summary ? rows.filter((r) => excluded(r)) : rows
   const edit = (id: string, fn: (r: SimRow) => void) => update((s) => { fn(s.sim.rows.find((r) => r.id === id)!) })
   /**
    * Position task decision. All three stay selectable and the latest one wins: Accepted applies the official target,
@@ -199,12 +203,13 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
 
   return (
     <>
-    {toReview + keptN > 0 && (
+    {summary && (
       <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-2.5 py-1.5 text-xs">
         <span className="inline-flex items-center gap-1.5">
           <TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />
-          {toReview > 0 ? `${toReview} ${toReview === 1 ? 'warning' : 'warnings'} to review` : 'No warnings to review'}
-          {keptN > 0 && <span className="text-fg-muted">· {keptN} kept</span>}
+          {!creating ? `${flagged} ${flagged === 1 ? 'instrument conflicts' : 'instruments conflict'} with exclusions`
+            : toReview > 0 ? `${toReview} ${toReview === 1 ? 'warning' : 'warnings'} to review` : 'No warnings to review'}
+          {creating && keptN > 0 && <span className="text-fg-muted">· {keptN} kept</span>}
         </span>
         <Button variant="link" className="text-xs" aria-pressed={onlyWarnings} onClick={() => setOnlyWarnings(!onlyWarnings)}>{onlyWarnings ? 'Show all positions' : 'Show only warnings'}</Button>
       </div>
@@ -223,6 +228,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
       <tbody>
         {shown.map((r) => {
           const c = !cur && conflict(r)
+          const flag = flagOnly(r)
           const edited = Math.abs(r.nw - r.w) >= 0.005
           const t = task && task.rowId === r.id ? task : null
           // Accepting a task moves the position to its official target; the other positions absorb the difference.
@@ -232,7 +238,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method, amountFor) : null
           return (
             <Fragment key={r.id}>
-            <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? (t.status === 'Open' ? '*:bg-task/25' : '*:bg-task/10') : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
+            <tr className={cn('group', c || flag ? '*:bg-excluded-subtle' : t ? (t.status === 'Open' ? '*:bg-task/25' : '*:bg-task/10') : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>{r.cls}</td>
               <td className={td}>
                 {r.name}
@@ -252,7 +258,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                 )}
                 {r.isin && <span className="block text-fg-muted">{r.isin}</span>}
                 {t && <span className="mt-0.75 block text-fg-muted">Official target {f2(t.next)}% from {t.component}</span>}
-                {(c || (cur && excluded(r))) && <ConflictNote>Excluded instrument</ConflictNote>}
+                {(c || flag || (cur && excluded(r))) && <ConflictNote>Excluded instrument</ConflictNote>}
               </td>
               <td className={td}>{r.bb}</td>
               <td className={td}>{r.ccy}<span className="block text-fg-muted">{r.fx.toFixed(2)}</span></td>
