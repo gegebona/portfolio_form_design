@@ -119,11 +119,11 @@ const NEUTRAL = 'var(--color-chart-neutral)'
 /** Horizontal bar chart: one row per item with label, bar (scaled to 100%) and value. */
 function BarList({ rows }: { rows: [label: string, value: number, color: string][] }) {
   return (
-    <div role="list" className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3rem] items-center gap-x-2.5 gap-y-1">
+    <div role="list" className="grid grid-cols-[max-content_minmax(2rem,1fr)_max-content] items-center gap-x-2.5 gap-y-1">
       {rows.map(([k, v, color]) => (
         <div key={k} role="listitem" className="contents">
-          <span className="truncate" title={k}>{k}</span>
-          <span className="h-2 bg-surface-strong" aria-hidden><span className="block h-full" style={{ width: `${Math.min(100, v)}%`, background: color }} /></span>
+          <span className="max-w-36 truncate" title={k}>{k}</span>
+          <span className="block h-2 w-full bg-surface-strong" aria-hidden><span className="block h-full" style={{ width: `${Math.min(100, v)}%`, background: color }} /></span>
           <span className="text-right font-semibold tabular-nums">{pct(v)}</span>
         </div>
       ))}
