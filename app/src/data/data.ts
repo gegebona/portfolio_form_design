@@ -245,6 +245,52 @@ export const POSITIONS: Position[] = [
   { id: 'goog', cls: 'Equity', name: 'Alphabet Inc. Class C', isin: 'US02079K1079', bb: '—', ccy: 'USD', fx: 0.85, price: 167.2, w: 0, esg: '—' },
 ]
 
+/** Look-through profile of each Simulation position for the Exposure view (illustrative). Funds are not looked through by country. */
+export type Exposure = { sector: string; region: string; country: string }
+export const EXPOSURE: Record<string, Exposure> = {
+  eur: { sector: 'Cash', region: 'Cash', country: 'Cash' },
+  gbond: { sector: 'Bond fund', region: 'Global', country: 'Diversified (funds)' },
+  defender: { sector: 'Multi-asset fund', region: 'Global', country: 'Diversified (funds)' },
+  aapl: { sector: 'Information technology', region: 'North America', country: 'United States' },
+  asml: { sector: 'Information technology', region: 'Europe', country: 'Netherlands' },
+  novo: { sector: 'Health care', region: 'Europe', country: 'Denmark' },
+  sap: { sector: 'Information technology', region: 'Europe', country: 'Germany' },
+  nesn: { sector: 'Consumer staples', region: 'Europe', country: 'Switzerland' },
+  lvmh: { sector: 'Consumer discretionary', region: 'Europe', country: 'France' },
+  rog: { sector: 'Health care', region: 'Europe', country: 'Switzerland' },
+  sie: { sector: 'Industrials', region: 'Europe', country: 'Germany' },
+  su: { sector: 'Industrials', region: 'Europe', country: 'France' },
+  alv: { sector: 'Financials', region: 'Europe', country: 'Germany' },
+  san: { sector: 'Health care', region: 'Europe', country: 'France' },
+  bap: { sector: 'Financials', region: 'Emerging markets', country: 'Peru' },
+  byd: { sector: 'Consumer discretionary', region: 'Emerging markets', country: 'China' },
+  ptr: { sector: 'Energy', region: 'Emerging markets', country: 'China' },
+  anto: { sector: 'Materials', region: 'Emerging markets', country: 'Chile' },
+  fres: { sector: 'Materials', region: 'Emerging markets', country: 'Mexico' },
+  rnw: { sector: 'Utilities', region: 'Emerging markets', country: 'India' },
+  au: { sector: 'Materials', region: 'Emerging markets', country: 'South Africa' },
+  lnv: { sector: 'Information technology', region: 'Emerging markets', country: 'China' },
+  fih: { sector: 'Information technology', region: 'Emerging markets', country: 'China' },
+  mtn: { sector: 'Consumer discretionary', region: 'Emerging markets', country: 'China' },
+  goog: { sector: 'Communication services', region: 'North America', country: 'United States' },
+  msft: { sector: 'Information technology', region: 'North America', country: 'United States' },
+  'add-msft': { sector: 'Information technology', region: 'North America', country: 'United States' },
+  'add-novn': { sector: 'Health care', region: 'Europe', country: 'Switzerland' },
+  'add-ulvr': { sector: 'Consumer staples', region: 'Europe', country: 'United Kingdom' },
+  'add-iwda': { sector: 'Equity fund', region: 'Global', country: 'Diversified (funds)' },
+  'add-chgov': { sector: 'Government bonds', region: 'Europe', country: 'Switzerland' },
+}
+/** Fixed income look-through per bond position: maturity and rating split (% of the position), duration (years), yield to maturity (%). */
+export type BondProfile = { maturity: Record<string, number>; rating: Record<string, number>; duration: number; ytm: number }
+export const MATURITY_BUCKETS = ['< 1 year', '1–3 years', '3–5 years', '5–10 years', '> 10 years']
+export const RATING_BUCKETS = ['AAA', 'AA', 'A', 'BBB', 'BB and below']
+export const BOND_PROFILE: Record<string, BondProfile> = {
+  gbond: { maturity: { '< 1 year': 8, '1–3 years': 22, '3–5 years': 28, '5–10 years': 27, '> 10 years': 15 }, rating: { AAA: 18, AA: 27, A: 31, BBB: 20, 'BB and below': 4 }, duration: 6.1, ytm: 3.4 },
+  'add-chgov': { maturity: { '5–10 years': 100 }, rating: { AAA: 100 }, duration: 7.6, ytm: 0.9 },
+}
+/** Fixed income benchmark figures shown next to the portfolio's (supplied by the bank; sample values). */
+export const BOND_BENCHMARK = { name: 'Bloomberg Global Aggregate (EUR hedged)', duration: 6.6, ytm: 3.6 }
+
 /** Positions a customized version may add on its own (single instruments, with a weight the user sets). */
 export const ADDABLE_POSITIONS: Position[] = [
   { id: 'add-msft', cls: 'Equity', name: 'Microsoft Corp.', isin: 'US5949181045', bb: '—', ccy: 'USD', fx: 0.85, price: 415.3, w: 0, esg: '4.1' },

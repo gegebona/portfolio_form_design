@@ -13,6 +13,7 @@ import { ADDABLE_POSITIONS, ASSET_CLASSES, BOOK_USER, CLASS_COLOR, PARENT_UPDATE
 import { cn } from '../lib/cn'
 import { getBook, setBookTaskStatus } from '../state/book'
 import { addOwnPosition, f2, near100, parentCode, PREF_LABEL, removeOwnPosition, setOwnWeight, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
+import { ExposureView } from './ExposureView'
 import { Overview, Swatch } from './Overview'
 
 type Mode = 'current' | 'new'
@@ -85,10 +86,12 @@ export function SimulationView() {
           <div className="flex items-center gap-4.5 pb-1.5">
             {!cur && !custom && <Button size="sm" onClick={() => { location.hash = 'components' }}>+ Add component</Button>}
             {!cur && custom && <Button size="sm" aria-expanded={adding} onClick={() => setAdding(true)}>+ Add position</Button>}
-            <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
-              <Switch checked={showZero} onCheckedChange={setShowZero} />
-              Show zero-weighted positions
-            </label>
+            {view !== 'exposure' && (
+              <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+                <Switch checked={showZero} onCheckedChange={setShowZero} />
+                Show zero-weighted positions
+              </label>
+            )}
           </div>
         </div>
         {adding && !cur && custom && <AddPosition onClose={() => setAdding(false)} />}
@@ -96,8 +99,9 @@ export function SimulationView() {
         <ViewTransition update={{ positions: 'table-swap', default: 'none' }} default="none">
         <div className="min-h-0 flex-1 overflow-auto">
           {view === 'instrument' ? <InstrumentTable mode={mode} showZero={showZero} />
+            : view === 'exposure' ? <ExposureView mode={mode} />
             : <GroupTable key={view} mode={mode} showZero={showZero} order={view === 'class' ? ASSET_CLASSES : undefined} hide={view === 'class' ? 'cls' : view === 'block' ? 'bb' : undefined}
-                keyOf={view === 'class' ? (r) => r.cls : view === 'block' ? (r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments') : (r) => r.ccy} />}
+                keyOf={view === 'class' ? (r) => r.cls : (r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments')} />}
         </div>
         </ViewTransition>
         <div className="flex shrink-0 items-center justify-end gap-3 border-t border-line-strong px-2.5 pt-1.5 text-xs">
