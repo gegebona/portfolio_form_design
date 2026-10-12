@@ -2,9 +2,8 @@ import { Tooltip } from '@base-ui/react/tooltip'
 import { useState, type ReactNode } from 'react'
 import { BENCH_EXPOSURE, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
 import { Button } from '../components/ui/button'
-import { Checkbox } from '../components/ui/selection'
 import { TooltipPopup } from '../components/ui/tag'
-import { WORLD, WORLD_VIEWBOX } from '../data/worldMap'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { AllocationBlock } from './Overview'
 import { cn } from '../lib/cn'
 import { benchmarkAlloc, pct, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
@@ -94,7 +93,7 @@ export function ExposureView({ mode }: { mode: Mode }) {
         <Block title="By sector"><InsideBars items={items((r) => expo(r).sector, BENCH_EXPOSURE.sector)} /></Block>
         <Block title="By region"><Waffles items={items((r) => expo(r).region, BENCH_EXPOSURE.region, 6)} /></Block>
         <div className="col-span-3 grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-x-10">
-          <CountryMap items={items((r) => expo(r).country, BENCH_EXPOSURE.country, 40)} theirs={theirs} />
+          <CountryTable items={items((r) => expo(r).country, BENCH_EXPOSURE.country, 100)} theirs={theirs} />
           <Block title="By currency"><Bubbles items={items((r) => r.ccy, BENCH_EXPOSURE.currency, 7)} /></Block>
         </div>
       </div>
@@ -267,62 +266,70 @@ function Kpi({ title, value, other, theirs, scale, fmt }: { title: string; value
   )
 }
 
-/** Countries in the portfolio, by ISO code on the map. Funds and cash have no country. */
-const ISO: Record<string, string> = {
-  'United States': 'USA', Netherlands: 'NLD', Denmark: 'DNK', Germany: 'DEU', Switzerland: 'CHE', France: 'FRA', Peru: 'PER', China: 'CHN',
-  Chile: 'CHL', Mexico: 'MEX', India: 'IND', 'South Africa': 'ZAF', 'United Kingdom': 'GBR', Ireland: 'IRL', Japan: 'JPN', Canada: 'CAN',
-  Australia: 'AUS', Sweden: 'SWE',
-}
-const REGIONS = [['ALL', 'All'], ['NA', 'NA'], ['LATAM', 'LATAM'], ['EMEA', 'EMEA'], ['APAC', 'APAC']] as const
-type RegionId = (typeof REGIONS)[number][0]
-/** Where a region's total is written on the map (viewBox units). */
-const REGION_AT: Record<Exclude<RegionId, 'ALL'>, [number, number]> = { NA: [215, 115], LATAM: [320, 285], EMEA: [530, 165], APAC: [770, 175] }
+/** Rows that are not a country: funds and cash are summed in the note under the table. */
+const NO_COUNTRY = new Set(['Diversified (funds)', 'Cash', 'Other countries', 'Other'])
+const TOP = 7
 
 /**
- * By country, as in the team's dashboards: a world map, countries shaded by their weight (darker = more), and region
- * check boxes that bring one region forward with both totals written on it. Hover a country for both weights.
+ * By country: a ranked table (largest of the two weights first) with a small bar pair, both weights and the active
+ * weight (difference). The first seven countries are shown; the rest sit in an expandable "Other" row.
  */
-function CountryMap({ items, theirs }: { items: Item[]; theirs: string }) {
-  const [region, setRegion] = useState<RegionId>('ALL')
-  const byIso = new Map(items.filter((i) => ISO[i.label]).map((i) => [ISO[i.label], i]))
-  const max = Math.max(1, ...[...byIso.values()].map((i) => i.value))
-  const regionOf = new Map(WORLD.map(([iso, , reg]) => [iso, reg]))
-  const total = (r: string, f: (i: Item) => number) => [...byIso.entries()].filter(([iso]) => regionOf.get(iso) === r).reduce((t, [, i]) => t + f(i), 0)
-  const unmapped = items.filter((i) => !ISO[i.label]).reduce((t, i) => t + i.value, 0)
+function CountryTable({ items, theirs }: { items: Item[]; theirs: string }) {
+  const [open, setOpen] = useState(false)
+  const rows = items.filter((i) => !NO_COUNTRY.has(i.label)).sort((a, b) => Math.max(b.value, b.other) - Math.max(a.value, a.other))
+  const top = rows.slice(0, TOP)
+  // The benchmark's own "Other countries" line belongs with the rest.
+  const rest = [...rows.slice(TOP), ...items.filter((i) => i.label === 'Other countries')]
+  const max = Math.max(1, ...rows.map((i) => Math.max(i.value, i.other)))
+  const loose = items.filter((i) => NO_COUNTRY.has(i.label) && i.label !== 'Other countries')
+  const sumOf = (l: Item[], f: (i: Item) => number) => l.reduce((t, i) => t + f(i), 0)
+  const row = (it: Item, indent?: boolean) => {
+    const d = it.value - it.other
+    return (
+      <tr key={it.label} className="border-b border-line">
+        <td className={cn('py-1.5 pr-2', indent && 'pl-4 text-fg-secondary')}>{it.label}</td>
+        <td className="py-1.5 pr-3">
+          <div className="h-2" style={{ width: `${(it.value / max) * 100}%`, background: ACCENT }} />
+          <div className="mt-px h-1" style={{ width: `${(it.other / max) * 100}%`, background: OTHER }} />
+        </td>
+        <td className="py-1.5 text-right font-semibold tabular-nums">{pct(it.value)}</td>
+        <td className="py-1.5 text-right text-fg-muted tabular-nums">{pct(it.other)}</td>
+        <td className={cn('py-1.5 text-right tabular-nums', d >= 0 ? 'text-fg' : 'text-fg-muted')}>{Math.abs(d) < 0.05 ? '—' : `${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(1)}`}</td>
+      </tr>
+    )
+  }
   return (
     <section className="min-w-0">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className="text-xl font-light text-fg-secondary">By country</h3>
-        <div className="flex flex-wrap gap-x-3.5 gap-y-1" role="radiogroup" aria-label="Region">
-          {REGIONS.map(([id, label]) => (
-            <label key={id} className="inline-flex cursor-pointer items-center gap-1.5">
-              <Checkbox checked={region === id} onCheckedChange={() => setRegion(id)} />
-              {label}
-            </label>
-          ))}
-        </div>
-      </div>
-      <svg viewBox={WORLD_VIEWBOX} className="h-auto w-full" role="img" aria-label="Portfolio weight by country">
-        {WORLD.map(([iso, name, reg, d]) => {
-          const hit = byIso.get(iso)
-          const held = !!hit && hit.value > 0.004
-          const dim = region !== 'ALL' && reg !== region
-          return (
-            <path key={iso} d={d} fill={held ? ACCENT : hit ? OTHER : SOFT} fillOpacity={dim ? 0.25 : held ? 0.35 + 0.65 * (hit.value / max) : 1} stroke="#fff" strokeWidth={0.6}>
-              <title>{hit ? `${name} ${pct(hit.value)} · ${theirs} ${pct(hit.other)}` : name}</title>
-            </path>
-          )
-        })}
-        {region !== 'ALL' && (
-          <text x={REGION_AT[region][0]} y={REGION_AT[region][1]} textAnchor="middle" className="fill-fg text-[40px] font-light" paintOrder="stroke" stroke="#fff" strokeWidth={6}>
-            {pct(total(region, (i) => i.value))}
-            <tspan className="fill-fg-muted text-[24px]"> / {pct(total(region, (i) => i.other))}</tspan>
-          </text>
-        )}
-      </svg>
-      <p className="mt-1.5 text-fg-muted">
-        Navy: held, darker = larger weight. Pale blue: only in the comparison. Hover a country for both weights.{unmapped > 0.004 && ` ${pct(unmapped)} (funds and cash) has no single country.`}
-      </p>
+      <h3 className="mb-3 text-xl font-light text-fg-secondary">By country</h3>
+      <table className="w-full table-fixed border-collapse">
+        <colgroup><col className="w-[30%]" /><col /><col className="w-[15%]" /><col className="w-[16%]" /><col className="w-[12%]" /></colgroup>
+        <thead>
+          <tr className="border-b border-line text-fg-muted">
+            <th className="pb-1.5 text-left font-normal">Country</th><th />
+            <th className="pb-1.5 text-right font-normal">Portfolio</th>
+            <th className="pb-1.5 text-right font-normal">{theirs}</th>
+            <th className="pb-1.5 text-right font-normal">Active</th>
+          </tr>
+        </thead>
+        <tbody>
+          {top.map((it) => row(it))}
+          {rest.length > 0 && (
+            <tr className="border-b border-line">
+              <td colSpan={5} className="py-1.5">
+                <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="grid w-full cursor-pointer grid-cols-[30%_1fr_15%_16%_12%] items-center text-left hover:bg-surface-subtle">
+                  <span className="inline-flex items-center gap-1 text-link">{open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}Other · {rest.length} more</span>
+                  <span />
+                  <span className="text-right font-semibold tabular-nums">{pct(sumOf(rest, (i) => i.value))}</span>
+                  <span className="text-right text-fg-muted tabular-nums">{pct(sumOf(rest, (i) => i.other))}</span>
+                  <span />
+                </button>
+              </td>
+            </tr>
+          )}
+          {open && rest.map((it) => row(it, true))}
+        </tbody>
+      </table>
+      {loose.length > 0 && <p className="mt-1.5 text-fg-muted">Not by country: {loose.map((i) => `${i.label === 'Diversified (funds)' ? 'funds' : i.label.toLowerCase()} ${pct(i.value)} / ${pct(i.other)}`).join(' · ')}.</p>}
     </section>
   )
 }
