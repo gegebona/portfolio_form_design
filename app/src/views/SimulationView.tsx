@@ -179,7 +179,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
     // Rows that need a decision first (an undecided warning or an open task), then cash (set apart visually), then every
     // other position by descending weight. The order uses the current weight so rows do not jump while a new weight
     // is being typed; new positions (no current weight) follow by new weight.
-    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a)) || Number(!!b.own || b.auto === 'added') - Number(!!a.own || a.auto === 'added')) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
+    .sort((a, b) => (cur ? 0 : Number(needsDecision(b) || flagOnly(b)) - Number(needsDecision(a) || flagOnly(a)) || Number(!!b.own || b.auto === 'added') - Number(!!a.own || a.auto === 'added')) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
   // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
   const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
   const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
