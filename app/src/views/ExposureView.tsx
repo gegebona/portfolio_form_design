@@ -213,10 +213,10 @@ function Bubbles({ items }: { items: Item[] }) {
       {items.map((it) => (
         <div key={it.label} className="relative flex min-w-0 flex-col items-center">
           <div className="flex h-22 items-center gap-0.5">
-            <span className="flex items-center justify-center rounded-full text-white tabular-nums" style={{ width: d(it.value), height: d(it.value), background: mainColor(it.label) }}>
+            <span className="flex shrink-0 items-center justify-center rounded-full text-white tabular-nums" style={{ width: d(it.value), height: d(it.value), background: mainColor(it.label) }}>
               {d(it.value) >= 48 && pct(it.value)}
             </span>
-            <span className="rounded-full" style={{ width: d(it.other), height: d(it.other), background: OTHER }} />
+            <span className="shrink-0 rounded-full" style={{ width: d(it.other), height: d(it.other), background: OTHER }} />
           </div>
           <Label it={it} className="mt-1" />
           <Pair it={it} />
