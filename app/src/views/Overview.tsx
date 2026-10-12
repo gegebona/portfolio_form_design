@@ -1,5 +1,5 @@
 import { Ban, Check, TriangleAlert } from 'lucide-react'
-import { ViewTransition } from 'react'
+import { useLayoutEffect, useRef, useState, ViewTransition } from 'react'
 import { Button } from '../components/ui/button'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { ASSET_CLASSES, CLASS_COLOR, PASS_SCORE, QUALITY_CHECKS } from '../data/data'
@@ -82,21 +82,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false, onTog
         {!quality && (
           <div className={sec}>
             <div className={title}><span>Exclusionary preferences</span>{editExclusions}</div>
-            {/* Never cut off: the first five exclusion groups (two lines), the rest behind “+N more” (same pattern as conflict tags). */}
-            <div className={cn('leading-relaxed', excl.length > 0 && 'text-conflict')}>
-              {excl.length ? <>Excluded: {excl.slice(0, 5).join(' · ')}{excl.length > 5 && (
-                <Popover
-                  title="Exclusionary preferences"
-                  description="Everything excluded from this model portfolio."
-                  className="w-80"
-                  trigger={<PopoverTrigger openOnHover delay={150} className="ml-1.5 cursor-pointer font-semibold whitespace-nowrap underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">+{excl.length - 5} more</PopoverTrigger>}
-                >
-                  <ul className="text-xs">
-                    {excl.map((x) => <li key={x} className="border-t border-line py-1.5 text-conflict first:border-t-0">{x}</li>)}
-                  </ul>
-                </Popover>
-              )}</> : prefLine}
-            </div>
+            {excl.length ? <ExclusionLine items={excl} /> : <div className="leading-relaxed">{prefLine}</div>}
           </div>
         )}
         <div className={sec}>
@@ -250,5 +236,48 @@ export function Donut({ alloc, label }: { alloc: Alloc; label: string }) {
         <text x="56" y="61" textAnchor="middle" className="fill-fg-muted text-xs">Not allocated</text>
       )}
     </svg>
+  )
+}
+
+/**
+ * Exclusions on at most two lines, never cut off: as many groups as fit, the rest behind “+N more” (same pattern as
+ * conflict tags). Measured after layout and again whenever the width changes.
+ */
+function ExclusionLine({ items }: { items: string[] }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [n, setN] = useState(items.length)
+  const key = items.join('|')
+  // Start again from the full list when the exclusions or the available width change.
+  useLayoutEffect(() => {
+    setN(items.length)
+    const el = ref.current
+    if (!el) return
+    let w = el.clientWidth
+    const ro = new ResizeObserver(() => { if (el.clientWidth !== w) { w = el.clientWidth; setN(items.length) } })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [key])
+  // Drop one group at a time until everything, “+N more” included, fits in two lines.
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (el && n > 1 && el.scrollHeight > el.clientHeight + 1) setN(n - 1)
+  })
+  const more = items.length - n
+  return (
+    <div ref={ref} className="line-clamp-2 leading-relaxed text-conflict">
+      Excluded: {items.slice(0, n).join(' · ')}
+      {more > 0 && (
+        <Popover
+          title="Exclusionary preferences"
+          description="Everything excluded from this model portfolio."
+          className="w-80"
+          trigger={<PopoverTrigger openOnHover delay={150} className="ml-1.5 cursor-pointer font-semibold whitespace-nowrap underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-selected">+{more} more</PopoverTrigger>}
+        >
+          <ul className="text-xs">
+            {items.map((x) => <li key={x} className="border-t border-line py-1.5 text-conflict first:border-t-0">{x}</li>)}
+          </ul>
+        </Popover>
+      )}
+    </div>
   )
 }
