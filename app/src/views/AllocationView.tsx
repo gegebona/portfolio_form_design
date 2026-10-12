@@ -1,12 +1,11 @@
-import { Tooltip } from '@base-ui/react/tooltip'
 import { X } from 'lucide-react'
 import { addTransitionType, startTransition, useState, ViewTransition } from 'react'
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
 import { ScrollArea } from '../components/ui/scroll-area'
-import { ConflictList, TooltipPopup } from '../components/ui/tag'
+import { ConflictList } from '../components/ui/tag'
 import { WeightField, WeightSlider } from '../components/ui/weight'
-import { ASSET_CLASSES, CLASS_COLOR } from '../data/data'
+import { CLASS_COLOR } from '../data/data'
 import { cn } from '../lib/cn'
 import {
   allocItems, benchmarkAlloc, conflictGroups, conflictsOf, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
@@ -53,7 +52,7 @@ export function AllocationView() {
             ))}
             {!list.length && <p className="p-3 text-fg-subtle">No components yet. Add them on the Component selection tab.</p>}
           </ScrollArea>
-          <TotalBar list={list} selKey={sel?.key} total={total} onDistribute={list.length > 1 ? distributeEvenly : undefined} />
+          <TotalBar total={total} onDistribute={list.length > 1 ? distributeEvenly : undefined} />
         </div>
         {/* The scrolling panel itself is the boundary, so the cross-fade stays clipped to the panel. */}
         <ViewTransition update={{ detail: 'swap', default: 'none' }} default="none">
@@ -111,27 +110,10 @@ function AllocRow({ it, selected, onPick, onSelect, total, setW }: { it: AllocIt
 }
 
 /** Total: one stacked bar of all components (grouped by asset class), then the total line. */
-function TotalBar({ list, selKey, total, onDistribute }: { list: AllocItem[]; selKey?: string; total: number; onDistribute?: () => void }) {
-  const { state } = usePortfolio()
-  const segs = list
-    .map((it, i) => ({ it, i, w: weightOf(state, it) }))
-    .filter((x) => x.w > 0.004)
-    .sort((a, b) => ASSET_CLASSES.indexOf(a.it.cls) - ASSET_CLASSES.indexOf(b.it.cls) || a.i - b.i)
+function TotalBar({ total, onDistribute }: { total: number; onDistribute?: () => void }) {
   const over = total > 100.005
   return (
     <div className="flex flex-col gap-2 border-t border-line-strong pt-3 pr-5 pb-0.5 pl-3">
-      <div role="img" aria-label="Allocation of all components" className="flex h-3.5 gap-0.5 bg-surface-strong">
-        {segs.map(({ it, w }) => (
-          <Tooltip.Root key={it.key}>
-            <Tooltip.Trigger
-              render={<span />}
-              className={cn('relative block h-full hover:brightness-90', it.key === selKey && 'after:absolute after:inset-x-0 after:-bottom-1.25 after:h-0.5 after:bg-fg')}
-              style={{ width: `${Math.min(100, w)}%`, background: CLASS_COLOR[it.cls] }}
-            />
-            <TooltipPopup>{it.name} · {it.cls} · {f2(w)}%</TooltipPopup>
-          </Tooltip.Root>
-        ))}
-      </div>
       <div className="flex items-baseline gap-3">
         <span>Total</span>
         <span className={cn('text-xs', over ? 'text-error' : 'text-fg-muted')}>

@@ -73,7 +73,8 @@ export function SimulationView() {
           </div>
         )}
       </div>
-      <Overview rows={[{ label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} onToggleCompact={() => setCompact(!compact)} />
+      {/* The Exposure view carries its own asset allocation, so the summary strip would only repeat it there. */}
+      {view !== 'exposure' && <Overview rows={[{ label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} onToggleCompact={() => setCompact(!compact)} />}
       {custom?.auto && <AutoUpdate />}
 
       <div className="mt-2 flex min-h-0 flex-1 flex-col">
