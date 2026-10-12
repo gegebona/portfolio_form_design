@@ -10,13 +10,12 @@ type Mode = 'current' | 'new'
 type Item = { label: string; value: number; before: number; tip?: string }
 
 /*
- * Chart language shared with the team's other dashboards: open sections with a light title (no boxes), muted fills,
- * labels inside the bars, waffles for regions and bubbles for currencies. One accent for the version on screen
- * (navy), a pale blue for Current when New is compared with it, asset classes in their own colours, cash in green.
+ * Chart language shared with the team's other dashboards: open sections with a light title (no boxes), soft bars
+ * with the label inside, waffles for regions, bubbles for currencies. Navy for waffles, bubbles and columns, asset
+ * classes in their own colours, cash in green. In New, small grey figures give the change against Current.
  */
 const ACCENT = 'var(--color-ubs-chart-19)'
 const SOFT = 'var(--color-ubs-background-tags-22)'
-const BEFORE = 'var(--color-ubs-background-tags-08)'
 
 export function ExposureView({ mode }: { mode: Mode }) {
   const { state } = usePortfolio()
@@ -60,16 +59,11 @@ export function ExposureView({ mode }: { mode: Mode }) {
 
   return (
     <div className="pb-6 text-xs">
-      {compare && (
-        <div className="flex justify-end gap-4 pt-3 text-fg-muted">
-          <span className="inline-flex items-center gap-1.5"><span className="size-2.5" style={{ background: ACCENT }} />New</span>
-          <span className="inline-flex items-center gap-1.5"><span className="size-2.5" style={{ background: BEFORE }} />Current</span>
-        </div>
-      )}
+      {compare && <p className="pt-3 text-right text-fg-muted">New version · small grey figures show the change against Current</p>}
       <div className="grid grid-cols-2 gap-x-14 gap-y-9 pt-2">
         <Block title="By asset class">
           <Mosaic parts={classes.map((c) => ({ label: c, value: alloc[c], color: CLASS_COLOR[c] }))} />
-          {compare && <Mosaic thin parts={classes.map((c) => ({ label: c, value: allocBefore[c], color: CLASS_COLOR[c] }))} />}
+          {compare && <div className="mt-1.5 flex flex-wrap gap-x-4 text-fg-muted">{classes.map((c) => { const d = alloc[c] - allocBefore[c]; return Math.abs(d) >= 0.05 && <span key={c}>{c} {d > 0 ? '+' : '−'}{Math.abs(Math.round(d * 10) / 10)}</span> })}</div>}
         </Block>
         <Block title="By sector"><InsideBars items={items((r) => expo(r).sector)} compare={compare} /></Block>
         <Block title="By region"><Waffles items={items((r) => expo(r).region, 5)} compare={compare} /></Block>
@@ -148,18 +142,17 @@ function InsideBars({ items, compare }: { items: Item[]; compare: boolean }) {
       <div className="flex flex-col gap-1">
         {items.map((it) => {
           const w = (it.value / max) * 100
-          // The label sits inside its bar; a short bar keeps it just outside, in dark text.
+          // The label sits inside its bar (dark on the soft fill, as in the team's dashboards); a short bar keeps it just outside.
           const inside = w >= 38
           return (
           <div key={it.label} className="grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-2">
             <div>
               <div className="relative h-5">
-                <div className="absolute inset-y-0 left-0" style={{ width: `${w}%`, background: it.label === 'Cash' ? CLASS_COLOR.Liquidity : ACCENT }} />
-                <span className={cn('absolute inset-y-0 flex items-center whitespace-nowrap', inside ? 'text-white' : 'text-fg')} style={{ left: inside ? 6 : `calc(${w}% + 6px)` }}>
+                <div className="absolute inset-y-0 left-0" style={{ width: `${w}%`, background: it.label === 'Cash' ? CLASS_COLOR.Liquidity : SOFT }} />
+                <span className={cn('absolute inset-y-0 flex items-center whitespace-nowrap', inside && it.label === 'Cash' ? 'text-white' : 'text-fg')} style={{ left: inside ? 6 : `calc(${w}% + 6px)` }}>
                   <Label it={it} />
                 </span>
               </div>
-              {compare && <div className="mt-px h-1.5" style={{ width: `${(it.before / max) * 100}%`, background: BEFORE }} />}
             </div>
             <span className="text-right tabular-nums">
               <span className="font-semibold">{pct(it.value)}</span>
@@ -184,16 +177,13 @@ function Waffles({ items, compare }: { items: Item[]; compare: boolean }) {
     <div className="flex flex-wrap gap-x-6 gap-y-4">
       {items.map((it) => {
         const n = Math.round(it.value)
-        const b = Math.round(it.before)
         return (
-          <div key={it.label} className="w-24">
+          <div key={it.label} className="w-28">
             <div role="img" aria-label={`${it.label} ${pct(it.value)}`} className="grid grid-cols-10 gap-px">
               {Array.from({ length: 100 }, (_, i) => {
-                // Filled from the bottom row up; in New, squares that only Current had are shown pale.
+                // Filled from the bottom row up.
                 const k = (9 - Math.floor(i / 10)) * 10 + (i % 10)
-                const on = k < n
-                const was = compare && !on && k < b
-                return <span key={i} className="aspect-square" style={{ background: on ? (it.label === 'Cash' ? CLASS_COLOR.Liquidity : ACCENT) : was ? BEFORE : SOFT }} />
+                return <span key={i} className="aspect-square" style={{ background: k < n ? (it.label === 'Cash' ? CLASS_COLOR.Liquidity : ACCENT) : SOFT }} />
               })}
             </div>
             <div className="mt-1.5 flex items-baseline justify-between gap-1">
@@ -221,10 +211,10 @@ function Bubbles({ items, compare }: { items: Item[]; compare: boolean }) {
             <span className="flex items-center justify-center rounded-full text-white tabular-nums" style={{ width: d(it.value), height: d(it.value), background: it.label === 'Cash' ? CLASS_COLOR.Liquidity : ACCENT }}>
               {d(it.value) >= 44 && <span className={d(it.value) >= 70 ? 'text-base' : ''}>{pct(it.value)}</span>}
             </span>
-            {compare && Math.abs(it.value - it.before) >= 0.05 && <span className="rounded-full" style={{ width: d(it.before), height: d(it.before), background: BEFORE }} />}
           </div>
           <Label it={it} className="mt-1" />
           {d(it.value) < 44 && <span className="font-semibold tabular-nums">{pct(it.value)}</span>}
+          {compare && delta(it) && <span className="text-fg-muted tabular-nums">{delta(it)}</span>}
         </div>
       ))}
     </div>
@@ -242,7 +232,6 @@ function Columns({ items, compare }: { items: Item[]; compare: boolean }) {
             <span className="mb-1 text-center font-semibold tabular-nums">{pct(it.value)}</span>
             <div className="flex items-end justify-center gap-0.5" style={{ height: `${(Math.max(it.value, it.before) / max) * 100}%` }}>
               <span className="w-full max-w-10" style={{ height: `${it.value ? (it.value / Math.max(it.value, it.before)) * 100 : 0}%`, background: ACCENT }} />
-              {compare && Math.abs(it.value - it.before) >= 0.05 && <span className="w-2" style={{ height: `${(it.before / Math.max(it.value, it.before)) * 100}%`, background: BEFORE }} />}
             </div>
           </div>
         ))}
