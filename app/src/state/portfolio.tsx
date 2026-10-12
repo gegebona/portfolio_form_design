@@ -57,7 +57,8 @@ export type PortfolioState = {
   /** mode: which version Simulation shows. Current is the published portfolio (read-only); New is the working version. */
   sim: { rows: SimRow[]; mode: 'current' | 'new' }
   /** Which book entry is open in the flow, and its open position task (shown at the top of Simulation). */
-  book: { id: string; task: BookTask | null }
+  /** creating: a brand-new portfolio in its creation workflow (the only time preference warnings are shown). */
+  book: { id: string; task: BookTask | null; creating?: boolean }
   /** Set when the open portfolio is a customized version. */
   custom: CustomState | null
 }
@@ -79,7 +80,8 @@ const INITIAL: PortfolioState = {
     'c:keyeq': 18, 'c:gem': 6, 'c:gbond': 16, 'c:defender': 8, 'c:holt-world': 10, 'c:holt-spx': 9, 'c:ch-eq': 6, 'c:jp-eq': 4,
     'c:hybond': 7, 'c:gold': 3, 'c:mp-balanced': 6, 'c:mp-income': 2, 'i:US02079K1079': 3,
   },
-  sim: { rows: POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false })), mode: 'new' },
+  // The sample portfolio as published: Apple is on its excluded list, so it is not held (its weight is in cash).
+  sim: { rows: POSITIONS.filter((p) => p.id !== 'aapl').map((p) => ({ ...p, w: p.id === 'eur' ? 3.5 : p.w, nw: p.id === 'eur' ? 3.5 : p.w, removed: false, kept: false })), mode: 'new' },
   book: { id: '', task: null },
   custom: null,
 }
@@ -134,10 +136,19 @@ export function startNew(s: PortfolioState) {
   s.prefs = { minPos: '', maxInst: '', sel: { geography: [], sector: [], currency: [], category: [] }, rating: RATINGS.length, unrated: false, esg: 0, inst: [] }
   s.comps = { added: [], inst: [], cash: [{ ccy: 'EUR', w: 0 }] }
   s.weights = {}
-  s.book = { id: '', task: null }
+  s.book = { id: '', task: null, creating: true }
   s.custom = null
   s.sim.mode = 'new'
+  // The creation sample still holds an excluded instrument, so its warning can be shown in Simulation.
+  s.sim.rows = POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false }))
 }
+/**
+ * Preference warnings (excluded instruments, components conflicting with exclusions) belong to the creation workflow
+ * only. An existing portfolio, draft or published, only ever shows its position tasks.
+ */
+export const isCreating = (s: PortfolioState) => !!s.book.creating
+/** A component's conflicts with the exclusions, shown only while creating. */
+export const conflictsIn = (s: PortfolioState, c: Component) => (isCreating(s) ? conflictsOf(c, s.prefs) : [])
 /** Opening an existing portfolio from the book shows the illustrative content again (the prototype stores one sample). */
 export function restoreSample(s: PortfolioState) {
   const fresh = structuredClone(INITIAL)

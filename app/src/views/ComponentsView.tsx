@@ -11,7 +11,7 @@ import { Checkbox } from '../components/ui/selection'
 import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictList } from '../components/ui/tag'
 import { AREAS, CASH_CURRENCIES, COMPONENTS, COMPONENT_INSTRUMENTS, PROVIDERS, type Component } from '../data/data'
-import { componentById, conflictGroups, conflictsOf, f2, instrumentByIsin, usePortfolio } from '../state/portfolio'
+import { componentById, conflictGroups, conflictsIn, f2, instrumentByIsin, usePortfolio } from '../state/portfolio'
 import { ComponentDetail } from './ComponentDetail'
 
 export function ComponentsView() {
@@ -65,7 +65,7 @@ export function ComponentsView() {
         </div>
         <Basket />
       </div>
-      <LearnMore id={learn} onClose={closeLearn} conflicts={learn ? conflictsOf(componentById(learn), state.prefs) : []} />
+      <LearnMore id={learn} onClose={closeLearn} conflicts={learn ? conflictsIn(state, componentById(learn)) : []} />
     </Section>
   )
 }
@@ -91,7 +91,7 @@ function CatalogueCard({ c, expanded, onLearnMore }: { c: Component; expanded: b
   const { state } = usePortfolio()
   const toggle = useToggleComponent()
   const on = state.comps.added.includes(c.id)
-  const cf = conflictsOf(c, state.prefs)
+  const cf = conflictsIn(state, c)
   // While expanded, the card's slot stays (keeps the grid still) but is empty and has no names: the expanded card holds them.
   const n = expanded ? undefined : cardNames(c.id)
   const card = (
@@ -154,8 +154,8 @@ function Basket() {
   const bb = added.filter((c) => c.kind === 'bb')
   const mp = added.filter((c) => c.kind === 'mp')
   const total = state.comps.added.length + state.comps.inst.length + state.comps.cash.length
-  const nConf = added.filter((c) => conflictsOf(c, state.prefs).length).length
-  const compRow = (c: Component) => <BasketRow key={c.id} label={c.name} warn={conflictsOf(c, state.prefs).length > 0} onRemove={() => toggle(c.id, false)} />
+  const nConf = added.filter((c) => conflictsIn(state, c).length).length
+  const compRow = (c: Component) => <BasketRow key={c.id} label={c.name} warn={conflictsIn(state, c).length > 0} onRemove={() => toggle(c.id, false)} />
 
   return (
     <aside aria-label="Portfolio components" className="min-h-0 overflow-y-auto border-l border-line pr-1.5 pb-2 pl-7">

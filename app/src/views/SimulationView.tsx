@@ -11,8 +11,8 @@ import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
 import { ADDABLE_POSITIONS, ASSET_CLASSES, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
 import { cn } from '../lib/cn'
-import { getBook, setBookTaskStatus } from '../state/book'
-import { addOwnPosition, f2, near100, parentCode, PREF_LABEL, removeOwnPosition, setOwnWeight, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
+import { setBookTaskStatus } from '../state/book'
+import { addOwnPosition, f2, isCreating, near100, parentCode, PREF_LABEL, removeOwnPosition, setOwnWeight, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { ExposureView } from './ExposureView'
 import { Overview, Swatch } from './Overview'
 
@@ -168,7 +168,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const task = cur ? null : state.book.task
   // Preference warnings belong to the creation workflow (a new portfolio or a draft). A published portfolio only ever
   // shows position tasks.
-  const creating = !state.custom && getBook().find((e) => e.id === state.book.id)?.status !== 'Published'
+  const creating = isCreating(state)
   const excluded = (r: SimRow) => creating && !!r.isin && state.prefs.inst.includes(r.isin)
   const conflict = (r: SimRow) => excluded(r) && !r.kept
   const needsDecision = (r: SimRow) => conflict(r) || (task?.rowId === r.id && task.status === 'Open')

@@ -7,7 +7,7 @@ import { ConflictList } from '../components/ui/tag'
 import { WeightField, WeightSlider } from '../components/ui/weight'
 import { cn } from '../lib/cn'
 import {
-  allocItems, benchmarkAlloc, conflictGroups, conflictsOf, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
+  allocItems, benchmarkAlloc, conflictGroups, conflictsIn, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
 } from '../state/portfolio'
 import { ComponentDetail } from './ComponentDetail'
 import { Overview } from './Overview'
@@ -42,7 +42,7 @@ export function AllocationView() {
       <div className="mt-3.5">
         <Overview rows={[{ label: 'Portfolio', alloc: portfolioAlloc(state) }, { label: 'Benchmark', alloc: benchmarkAlloc(state) }]} focus={0} compact={compact} quality={false} onToggleCompact={() => setCompact(!compact)} />
       </div>
-      <div className="mt-4 grid min-h-0 flex-1 grid-cols-[26.25rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
+      <div className="mt-1 grid min-h-0 flex-1 grid-cols-[26.25rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
         <div className="flex min-h-0 flex-col">
           <div className="flex justify-between pr-5 pb-2 text-xs text-fg-muted"><span>Components</span><span>Weight</span></div>
           <ScrollArea hints="edges" className="flex-1 border-t border-line">
@@ -84,7 +84,7 @@ export function AllocationView() {
 function AllocRow({ it, selected, onPick, onSelect, total, setW }: { it: AllocItem; selected: boolean; onPick: () => void; onSelect: () => void; total: number; setW: (it: AllocItem, v: number) => void }) {
   const { state } = usePortfolio()
   const w = weightOf(state, it)
-  const cf = it.comp ? conflictsOf(it.comp, state.prefs) : []
+  const cf = it.comp ? conflictsIn(state, it.comp) : []
   const left = 100 - total
   return (
     <div className={cn('flex flex-col gap-2 border-b border-l-2 border-b-line pt-2.5 pr-5 pb-3 pl-2.5', selected ? 'border-l-selected bg-selected/5' : 'border-l-transparent bg-surface hover:bg-surface-subtle')}>
