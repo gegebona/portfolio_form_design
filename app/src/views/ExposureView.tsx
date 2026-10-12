@@ -1,7 +1,10 @@
 import { Tooltip } from '@base-ui/react/tooltip'
-import type { ReactNode } from 'react'
-import { ASSET_CLASSES, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
+import { useState, type ReactNode } from 'react'
+import { BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
+import { Checkbox } from '../components/ui/selection'
 import { TooltipPopup } from '../components/ui/tag'
+import { WORLD, WORLD_VIEWBOX } from '../data/worldMap'
+import { AllocationBlock } from './Overview'
 import { cn } from '../lib/cn'
 import { pct, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 
@@ -46,7 +49,6 @@ export function ExposureView({ mode }: { mode: Mode }) {
 
   const alloc = simAlloc(state, mode)
   const allocBefore = simAlloc(state, 'current')
-  const classes = ASSET_CLASSES.filter((c) => alloc[c] > 0.004 || allocBefore[c] > 0.004)
 
   // Fixed income: bond positions looked through to maturity and rating, as a share of the fixed income part.
   const bondsIn = (m: Mode) => rows.filter((r) => BOND_PROFILE[r.id] && wOf(r, m) > 0)
@@ -61,12 +63,12 @@ export function ExposureView({ mode }: { mode: Mode }) {
     <div className="pb-6 text-xs">
       {compare && <p className="pt-3 text-right text-fg-muted">New version · small grey figures show the change against Current</p>}
       <div className="grid grid-cols-2 gap-x-14 gap-y-9 pt-2">
+        {/* Same asset allocation block as the overview strip's details on Component allocation and Simulation. */}
         <Block title="By asset class">
-          <Mosaic parts={classes.map((c) => ({ label: c, value: alloc[c], color: CLASS_COLOR[c] }))} />
-          {compare && <div className="mt-1.5 flex flex-wrap gap-x-4 text-fg-muted">{classes.map((c) => { const d = alloc[c] - allocBefore[c]; return Math.abs(d) >= 0.05 && <span key={c}>{c} {d > 0 ? '+' : '−'}{Math.abs(Math.round(d * 10) / 10)}</span> })}</div>}
+          <AllocationBlock rows={[{ label: 'Current', alloc: allocBefore }, { label: 'New', alloc }]} focus={compare ? 1 : 0} showChange={compare} />
         </Block>
         <Block title="By sector"><InsideBars items={items((r) => expo(r).sector)} compare={compare} /></Block>
-        <Block title="By country"><InsideBars items={items((r) => expo(r).country, 8)} compare={compare} /></Block>
+        <CountryMap weights={sum((r) => expo(r).country, mode)} />
         <Block title="By region"><Waffles items={items((r) => expo(r).region, 5)} compare={compare} /></Block>
         <Block title="By currency" className="col-span-2"><Bubbles items={items((r) => r.ccy, 9)} compare={compare} /></Block>
       </div>
@@ -114,24 +116,6 @@ function Label({ it, className }: { it: Item; className?: string }) {
 }
 /** Axis maximum: the largest value rounded up to a step of 5 (or 10 above 30). */
 const niceMax = (v: number) => { const step = v > 30 ? 10 : 5; return Math.max(step, Math.ceil(v / step) * step) }
-
-/** Asset classes as one band of blocks, width = share, label and value written upwards inside each block. */
-function Mosaic({ parts, thin }: { parts: { label: string; value: number; color: string }[]; thin?: boolean }) {
-  const shown = parts.filter((p) => p.value > 0.004)
-  return (
-    <div role="img" aria-label={(thin ? 'Current: ' : '') + shown.map((p) => `${p.label} ${pct(p.value)}`).join(', ')} className={cn('flex w-full gap-0.5', thin ? 'mt-1.5 h-2 opacity-45' : 'h-28')}>
-      {shown.map((p) => (
-        <div key={p.label} className="relative min-w-0 overflow-hidden" style={{ width: `${p.value}%`, background: p.color }} title={`${p.label} ${pct(p.value)}`}>
-          {!thin && p.value >= 6 && (
-            <span className="absolute bottom-2 left-1.5 rotate-180 text-sm/tight whitespace-nowrap text-white [writing-mode:vertical-rl]">
-              {p.label}<br />{pct(p.value)}
-            </span>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
 
 /** Horizontal bars with the label inside, an axis underneath; in New a pale Current bar under each. */
 function InsideBars({ items, compare }: { items: Item[]; compare: boolean }) {
@@ -261,6 +245,67 @@ function Kpi({ title, value, bench, scale, fmt, note }: { title: string; value: 
         <span>Benchmark {fmt(bench)} <span className="inline-block h-2.5 w-0.5 bg-fg align-[-1px]" /></span>
       </div>
       <p className="mt-2 text-sm text-fg-secondary">{note(value - bench)} Benchmark: {BOND_BENCHMARK.name}.</p>
+    </section>
+  )
+}
+
+/** Countries in the portfolio, by ISO code on the map. Funds and cash have no country. */
+const ISO: Record<string, string> = {
+  'United States': 'USA', Netherlands: 'NLD', Denmark: 'DNK', Germany: 'DEU', Switzerland: 'CHE', France: 'FRA', Peru: 'PER', China: 'CHN',
+  Chile: 'CHL', Mexico: 'MEX', India: 'IND', 'South Africa': 'ZAF', 'United Kingdom': 'GBR', Ireland: 'IRL',
+}
+const REGIONS = [['ALL', 'All'], ['NA', 'NA'], ['LATAM', 'LATAM'], ['EMEA', 'EMEA'], ['APAC', 'APAC']] as const
+type RegionId = (typeof REGIONS)[number][0]
+/** Where a region's total is written on the map (viewBox units). */
+const REGION_AT: Record<Exclude<RegionId, 'ALL'>, [number, number]> = { NA: [215, 115], LATAM: [320, 285], EMEA: [530, 165], APAC: [770, 175] }
+
+/**
+ * By country, as in the team's dashboards: a world map, countries shaded by their weight (darker = more), and region
+ * check boxes that bring one region forward with its total written on it. Hover a country for its weight.
+ */
+function CountryMap({ weights }: { weights: Map<string, number> }) {
+  const [region, setRegion] = useState<RegionId>('ALL')
+  const byIso = new Map<string, [string, number]>()
+  weights.forEach((v, k) => { if (ISO[k]) byIso.set(ISO[k], [k, v]) })
+  const max = Math.max(1, ...[...byIso.values()].map(([, v]) => v))
+  const regionOf = new Map(WORLD.map(([iso, , reg]) => [iso, reg]))
+  const regionTotal = (r: string) => [...byIso.entries()].filter(([iso]) => regionOf.get(iso) === r).reduce((t, [, [, v]]) => t + v, 0)
+  const unmapped = [...weights.entries()].filter(([k]) => !ISO[k]).reduce((t, [, v]) => t + v, 0)
+  return (
+    <section className="min-w-0">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 className="text-xl font-light text-fg-secondary">By country</h3>
+        <div className="flex flex-wrap gap-x-3.5 gap-y-1" role="radiogroup" aria-label="Region">
+          {REGIONS.map(([id, label]) => (
+            <label key={id} className="inline-flex cursor-pointer items-center gap-1.5">
+              <Checkbox checked={region === id} onCheckedChange={() => setRegion(id)} />
+              {label}
+            </label>
+          ))}
+        </div>
+      </div>
+      <svg viewBox={WORLD_VIEWBOX} className="h-auto w-full" role="img" aria-label="Portfolio weight by country">
+        {WORLD.map(([iso, name, reg, d]) => {
+          const hit = byIso.get(iso)
+          const dim = region !== 'ALL' && reg !== region
+          // Held countries in navy, darker for a larger weight; the rest in the soft grey.
+          const fill = hit ? ACCENT : SOFT
+          const opacity = hit ? 0.35 + 0.65 * (hit[1] / max) : 1
+          return (
+            <path key={iso} d={d} fill={fill} fillOpacity={dim ? (hit ? 0.15 : 0.5) : opacity} stroke="#fff" strokeWidth={0.6}>
+              <title>{hit ? `${name} ${pct(hit[1])}` : name}</title>
+            </path>
+          )
+        })}
+        {region !== 'ALL' && (
+          <text x={REGION_AT[region][0]} y={REGION_AT[region][1]} textAnchor="middle" className="fill-fg text-[44px] font-light" paintOrder="stroke" stroke="#fff" strokeWidth={6}>
+            {pct(regionTotal(region))}
+          </text>
+        )}
+      </svg>
+      <p className="mt-1.5 text-fg-muted">
+        Darker = larger weight; hover a country for its share.{unmapped > 0.004 && ` ${pct(unmapped)} (funds and cash) has no single country.`}
+      </p>
     </section>
   )
 }
