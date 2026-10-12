@@ -4,7 +4,7 @@ import { addTransitionType, startTransition, useState, ViewTransition } from 're
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
 import { ScrollArea } from '../components/ui/scroll-area'
-import { ConflictTag, TooltipPopup } from '../components/ui/tag'
+import { ConflictList, TooltipPopup } from '../components/ui/tag'
 import { WeightField, WeightSlider } from '../components/ui/weight'
 import { ASSET_CLASSES, CLASS_COLOR } from '../data/data'
 import { cn } from '../lib/cn'
@@ -94,10 +94,11 @@ function AllocRow({ it, selected, onPick, onSelect, total, setW }: { it: AllocIt
         <button type="button" onClick={onPick} aria-pressed={selected} className="flex min-w-0 flex-1 cursor-pointer flex-col text-left">
           <span>{it.name}</span>
           <span className="text-xs text-fg-muted">{it.meta}</span>
-          {cf.length > 0 && <ConflictTag className="mt-1">Conflicts with exclusions: {cf.join(', ')}</ConflictTag>}
         </button>
         <WeightField whole value={w} onValueChange={(v) => setW(it, v)} onFocus={onSelect} aria-label={`Weight of ${it.name} in percent`} />
       </div>
+      {/* Outside the select button: the “+N more” trigger is a button of its own. */}
+      {cf.length > 0 && <ConflictList items={cf} className="-mt-1" />}
       {/* Pressing the slider selects its row immediately; the drag is not interrupted because the slider is not re-mounted. */}
       <WeightSlider value={w} onValueChange={(v) => setW(it, v)} onPointerDown={onSelect} color={CLASS_COLOR[it.cls]} aria-label={`Weight of ${it.name} (slider)`} />
       {selected && left > 0.004 && (
