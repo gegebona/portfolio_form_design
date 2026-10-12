@@ -87,7 +87,7 @@ export function ComponentDetail({ c }: { c: Component }) {
               {conflicts > 0
                 ? <><TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />{conflicts} {conflicts === 1 ? 'instrument conflicts' : 'instruments conflict'} with exclusions</>
                 : null}
-              <span className="text-fg-muted">{conflicts > 0 && '· '}{list.length} included instruments</span>
+              <span className="text-fg-muted">{conflicts > 0 && '· '}{list.length} instruments</span>
             </span>
           </div>
           <table className="w-full table-fixed border-collapse text-xs">

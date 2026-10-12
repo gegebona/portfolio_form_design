@@ -124,17 +124,19 @@ function Cols({ w }: { w: number[] }) {
 
 type Method = 'equal' | 'proportional' | 'cash'
 const METHODS: { id: Method; label: string; help: string }[] = [
-  { id: 'equal', label: 'Equal', help: 'The same share to each remaining position.' },
-  { id: 'proportional', label: 'Proportional', help: "In proportion to each remaining position's current weight." },
-  { id: 'cash', label: 'Cash', help: 'All of it to the cash position.' },
+  { id: 'equal', label: 'Equal', help: 'The same amount for each other position.' },
+  { id: 'proportional', label: 'Proportional', help: "In proportion to each other position's current weight." },
+  { id: 'cash', label: 'Cash', help: 'All of it through the cash position.' },
 ]
 
 /**
- * Where the weight of a removed position would go. Returns the amount per receiving position (2 decimals, summing to
- * exactly the released weight), or add = null with the limitation that makes the method impossible. Nothing is applied here.
+ * How the other positions absorb a weight change of one position. `amount` is what they receive: by default the whole
+ * weight of a removed position; negative when they give weight up (an accepted task that raises a position).
+ * Returns the change per position (2 decimals, summing to exactly `amount`), or add = null with the limitation that
+ * makes the method impossible. Nothing is applied here.
  */
-function redistribution(all: SimRow[], id: string, method: Method) {
-  const amount = all.find((r) => r.id === id)?.nw ?? 0
+function redistribution(all: SimRow[], id: string, method: Method, amountIn?: number) {
+  const amount = amountIn ?? all.find((r) => r.id === id)?.nw ?? 0
   const others = all.filter((r) => !r.removed && r.id !== id)
   const targets = method === 'cash' ? others.filter((r) => r.cls === 'Liquidity').slice(0, 1) : others.filter((r) => r.nw > 0)
   if (!targets.length) return { amount, targets, add: null, why: method === 'cash' ? 'the rule that a cash position must exist' : 'the rule that weight only goes to positions already held' }
@@ -144,12 +146,14 @@ function redistribution(all: SimRow[], id: string, method: Method) {
   // Rounding leftovers go to the largest receiver so the total stays exact.
   const big = [...targets].sort((a, b) => b.nw - a.nw)[0]
   add.set(big.id, round2((add.get(big.id) ?? 0) + amount - [...add.values()].reduce((t, v) => t + v, 0)))
+  if (targets.some((r) => r.nw + (add.get(r.id) ?? 0) < -0.004)) return { amount, targets, add: null, why: 'the rule that no weight can go below 0%' }
   return { amount, targets, add, why: '' }
 }
 
 function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) {
   // The position being removed and the redistribution method picked for it (the panel opens under its row).
-  const [removing, setRemoving] = useState<{ id: string; method: Method } | null>(null)
+  // The position being removed, or whose position task is being accepted, and the redistribution method picked for it.
+  const [removing, setRemoving] = useState<{ id: string; method: Method; kind?: 'remove' | 'accept' } | null>(null)
   const [onlyWarnings, setOnlyWarnings] = useState(false)
   const { state, update } = usePortfolio()
   const cur = mode === 'current'
@@ -216,7 +220,11 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const c = !cur && conflict(r)
           const edited = Math.abs(r.nw - r.w) >= 0.005
           const t = task && task.rowId === r.id ? task : null
-          const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method) : null
+          // Accepting a task moves the position to its official target; the other positions absorb the difference.
+          const accepting = removing?.kind === 'accept' && !!t
+          const delta = t ? round2(t.next - r.nw) : 0
+          const amountFor = accepting ? -delta : undefined
+          const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method, amountFor) : null
           return (
             <Fragment key={r.id}>
             <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
@@ -262,7 +270,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                   {custom ? <UpdateNote r={r} /> : t ? (
                     <span className="inline-flex gap-1">
                       {(['Accepted', 'Rejected', 'Deferred'] as const).map((st) => (
-                        <Button key={st} size="xs" aria-pressed={t.status === st} className={cn(t.status === st && 'border-control-active bg-surface-strong font-semibold')} onClick={() => decide(st)}>
+                        <Button key={st} size="xs" aria-pressed={t.status === st} className={cn(t.status === st && 'border-control-active bg-surface-strong font-semibold')} onClick={() => (st === 'Accepted' && Math.abs(t.next - r.nw) >= 0.005 ? setRemoving({ id: r.id, method: 'proportional', kind: 'accept' }) : decide(st))}>
                           {{ Accepted: 'Accept', Rejected: 'Reject', Deferred: 'Defer' }[st]}
                         </Button>
                       ))}
@@ -288,15 +296,21 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               <tr>
                 <td colSpan={10} className="border-b border-line border-l-2 border-l-selected bg-surface px-6 py-4">
                   <div className="max-w-180">
-                    <div className="text-sm font-semibold">Remove {r.name}</div>
-                    <p className="text-fg-muted">{f2(plan.amount)}% will be released. Choose how to redistribute it.</p>
-                    <RadioGroup aria-label="Redistribution method" value={removing.method} onValueChange={(v) => setRemoving({ id: r.id, method: v as Method })} className="mt-2 border-t border-line">
+                    <div className="text-sm font-semibold">{accepting ? `Accept the position task for ${r.name}` : `Remove ${r.name}`}</div>
+                    <p className="text-fg-muted">
+                      {accepting
+                        ? `${r.name} goes from ${f2(r.nw)}% to its official target of ${f2(t!.next)}%. ${f2(Math.abs(delta))}% ${delta > 0 ? 'must come from' : 'goes back to'} the other positions. Choose how.`
+                        : `${f2(plan.amount)}% will be released. Choose how to redistribute it.`}
+                    </p>
+                    <RadioGroup aria-label="Redistribution method" value={removing.method} onValueChange={(v) => setRemoving({ ...removing, method: v as Method })} className="mt-2 border-t border-line">
                       {METHODS.map((m) => {
-                        const p = redistribution(state.sim.rows, r.id, m.id)
+                        const p = redistribution(state.sim.rows, r.id, m.id, amountFor)
                         const cash = p.targets[0]
+                        const sg = (v: number) => (v >= 0 ? '+' : '−') + f2(Math.abs(v))
+                        const extreme = p.add ? [...p.add.values()].sort((a, b) => Math.abs(b) - Math.abs(a))[0] : 0
                         const effect = !p.add ? 'Not possible'
-                          : m.id === 'equal' ? `+${f2(p.amount / p.targets.length)} each · ${p.targets.length} positions`
-                          : m.id === 'proportional' ? `largest +${f2(Math.max(...p.add.values()))}`
+                          : m.id === 'equal' ? `${sg(p.amount / p.targets.length)} each · ${p.targets.length} positions`
+                          : m.id === 'proportional' ? `largest ${sg(extreme)}`
                           : `${cash.name} ${f2(cash.nw)} → ${f2(cash.nw + p.amount)}`
                         return (
                           <label key={m.id} className="flex cursor-pointer items-start gap-2.5 border-b border-line py-2 hover:bg-surface-subtle">
@@ -310,24 +324,27 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     {!plan.add && (
                       <div role="alert" className="mt-3 border border-excluded-border bg-excluded-subtle px-3 py-2 text-conflict">
                         <strong className="block font-semibold">Automatic redistribution</strong>
-                        The automatic redistribution for {r.name} could not be completed. {f2(plan.amount)}% could not be allocated without violating {plan.why}. No automatic changes were applied. The position can still be removed manually. Choose another redistribution method or cancel.
+                        The automatic redistribution for {r.name} could not be completed. {f2(Math.abs(plan.amount))}% could not be allocated without violating {plan.why}. No automatic changes were applied. {accepting ? 'The task can still be accepted without redistributing.' : 'The position can still be removed manually.'} Choose another redistribution method or cancel.
                       </div>
                     )}
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
                       <span className="text-fg-muted">{plan.add ? 'The total weight stays unchanged.' : ''}</span>
                       <span className="inline-flex flex-wrap items-center gap-2">
                         <Button size="sm" onClick={() => setRemoving(null)}>Cancel</Button>
-                        <Button size="sm" onClick={() => { edit(r.id, (x) => { x.removed = true; x.nw = 0 }); setRemoving(null) }}>Remove without redistributing</Button>
+                        {accepting
+                          ? <Button size="sm" onClick={() => { decide('Accepted'); setRemoving(null) }}>Accept without redistributing</Button>
+                          : <Button size="sm" onClick={() => { edit(r.id, (x) => { x.removed = true; x.nw = 0 }); setRemoving(null) }}>Remove without redistributing</Button>}
                         <Button size="sm" variant="primary" disabled={!plan.add} onClick={() => {
                           const add = plan.add
                           if (!add) return
+                          if (accepting) decide('Accepted')
                           update((s) => {
                             s.sim.rows.forEach((x) => {
-                              if (x.id === r.id) { x.removed = true; x.nw = 0 } else if (add.has(x.id)) x.nw = round2(x.nw + (add.get(x.id) ?? 0))
+                              if (x.id === r.id) { if (!accepting) { x.removed = true; x.nw = 0 } } else if (add.has(x.id)) x.nw = round2(x.nw + (add.get(x.id) ?? 0))
                             })
                           })
                           setRemoving(null)
-                        }}>Remove and redistribute</Button>
+                        }}>{accepting ? 'Accept and redistribute' : 'Remove and redistribute'}</Button>
                       </span>
                     </div>
                   </div>

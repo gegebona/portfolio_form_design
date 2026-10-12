@@ -46,8 +46,7 @@ export function ConflictList({ items, groups, max = 2, compact, className }: { i
           {/* Same pattern as the exclusions strip: preference type in grey, the conflicting values in red. */}
           <ul className="text-xs">
             {(groups ?? items.map((x) => ({ label: '', values: [x] }))).map((g) => (
-              <li key={g.label + g.values[0]} className="flex items-start gap-1.5 border-t border-line py-1.5 first:border-t-0">
-                <TriangleAlert className="mt-px size-3 shrink-0 text-error" strokeWidth={1.75} aria-hidden />
+              <li key={g.label + g.values[0]} className="border-t border-line py-1.5 first:border-t-0">
                 <span>{g.label && <span className="text-fg-muted">{g.label} </span>}<span className="text-conflict">{g.values.join(', ')}</span></span>
               </li>
             ))}
