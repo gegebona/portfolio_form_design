@@ -144,7 +144,8 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
     if (custom) {
       // Publishing NEW replaces CURRENT: the version number goes up and the pending automatic update is settled.
       // Saving keeps NEW pending; the published CURRENT is untouched.
-      if (publish) setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : { ...e, ...fields, name: e.name, auto: undefined, version: custom.version + 1 })))
+      // An update that could not be applied stays pending (the next data load retries), even if a preference change is published.
+      if (publish) setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : { ...e, editedBy: fields.editedBy, modified: fields.modified, auto: e.auto === 'invalid' ? 'invalid' : undefined, version: custom.version + 1 })))
     } else if (l.some((e) => e.id === state.book.id)) {
       setBook(l.map((e): BookEntry => (e.id !== state.book.id ? e : publish
         ? { ...e, ...fields, status: 'Published', tasks: e.tasks?.filter((t) => t.status === 'Deferred') }
