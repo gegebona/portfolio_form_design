@@ -66,9 +66,9 @@ export function ExposureView({ mode }: { mode: Mode }) {
           {compare && <div className="mt-1.5 flex flex-wrap gap-x-4 text-fg-muted">{classes.map((c) => { const d = alloc[c] - allocBefore[c]; return Math.abs(d) >= 0.05 && <span key={c}>{c} {d > 0 ? '+' : '−'}{Math.abs(Math.round(d * 10) / 10)}</span> })}</div>}
         </Block>
         <Block title="By sector"><InsideBars items={items((r) => expo(r).sector)} compare={compare} /></Block>
+        <Block title="By country"><InsideBars items={items((r) => expo(r).country, 8)} compare={compare} /></Block>
         <Block title="By region"><Waffles items={items((r) => expo(r).region, 5)} compare={compare} /></Block>
-        <Block title="By currency"><Bubbles items={items((r) => r.ccy, 7)} compare={compare} /></Block>
-        <Block title="By country" className="col-span-2"><InsideBars items={items((r) => expo(r).country, 9)} compare={compare} /></Block>
+        <Block title="By currency" className="col-span-2"><Bubbles items={items((r) => r.ccy, 9)} compare={compare} /></Block>
       </div>
 
       <div className="mt-10 flex items-baseline gap-3 border-b border-line pb-2">
@@ -178,7 +178,7 @@ function Waffles({ items, compare }: { items: Item[]; compare: boolean }) {
       {items.map((it) => {
         const n = Math.round(it.value)
         return (
-          <div key={it.label} className="w-28">
+          <div key={it.label} className="w-32">
             <div role="img" aria-label={`${it.label} ${pct(it.value)}`} className="grid grid-cols-10 gap-px">
               {Array.from({ length: 100 }, (_, i) => {
                 // Filled from the bottom row up.
@@ -187,8 +187,8 @@ function Waffles({ items, compare }: { items: Item[]; compare: boolean }) {
               })}
             </div>
             <div className="mt-1.5 flex items-baseline justify-between gap-1">
-              <Label it={it} className="truncate" />
-              <span className="font-semibold tabular-nums">{pct(it.value)}</span>
+              <Label it={it} />
+              <span className="shrink-0 font-semibold tabular-nums">{pct(it.value)}</span>
             </div>
             {compare && delta(it) && <div className="text-right text-fg-muted tabular-nums">{delta(it)}</div>}
           </div>
@@ -203,7 +203,7 @@ function Bubbles({ items, compare }: { items: Item[]; compare: boolean }) {
   const max = Math.max(...items.map((i) => Math.max(i.value, i.before)))
   const d = (v: number) => (v > 0 ? 14 + Math.sqrt(v / max) * 82 : 0)
   return (
-    <div className="relative flex items-end justify-between gap-2">
+    <div className="relative flex items-start justify-around gap-2">
       <span aria-hidden className="absolute inset-x-0 top-[3.5rem] h-px bg-line" />
       {items.map((it) => (
         <div key={it.label} className="relative flex min-w-0 flex-col items-center">
@@ -252,7 +252,7 @@ function Kpi({ title, value, bench, scale, fmt, note }: { title: string; value: 
         <h3 className="text-xl font-light text-fg-secondary">{title}</h3>
         <span className="text-xl tabular-nums">{fmt(value)}</span>
       </div>
-      <div className="relative mt-2 h-6" style={{ background: SOFT }}>
+      <div className="relative mt-2 h-4" style={{ background: SOFT }}>
         <div className="absolute inset-y-0 left-0" style={{ width: at(value), background: ACCENT }} />
         <div className="absolute -inset-y-1 w-0.5 bg-fg" style={{ left: at(bench) }} title={`Benchmark ${fmt(bench)}`} />
       </div>
