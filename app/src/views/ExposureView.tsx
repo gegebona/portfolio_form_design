@@ -62,15 +62,18 @@ export function ExposureView({ mode }: { mode: Mode }) {
   return (
     <div className="pb-6 text-xs">
       {compare && <p className="pt-3 text-right text-fg-muted">New version · small grey figures show the change against Current</p>}
-      <div className="grid grid-cols-2 gap-x-14 gap-y-9 pt-2">
+      {/* Three charts per row; the map and the currency bubbles need more width and take the second row together. */}
+      <div className="grid grid-cols-3 gap-x-10 gap-y-9 pt-2">
         {/* Same asset allocation block as the overview strip's details on Component allocation and Simulation. */}
         <Block title="By asset class">
           <AllocationBlock rows={[{ label: 'Current', alloc: allocBefore }, { label: 'New', alloc }]} focus={compare ? 1 : 0} showChange={compare} />
         </Block>
         <Block title="By sector"><InsideBars items={items((r) => expo(r).sector)} compare={compare} /></Block>
-        <CountryMap weights={sum((r) => expo(r).country, mode)} />
         <Block title="By region"><Waffles items={items((r) => expo(r).region, 5)} compare={compare} /></Block>
-        <Block title="By currency" className="col-span-2"><Bubbles items={items((r) => r.ccy, 9)} compare={compare} /></Block>
+        <div className="col-span-3 grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-x-10">
+          <CountryMap weights={sum((r) => expo(r).country, mode)} />
+          <Block title="By currency"><Bubbles items={items((r) => r.ccy, 7)} compare={compare} /></Block>
+        </div>
       </div>
 
       <div className="mt-10 flex items-baseline gap-3 border-b border-line pb-2">
@@ -78,13 +81,15 @@ export function ExposureView({ mode }: { mode: Mode }) {
         <span className="text-fg-muted">{fiW(mode) ? `${pct(fiW(mode))} of the portfolio · maturity and rating as a share of the fixed income part` : 'No fixed income positions'}</span>
       </div>
       {fiW(mode) > 0 && (
-        <div className="grid grid-cols-2 gap-x-14 gap-y-9 pt-5">
+        <div className="grid grid-cols-3 gap-x-10 gap-y-9 pt-5">
           <Block title="Maturity"><Columns items={split((id) => BOND_PROFILE[id].maturity, MATURITY_BUCKETS)} compare={compare} /></Block>
           <Block title="Rating"><InsideBars items={split((id) => BOND_PROFILE[id].rating, RATING_BUCKETS)} compare={compare} /></Block>
+          <div className="flex flex-col gap-7">
           <Kpi title="Duration" value={avg((id) => BOND_PROFILE[id].duration)} bench={BOND_BENCHMARK.duration} scale={10} fmt={(v) => `${v.toFixed(1)} yrs`}
             note={(d) => `The portfolio's duration is ${Math.abs(d).toFixed(1)} years ${d < 0 ? 'shorter' : 'longer'} than the benchmark's, so it is ${d < 0 ? 'less' : 'more'} sensitive to interest rate changes.`} />
           <Kpi title="Yield to maturity" value={avg((id) => BOND_PROFILE[id].ytm)} bench={BOND_BENCHMARK.ytm} scale={6} fmt={(v) => `${v.toFixed(2)}%`}
             note={(d) => `Held to maturity, the fixed income part would yield ${Math.abs(d).toFixed(2)} points ${d < 0 ? 'less' : 'more'} per year than the benchmark.`} />
+          </div>
         </div>
       )}
     </div>
@@ -158,11 +163,11 @@ function InsideBars({ items, compare }: { items: Item[]; compare: boolean }) {
 /** One waffle per region: 10 × 10 squares, one square per percentage point. */
 function Waffles({ items, compare }: { items: Item[]; compare: boolean }) {
   return (
-    <div className="flex flex-wrap gap-x-6 gap-y-4">
+    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
       {items.map((it) => {
         const n = Math.round(it.value)
         return (
-          <div key={it.label} className="w-32">
+          <div key={it.label} className="max-w-32 min-w-0">
             <div role="img" aria-label={`${it.label} ${pct(it.value)}`} className="grid grid-cols-10 gap-px">
               {Array.from({ length: 100 }, (_, i) => {
                 // Filled from the bottom row up.
