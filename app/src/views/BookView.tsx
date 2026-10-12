@@ -83,10 +83,10 @@ function TaskTag({ e, onReview }: { e: BookEntry; onReview: () => void }) {
       description="An underlying component changed the weight of a position. Accept, reject or defer it in Simulation."
     >
       <MiniTable
-        caption="New position weight in underlying component"
-        heads={['Instrument', 'Underlying component', 'Status', 'Current weight %', 'New weight %']}
+        caption="Weight of the position inside its component, and what it means for this portfolio"
+        heads={['Instrument', 'Underlying component', 'Status', 'In component %', 'In portfolio %']}
         numFrom={3}
-        rows={tasks.map((t) => [<>{t.instrument}<span className="block text-fg-muted">{t.isin}</span></>, t.component, t.status, f2(t.current), f2(t.next)])}
+        rows={tasks.map((t) => [<>{t.instrument}<span className="block text-fg-muted">{t.isin}</span></>, t.component, t.status, `${f2(t.inCurrent)} → ${f2(t.inNext)}`, `${f2(t.current)} → ${f2(t.next)}`])}
       />
       <div className="mt-3 flex justify-end"><Button size="sm" onClick={onReview}>Review in Simulation</Button></div>
     </Popover>

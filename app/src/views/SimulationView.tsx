@@ -230,7 +230,6 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>{r.cls}</td>
               <td className={td}>
-                {t && <span className="mb-0.75 block w-fit rounded-xs bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
                 {r.name}
                 {!cur && r.kept && excluded(r) && (
                   <Popover
@@ -247,7 +246,8 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                   </Popover>
                 )}
                 {r.isin && <span className="block text-fg-muted">{r.isin}</span>}
-                {t && <span className="mt-0.75 block text-fg-muted">Official target {f2(t.next)}% from {t.component}</span>}
+                {/* Position task: why the weight should change, in one line under the instrument. */}
+                {t && <span className="mt-0.75 block text-fg-muted">{t.component} changed it from {f2(t.inCurrent)}% to {f2(t.inNext)}% → target {f2(t.next)}% here</span>}
                 {(c || (cur && excluded(r))) && <ConflictNote>Excluded instrument</ConflictNote>}
               </td>
               <td className={td}>{r.bb}</td>
@@ -262,9 +262,11 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     : custom
                     ? <span className={cn('block text-right tabular-nums', edited && 'font-semibold')}>{f2(r.nw)}</span>
                     : <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />}
+                  {/* An open task proposes a weight; nothing changes until it is accepted. */}
+                  {t?.status === 'Open' && <span className="mt-0.5 block text-right text-fg-muted tabular-nums">proposed {f2(t.next)}</span>}
                 </td>
               )}
-              {!cur && <td className={cn(td, 'text-right tabular-nums')}>{Math.abs(r.nw - r.w) < 0.005 ? <span className="text-fg-subtle">—</span> : (r.nw > r.w ? '+' : '') + f2(r.nw - r.w)}</td>}
+              {!cur && <td className={cn(td, 'text-right tabular-nums')}>{Math.abs(r.nw - r.w) < 0.005 ? (t?.status === 'Open' ? <span className="text-fg-muted">{(t.next > r.w ? '+' : '') + f2(t.next - r.w)}<span className="block">proposed</span></span> : <span className="text-fg-subtle">—</span>) : (r.nw > r.w ? '+' : '') + f2(r.nw - r.w)}</td>}
               {!cur && (
                 <td className={cn(td, custom ? 'text-left' : 'text-right whitespace-nowrap')}>
                   {custom ? <UpdateNote r={r} /> : t ? (
