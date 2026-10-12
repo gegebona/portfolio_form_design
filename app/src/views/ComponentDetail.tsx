@@ -12,7 +12,7 @@ const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 
 /**
  * Component details, used by the Allocation panel and the Learn more window.
- * A key-figure strip (asset allocation, sector allocation, region allocation — the same strip pattern as the portfolio
+ * Three bar charts (asset allocation, sector allocation, region allocation — the same strip pattern as the portfolio
  * overview) above a full-width list of every instrument it holds, in two views that mirror Simulation: a flat Instrument
  * view and an Asset class view with group subtotals. An instrument on the portfolio's excluded list is highlighted as a conflict.
  */
@@ -35,7 +35,7 @@ export function ComponentDetail({ c }: { c: Component }) {
   }
   const sectors = breakdown((h) => h.sector)
   const regions = breakdown((h) => h.region)
-  const sec = 'min-w-0 px-6 py-2.5 first:pl-0 [&+&]:border-l [&+&]:border-line'
+  const sec = 'min-w-0 px-6 pt-2.5 pb-3 first:pl-0 [&+&]:border-l [&+&]:border-line'
   const title = 'mb-0.5 flex min-h-5 items-center gap-2 text-fg-muted'
 
   const row = (h: Holding, indent?: boolean) => (
@@ -54,29 +54,18 @@ export function ComponentDetail({ c }: { c: Component }) {
   return (
     <>
       <p className="mt-3 max-w-205 text-fg-secondary">{c.desc} The currency risk is not hedged.</p>
-      <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)] border-y border-line text-xs">
+      <div className="mt-4 grid grid-cols-3 border-y border-line text-xs">
         <div className={sec}>
-          <div className={title}>
-            <span>Asset allocation</span>
-            <span role="img" aria-label={inUse.map((k) => `${k} ${pct(alloc[k])}`).join(', ')} className="ml-2 flex h-2 flex-1 gap-0.5 bg-surface-strong">
-              {inUse.map((k) => <span key={k} className="h-full" style={{ width: `${Math.min(100, alloc[k])}%`, background: CLASS_COLOR[k] }} />)}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-0.5 leading-relaxed">
-            {inUse.map((k) => <span key={k} className="whitespace-nowrap"><Swatch cls={k} />{k} <strong className="font-semibold">{pct(alloc[k])}</strong></span>)}
-          </div>
+          <div className={title}>Asset allocation</div>
+          <BarList rows={inUse.map((k) => [k, alloc[k], CLASS_COLOR[k]] as [string, number, string])} />
         </div>
         <div className={sec}>
           <div className={title}>Sector allocation</div>
-          <div className="flex flex-wrap gap-x-4 gap-y-0.5 leading-relaxed">
-            {sectors.map(([k, v]) => <span key={k} className="whitespace-nowrap">{k} <strong className="font-semibold">{pct(v)}</strong></span>)}
-          </div>
+          <BarList rows={sectors.map(([k, v]) => [k, v, k === 'Cash' ? CLASS_COLOR.Liquidity : NEUTRAL] as [string, number, string])} />
         </div>
         <div className={sec}>
           <div className={title}>Region allocation</div>
-          <div className="flex flex-wrap gap-x-4 gap-y-0.5 leading-relaxed">
-            {regions.map(([k, v]) => <span key={k} className="whitespace-nowrap">{k} <strong className="font-semibold">{pct(v)}</strong></span>)}
-          </div>
+          <BarList rows={regions.map(([k, v]) => [k, v, k === 'Cash' ? CLASS_COLOR.Liquidity : NEUTRAL] as [string, number, string])} />
         </div>
       </div>
 
@@ -121,6 +110,24 @@ export function ComponentDetail({ c }: { c: Component }) {
           </table>
       </div>
     </>
+  )
+}
+
+/** Sectors and regions carry no colour meaning of their own: one neutral bar colour; cash keeps the Liquidity colour. */
+const NEUTRAL = 'var(--color-chart-neutral)'
+
+/** Horizontal bar chart: one row per item with label, bar (scaled to 100%) and value. */
+function BarList({ rows }: { rows: [label: string, value: number, color: string][] }) {
+  return (
+    <div role="list" className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3rem] items-center gap-x-2.5 gap-y-1">
+      {rows.map(([k, v, color]) => (
+        <div key={k} role="listitem" className="contents">
+          <span className="truncate" title={k}>{k}</span>
+          <span className="h-2 bg-surface-strong" aria-hidden><span className="block h-full" style={{ width: `${Math.min(100, v)}%`, background: color }} /></span>
+          <span className="text-right font-semibold tabular-nums">{pct(v)}</span>
+        </div>
+      ))}
+    </div>
   )
 }
 
