@@ -69,7 +69,7 @@ export function PreferencesView() {
 function Row({ label, htmlFor, labelId, count, k, children }: { label: string; htmlFor?: string; labelId?: string; count?: string; k: PrefKey; children: ReactNode }) {
   const Label = htmlFor ? 'label' : 'span'
   return (
-    <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-x-4 border-b border-line py-2.5 last:border-b-0">
+    <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] gap-x-4 border-b border-line py-3 last:border-b-0">
       <div className="pt-1">
         <Label htmlFor={htmlFor} id={labelId} className="block text-sm">{label}</Label>
         {count && <span className="block text-xs text-fg-muted">{count}</span>}
@@ -97,19 +97,19 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
         <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="mr-1.5 w-44 shrink-0" />
         {sugg.length > 0 && (
           <>
-            <span className="ml-1 text-xs text-fg-muted">Suggested</span>
+            <span className="ml-1 text-[13px] text-fg-muted">Suggested</span>
             {visible.map((id) => {
               const l = optionLabel(cat.id, id)
               return <SuggestionChip key={id} onClick={() => setSel([...sel, id])} aria-label={'Exclude ' + l}>{l}</SuggestionChip>
             })}
             {sugg.length > SHOW && (
-              <Button variant="link" className="text-xs" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${sugg.length - SHOW} more`}</Button>
+              <Button variant="link" className="text-[13px]" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${sugg.length - SHOW} more`}</Button>
             )}
           </>
         )}
       </div>
       {sel.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {sel.map((id) => {
             const l = optionLabel(cat.id, id)
             return (
