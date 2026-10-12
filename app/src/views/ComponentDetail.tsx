@@ -154,11 +154,11 @@ export function MiniTable({ caption, heads, rows, numFrom }: { caption: string; 
     <table className="w-full border-collapse border border-line bg-surface text-xs">
       <caption className="pb-1.5 text-left text-fg-muted">{caption}</caption>
       <thead>
-        <tr>{heads.map((h, i) => <th key={h} className={'border-b border-surface-muted bg-surface-subtle px-2.5 py-1.5 font-normal text-fg-muted ' + num(i)}>{h}</th>)}</tr>
+        <tr>{heads.map((h, i) => <th key={h} className={'border-b border-surface-muted bg-surface-subtle px-2.5 py-1.5 font-normal whitespace-nowrap text-fg-muted ' + num(i)}>{h}</th>)}</tr>
       </thead>
       <tbody>
         {rows.map((r, ri) => (
-          <tr key={ri}>{r.map((v, i) => <td key={i} className={'border-t border-line px-2.5 py-1.5 ' + num(i)}>{v}</td>)}</tr>
+          <tr key={ri}>{r.map((v, i) => <td key={i} className={'border-t border-line px-2.5 py-1.5 ' + num(i) + (i >= numFrom ? ' whitespace-nowrap' : '')}>{v}</td>)}</tr>
         ))}
       </tbody>
     </table>

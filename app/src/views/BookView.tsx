@@ -79,12 +79,13 @@ function TaskTag({ e, onReview }: { e: BookEntry; onReview: () => void }) {
   return (
     <Popover
       trigger={<PopoverTrigger openOnHover delay={150} className={cn(tagBase, 'cursor-pointer hover:underline', openN ? 'bg-task' : 'border border-line-strong text-fg-muted')} aria-label={`${label} position task${openN + deferredN > 1 ? 's' : ''} for ${e.name}`}>{label}</PopoverTrigger>}
+      className="w-160"
       title="Position tasks"
       description="An underlying component changed the weight of a position. Accept, reject or defer it in Simulation."
     >
       <MiniTable
-        caption="Weight of the position inside its component, and what it means for this portfolio"
-        heads={['Instrument', 'Underlying component', 'Status', 'In component %', 'In portfolio %']}
+        caption="Weights in %, current → new"
+        heads={['Instrument', 'Underlying component', 'Status', 'In component', 'In portfolio']}
         numFrom={3}
         rows={tasks.map((t) => [<>{t.instrument}<span className="block text-fg-muted">{t.isin}</span></>, t.component, t.status, `${f2(t.inCurrent)} → ${f2(t.inNext)}`, `${f2(t.current)} → ${f2(t.next)}`])}
       />

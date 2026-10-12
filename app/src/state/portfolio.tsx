@@ -215,10 +215,11 @@ export function openEntry(s: PortfolioState, e: BookEntry, mode: 'current' | 'ne
   s.sim.mode = mode
   // A published portfolio holds no excluded instrument (preference warnings exist only while creating): Apple's weight is in cash.
   if (e.status === 'Published') s.sim.rows = s.sim.rows.filter((r) => r.id !== 'aapl').map((r) => (r.id === 'eur' ? { ...r, w: 3.5, nw: 3.5 } : r))
-  // The task proposes a change; start from the current weight each time the portfolio is opened.
+  // An open task brings the official target into New (the rest of the portfolio is not adjusted until it is
+  // accepted); a rejected or deferred one keeps the current weight.
   if (task) {
     const r = s.sim.rows.find((x) => x.id === task.rowId)
-    if (r) r.nw = task.status === 'Accepted' ? task.next : r.w
+    if (r) r.nw = task.status === 'Accepted' || task.status === 'Open' ? task.next : r.w
   }
 }
 

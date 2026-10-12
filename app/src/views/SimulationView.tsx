@@ -222,7 +222,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const t = task && task.rowId === r.id ? task : null
           // Accepting a task moves the position to its official target; the other positions absorb the difference.
           const accepting = removing?.kind === 'accept' && !!t
-          const delta = t ? round2(t.next - r.nw) : 0
+          const delta = t ? round2(t.next - r.w) : 0
           const amountFor = accepting ? -delta : undefined
           const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method, amountFor) : null
           return (
@@ -230,6 +230,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             <tr className={cn('group', c ? '*:bg-excluded-subtle' : t ? '*:bg-surface-muted' : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>{r.cls}</td>
               <td className={td}>
+                {t && <span className="mb-0.75 block w-fit rounded-xs bg-task px-1.5 text-xs/4.5 whitespace-nowrap">Position task · {t.status}</span>}
                 {r.name}
                 {!cur && r.kept && excluded(r) && (
                   <Popover
@@ -246,8 +247,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                   </Popover>
                 )}
                 {r.isin && <span className="block text-fg-muted">{r.isin}</span>}
-                {/* Position task: why the weight should change, in one line under the instrument. */}
-                {t && <span className="mt-0.75 block text-fg-muted">{t.component} changed it from {f2(t.inCurrent)}% to {f2(t.inNext)}% → target {f2(t.next)}% here</span>}
+                {t && <span className="mt-0.75 block text-fg-muted">Official target {f2(t.next)}% from {t.component}</span>}
                 {(c || (cur && excluded(r))) && <ConflictNote>Excluded instrument</ConflictNote>}
               </td>
               <td className={td}>{r.bb}</td>
@@ -262,17 +262,15 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     : custom
                     ? <span className={cn('block text-right tabular-nums', edited && 'font-semibold')}>{f2(r.nw)}</span>
                     : <WeightField size="sm" strong={edited} value={r.nw} onValueChange={(v) => edit(r.id, (x) => { x.nw = v })} aria-label={`New weight of ${r.name} in percent`} className="ml-auto w-fit" />}
-                  {/* An open task proposes a weight; nothing changes until it is accepted. */}
-                  {t?.status === 'Open' && <span className="mt-0.5 block text-right text-fg-muted tabular-nums">proposed {f2(t.next)}</span>}
                 </td>
               )}
-              {!cur && <td className={cn(td, 'text-right tabular-nums')}>{Math.abs(r.nw - r.w) < 0.005 ? (t?.status === 'Open' ? <span className="text-fg-muted">{(t.next > r.w ? '+' : '') + f2(t.next - r.w)}<span className="block">proposed</span></span> : <span className="text-fg-subtle">—</span>) : (r.nw > r.w ? '+' : '') + f2(r.nw - r.w)}</td>}
+              {!cur && <td className={cn(td, 'text-right tabular-nums')}>{Math.abs(r.nw - r.w) < 0.005 ? <span className="text-fg-subtle">—</span> : (r.nw > r.w ? '+' : '') + f2(r.nw - r.w)}</td>}
               {!cur && (
                 <td className={cn(td, custom ? 'text-left' : 'text-right whitespace-nowrap')}>
                   {custom ? <UpdateNote r={r} /> : t ? (
                     <span className="inline-flex gap-1">
                       {(['Accepted', 'Rejected', 'Deferred'] as const).map((st) => (
-                        <Button key={st} size="xs" aria-pressed={t.status === st} className={cn(t.status === st && 'border-control-active bg-surface-strong font-semibold')} onClick={() => (st === 'Accepted' && Math.abs(t.next - r.nw) >= 0.005 ? setRemoving({ id: r.id, method: 'proportional', kind: 'accept' }) : decide(st))}>
+                        <Button key={st} size="xs" aria-pressed={t.status === st} className={cn(t.status === st && 'border-control-active bg-surface-strong font-semibold')} onClick={() => (st === 'Accepted' && Math.abs(t.next - r.w) >= 0.005 ? setRemoving({ id: r.id, method: 'proportional', kind: 'accept' }) : decide(st))}>
                           {{ Accepted: 'Accept', Rejected: 'Reject', Deferred: 'Defer' }[st]}
                         </Button>
                       ))}
@@ -301,7 +299,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     <div className="text-sm font-semibold">{accepting ? `Accept the position task for ${r.name}` : `Remove ${r.name}`}</div>
                     <p className="text-fg-muted">
                       {accepting
-                        ? `${r.name} goes from ${f2(r.nw)}% to its official target of ${f2(t!.next)}%. ${f2(Math.abs(delta))}% ${delta > 0 ? 'must come from' : 'goes back to'} the other positions. Choose how.`
+                        ? `${r.name} goes from ${f2(r.w)}% to its official target of ${f2(t!.next)}%. ${f2(Math.abs(delta))}% ${delta > 0 ? 'must come from' : 'goes back to'} the other positions. Choose how.`
                         : `${f2(plan.amount)}% will be released. Choose how to redistribute it.`}
                     </p>
                     <RadioGroup aria-label="Redistribution method" value={removing.method} onValueChange={(v) => setRemoving({ ...removing, method: v as Method })} className="mt-2 border-t border-line">
