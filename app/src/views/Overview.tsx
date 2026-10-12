@@ -273,7 +273,7 @@ function ExclusionLine({ groups }: { groups: { label: string; values: string[] }
     // Each group reads "Label values": the label in grey, the excluded values in red; a group never breaks over two lines.
     <div ref={ref} className="line-clamp-2 leading-relaxed">
       {items.slice(0, n).map((g) => (
-        <span key={g.label} className="mr-3.5 inline-block whitespace-nowrap">
+        <span key={g.label} className="mr-3.5 inline-block max-w-full truncate align-bottom whitespace-nowrap" title={`${g.label}: ${g.values.join(', ')}`}>
           <span className="text-fg-muted">{SHORT[g.label] ?? g.label}</span> <span className="text-conflict">{brief(g.values)}</span>
         </span>
       ))}
