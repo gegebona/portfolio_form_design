@@ -11,7 +11,7 @@ import { Checkbox } from '../components/ui/selection'
 import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictList } from '../components/ui/tag'
 import { AREAS, CASH_CURRENCIES, COMPONENTS, COMPONENT_INSTRUMENTS, PROVIDERS, type Component } from '../data/data'
-import { componentById, conflictsOf, f2, instrumentByIsin, usePortfolio } from '../state/portfolio'
+import { componentById, conflictGroups, conflictsOf, f2, instrumentByIsin, usePortfolio } from '../state/portfolio'
 import { ComponentDetail } from './ComponentDetail'
 
 export function ComponentsView() {
@@ -106,7 +106,7 @@ function CatalogueCard({ c, expanded, onLearnMore }: { c: Component; expanded: b
       </label>
       <Button variant="link" className="absolute bottom-2 left-9.5" onClick={onLearnMore} aria-haspopup="dialog">Learn more</Button>
       {/* The conflict tag sits in the footer, beside Learn more, so every card keeps the same height. */}
-      {cf.length > 0 && <ConflictList items={cf} max={1} compact className="absolute right-3 bottom-2 max-w-48 whitespace-nowrap" />}
+      {cf.length > 0 && <ConflictList items={cf} groups={conflictGroups(c, state.prefs)} max={1} compact className="absolute right-3 bottom-2 max-w-48 whitespace-nowrap" />}
     </div>
   )
   if (expanded) return <div aria-hidden className="invisible grid">{card}</div>
@@ -129,7 +129,7 @@ function LearnMore({ id, onClose, conflicts }: { id: string | null; onClose: (th
       onClose={() => onClose()}
       title={c.name}
       meta={`${c.area} · ${c.region} · ${c.provider}`}
-      headerExtra={conflicts.length > 0 && <ConflictList items={conflicts} />}
+      headerExtra={conflicts.length > 0 && <ConflictList items={conflicts} groups={conflictGroups(c, state.prefs)} />}
       footer={
         <>
           {on && <span className="mr-auto inline-flex items-center gap-1.5 text-xs text-fg-muted"><Check className="size-3 text-selected" strokeWidth={3} />In this portfolio</span>}

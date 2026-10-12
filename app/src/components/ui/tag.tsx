@@ -26,7 +26,7 @@ export function ConflictTag({ children, className }: { children: ReactNode; clas
  * Conflict tag that never outgrows its row: shows the first `max` exclusions and a “+N more” button that opens the full
  * list. Must not be placed inside another button.
  */
-export function ConflictList({ items, max = 2, compact, className }: { items: string[]; max?: number; /** Small spaces (cards): no lead-in text and “+N” instead of “+N more”. */ compact?: boolean; className?: string }) {
+export function ConflictList({ items, groups, max = 2, compact, className }: { items: string[]; /** The same items by preference type, for the full list. */ groups?: { label: string; values: string[] }[]; max?: number; /** Small spaces (cards): no lead-in text and “+N” instead of “+N more”. */ compact?: boolean; className?: string }) {
   const shown = items.slice(0, max)
   const more = items.length - shown.length
   return (
@@ -43,10 +43,12 @@ export function ConflictList({ items, max = 2, compact, className }: { items: st
             </PopoverTrigger>
           }
         >
+          {/* Same pattern as the exclusions strip: preference type in grey, the conflicting values in red. */}
           <ul className="text-xs">
-            {items.map((x) => (
-              <li key={x} className="flex items-center gap-1.5 border-t border-line py-1.5 text-conflict first:border-t-0">
-                <TriangleAlert className="size-3 shrink-0 text-error" strokeWidth={1.75} aria-hidden />{x}
+            {(groups ?? items.map((x) => ({ label: '', values: [x] }))).map((g) => (
+              <li key={g.label + g.values[0]} className="flex items-start gap-1.5 border-t border-line py-1.5 first:border-t-0">
+                <TriangleAlert className="mt-px size-3 shrink-0 text-error" strokeWidth={1.75} aria-hidden />
+                <span>{g.label && <span className="text-fg-muted">{g.label} </span>}<span className="text-conflict">{g.values.join(', ')}</span></span>
               </li>
             ))}
           </ul>

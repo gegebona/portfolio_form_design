@@ -338,6 +338,12 @@ export const benchmarkById = (id: string) => BENCHMARKS.find((b) => b.id === id)
 export const optionLabel = (cat: CategoryId, id: string) => CATEGORIES.find((c) => c.id === cat)!.options.find((o) => o.id === id)!.label
 
 /** Exclusions a component conflicts with (geography and sector), as labels. */
+/** The same conflicts grouped by preference type (for the full list: type in grey, values in red). */
+export function conflictGroups(c: Component, prefs: PortfolioState['prefs']) {
+  return ([['Geography', 'geography', c.geo], ['Sector', 'sector', c.sector]] as const)
+    .map(([label, cat, ids]) => ({ label, values: (ids ?? []).filter((id) => prefs.sel[cat].includes(id)).map((id) => optionLabel(cat, id)) }))
+    .filter((g) => g.values.length > 0)
+}
 export function conflictsOf(c: Component, prefs: PortfolioState['prefs']) {
   const out: string[] = []
   ;([['geography', c.geo], ['sector', c.sector]] as const).forEach(([cat, ids]) => {

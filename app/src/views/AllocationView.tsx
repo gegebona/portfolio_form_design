@@ -9,7 +9,7 @@ import { WeightField, WeightSlider } from '../components/ui/weight'
 import { ASSET_CLASSES, CLASS_COLOR } from '../data/data'
 import { cn } from '../lib/cn'
 import {
-  allocItems, benchmarkAlloc, conflictsOf, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
+  allocItems, benchmarkAlloc, conflictGroups, conflictsOf, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
 } from '../state/portfolio'
 import { ComponentDetail } from './ComponentDetail'
 import { Overview } from './Overview'
@@ -98,7 +98,7 @@ function AllocRow({ it, selected, onPick, onSelect, total, setW }: { it: AllocIt
         <WeightField whole value={w} onValueChange={(v) => setW(it, v)} onFocus={onSelect} aria-label={`Weight of ${it.name} in percent`} />
       </div>
       {/* Outside the select button: the “+N more” trigger is a button of its own. */}
-      {cf.length > 0 && <ConflictList items={cf} className="-mt-1" />}
+      {cf.length > 0 && <ConflictList items={cf} groups={it.comp && conflictGroups(it.comp, state.prefs)} className="-mt-1" />}
       {/* Pressing the slider selects its row immediately; the drag is not interrupted because the slider is not re-mounted. */}
       <WeightSlider value={w} onValueChange={(v) => setW(it, v)} onPointerDown={onSelect} color={CLASS_COLOR[it.cls]} aria-label={`Weight of ${it.name} (slider)`} />
       {selected && left > 0.004 && (
