@@ -15,7 +15,7 @@ export function SuggestionChip({ children, onClick, 'aria-label': ariaLabel }: {
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="inline-flex h-6.5 cursor-pointer items-center gap-1 rounded-sm border border-suggested-border bg-suggested pr-2.25 pl-1.75 text-[13px] hover:bg-surface-strong"
+      className="inline-flex h-6.5 cursor-pointer items-center gap-1 rounded-sm border border-suggested-border bg-suggested pr-2.25 pl-1.75 text-xs hover:bg-surface-strong"
     >
       <Plus className="size-2.5 text-fg-secondary" strokeWidth={2.5} aria-hidden />
       {children}
@@ -25,7 +25,7 @@ export function SuggestionChip({ children, onClick, 'aria-label': ariaLabel }: {
 
 export function ExclusionChip({ children, onRemove, removeLabel }: { children: ReactNode; onRemove: () => void; removeLabel: string }) {
   return (
-    <span className="inline-flex h-6.5 items-center gap-0.5 rounded-sm border border-excluded-border bg-excluded pr-0.5 pl-2.25 text-[13px]">
+    <span className="inline-flex h-6.5 items-center gap-0.5 rounded-sm border border-excluded-border bg-excluded pr-0.5 pl-2.25 text-xs">
       {children}
       <RemoveButton onClick={onRemove} label={removeLabel} className="hover:bg-excluded-border" />
     </span>
@@ -33,7 +33,7 @@ export function ExclusionChip({ children, onRemove, removeLabel }: { children: R
 }
 
 export function EmptySlot({ children }: { children: ReactNode }) {
-  return <span className="inline-flex h-6.5 items-center rounded-sm border border-dashed border-line-strong px-2.5 text-[13px] text-fg-muted">{children}</span>
+  return <span className="inline-flex h-6.5 items-center rounded-sm border border-dashed border-line-strong px-2.5 text-xs text-fg-muted">{children}</span>
 }
 
 /** Small "×" used on chips and list rows (22px target). */

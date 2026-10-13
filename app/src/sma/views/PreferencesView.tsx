@@ -74,7 +74,8 @@ function Row({ label, htmlFor, labelId, count, k, children }: { label: string; h
         <Label htmlFor={htmlFor} id={labelId} className="block text-sm">{label}</Label>
         {count && <span className="block text-xs text-fg-muted">{count}</span>}
       </div>
-      <div className="min-w-0">
+      {/* Same height for every preference, chosen values or not: room for the controls line and the chips line. */}
+      <div className="min-h-17 min-w-0">
         <Source k={k} />
         {children}
       </div>
@@ -82,7 +83,7 @@ function Row({ label, htmlFor, labelId, count, k, children }: { label: string; h
   )
 }
 
-/** One exclusion category: search field and one-click suggestions on the first line, chosen exclusions on the second. */
+/** One exclusion category: one-click suggestions then the search field on the first line, chosen exclusions on the second. */
 function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   const { state, animate } = usePortfolio()
   const [more, setMore] = useState(false)
@@ -92,21 +93,22 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   const visible = more ? sugg : sugg.slice(0, SHOW)
   return (
     <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} k={cat.id}>
-      {/* Line 1: search and suggestions. Line 2: what is excluded. */}
+      {/* Line 1: the one-click suggestions first (the quickest way to exclude), then the search for anything else.
+          Line 2: what is excluded. */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="mr-1.5 w-44 shrink-0" />
         {sugg.length > 0 && (
           <>
-            <span className="ml-1 text-[13px] text-fg-muted">Suggested</span>
+            <span className="mr-0.5 text-xs text-fg-muted">Suggested</span>
             {visible.map((id) => {
               const l = optionLabel(cat.id, id)
               return <SuggestionChip key={id} onClick={() => setSel([...sel, id])} aria-label={'Exclude ' + l}>{l}</SuggestionChip>
             })}
             {sugg.length > SHOW && (
-              <Button variant="link" className="text-[13px]" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${sugg.length - SHOW} more`}</Button>
+              <Button variant="link" className="text-xs" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${sugg.length - SHOW} more`}</Button>
             )}
           </>
         )}
+        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className={cn('w-44 shrink-0', sugg.length > 0 && 'ml-2')} />
       </div>
       {sel.length > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
