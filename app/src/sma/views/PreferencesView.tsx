@@ -11,7 +11,7 @@ import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, RATINGS, type Exclusion
 import { cn } from '../lib/cn'
 import { instrumentByIsin, optionLabel, parentCode, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
 
-const SHOW = 4 // suggestions shown before "+N more"
+const SHOW = 3 // suggestions shown before "+N more" (three keep them and the search on one line)
 
 export function PreferencesView() {
   const { state, update } = usePortfolio()
