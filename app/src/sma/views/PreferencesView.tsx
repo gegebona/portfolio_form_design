@@ -116,7 +116,7 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
     <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} k={cat.id}>
       <div className="flex items-start gap-1.5">
         {sugg.length > 0 && <span className="mr-0.5 flex h-8 shrink-0 items-center text-xs text-fg-muted">Suggested</span>}
-        <div ref={box} className={cn('flex min-w-0 flex-1 gap-1.5 py-0.75', more ? 'flex-wrap' : 'overflow-hidden')}>
+        <div ref={box} className={cn('relative flex min-w-0 flex-1 gap-1.5 py-0.75', more ? 'flex-wrap' : 'overflow-hidden')}>
           {sugg.map((id, i) => {
             const l = optionLabel(cat.id, id)
             const off = !more && i >= fit
