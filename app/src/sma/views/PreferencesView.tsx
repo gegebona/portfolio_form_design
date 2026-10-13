@@ -65,13 +65,13 @@ export function PreferencesView() {
  * Compact row: the preference's name (and what is excluded) in a fixed left column, its controls on the right, so
  * each preference takes one or two lines and the whole list fits on screen.
  */
-function Row({ label, htmlFor, labelId, count, k, children }: { label: string; htmlFor?: string; labelId?: string; count?: string; k: PrefKey; children: ReactNode }) {
+function Row({ label, htmlFor, labelId, count, active, k, children }: { label: string; htmlFor?: string; labelId?: string; count?: string; /** Something is excluded: the count reads in red, as excluded items do in Simulation. */ active?: boolean; k: PrefKey; children: ReactNode }) {
   const Label = htmlFor ? 'label' : 'span'
   return (
     <div className="grid grid-cols-[9.5rem_minmax(0,1fr)] gap-x-4 border-b border-line py-3 last:border-b-0">
       <div className="pt-1">
         <Label htmlFor={htmlFor} id={labelId} className="block text-sm">{label}</Label>
-        {count && <span className="block text-xs text-fg-muted">{count}</span>}
+        {count && <span className={cn('block text-xs', active ? 'text-conflict' : 'text-fg-muted')}>{count}</span>}
       </div>
       {/* Same height for every preference, chosen values or not: room for the controls line and the chips line. */}
       <div className="min-h-17 min-w-0">
@@ -113,7 +113,7 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   }, [sugg.join(), more])
   const hidden = more ? 0 : sugg.length - fit
   return (
-    <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} k={cat.id}>
+    <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} active={sel.length > 0} k={cat.id}>
       <div className="flex items-start gap-1.5">
         <div ref={box} className={cn('relative flex min-w-0 flex-1 gap-1.5 py-0.75', more ? 'flex-wrap' : 'overflow-hidden')}>
           {sugg.map((id, i) => {
@@ -152,7 +152,7 @@ function RatingRow() {
   const p = state.prefs
   const limited = p.rating < RATINGS.length
   return (
-    <Row label="Credit rating" labelId="rating-label" count={limited ? `${RATINGS[p.rating]} and below excluded` : 'Click a grade to exclude it and below'} k="rating">
+    <Row label="Credit rating" labelId="rating-label" count={limited ? `${RATINGS[p.rating]} and below excluded` : 'Click a grade to exclude it and below'} active={limited} k="rating">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         {/* Shown from the lowest grade up (C … Aaa), like the ESG scores: what is excluded sits on the left. */}
         <ThresholdScale
@@ -176,7 +176,7 @@ function EsgRow() {
   const { state, update } = usePortfolio()
   const p = state.prefs
   return (
-    <Row label="ESG" labelId="esg-label" count={p.esg > 0 ? `Score ${ESG_SCORES[p.esg - 1]} and below excluded` : 'Click a score to exclude it and below'} k="esg">
+    <Row label="ESG" labelId="esg-label" count={p.esg > 0 ? `Score ${ESG_SCORES[p.esg - 1]} and below excluded` : 'Click a score to exclude it and below'} active={p.esg > 0} k="esg">
       <ThresholdScale
         aria-labelledby="esg-label"
         labels={ESG_SCORES.map((s) => 'Score ' + s)}
@@ -196,7 +196,7 @@ function InstrumentsColumn() {
   const setInst = (next: string[]) => animate((s) => { s.prefs.inst = next; setOwnValue(s, 'inst') })
   return (
     <div className="min-w-0 flex-[1_1_23.75rem] border-l border-line py-2.5 pr-1.5 pl-7">
-      <GroupLabel htmlFor="inst-q" count={inst.length ? `${inst.length} excluded` : undefined}>Excluded instruments</GroupLabel>
+      <GroupLabel htmlFor="inst-q" count={inst.length ? <span className="text-conflict">{inst.length} excluded</span> : undefined}>Excluded instruments</GroupLabel>
       <Source k="inst" />
       <MultiCombobox
         id="inst-q"

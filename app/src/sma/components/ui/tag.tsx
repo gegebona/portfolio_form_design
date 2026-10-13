@@ -69,7 +69,7 @@ export function ConflictList({ items, groups, max = 2, compact, className }: { i
 export function ConflictNote({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span className={cn('mt-0.75 inline-flex items-center gap-1.25 text-xs text-conflict', className)}>
-      <TriangleAlert className="size-3 shrink-0 text-error" strokeWidth={1.75} aria-hidden />
+      <TriangleAlert className="size-3 shrink-0 -translate-y-px text-error" strokeWidth={1.75} aria-hidden />
       {children}
     </span>
   )
