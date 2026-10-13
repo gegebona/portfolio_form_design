@@ -95,7 +95,7 @@ function HashOpener({ onOpen }: { onOpen: (r: Route) => void }) {
 function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route) => void }) {
   const links: { id: string; label: string; note?: string; active: boolean; to: Route }[] = [
     { id: 'book', label: 'Model portfolio book', active: route !== 'design' && route !== 'sma', to: 'book' as Route },
-    { id: 'sma', label: 'SMA book', note: 'incl. feedback', active: route === 'sma', to: 'sma' as Route },
+    { id: 'sma', label: 'MP book', note: 'incl. feedback', active: route === 'sma', to: 'sma' as Route },
     { id: 'design', label: 'Design system', active: route === 'design', to: 'design' as Route },
   ]
   return (

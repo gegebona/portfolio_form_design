@@ -1,6 +1,6 @@
 import { Tooltip } from '@base-ui/react/tooltip'
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, MoreHorizontal } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, LoaderCircle, MoreHorizontal } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '../components/ui/button'
 import { SearchInput } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
@@ -15,7 +15,6 @@ import { cn } from '../lib/cn'
 import { getBook } from '../state/book'
 import { f2, openEntry, startCustomized, startNew, usePortfolio } from '../state/portfolio'
 import { MiniTable } from './ComponentDetail'
-import { Swatch } from './Overview'
 
 /** Same table look as the Simulation positions table: muted sticky header, 12px rows, hairline dividers. */
 const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg-muted'
@@ -109,6 +108,9 @@ const uniq = (v: string[]) => [...new Set(v)].sort()
  * Type tabs + filters + search narrow it; column headers sort it; customized versions sit under their parent
  * and stay collapsed until asked for, so a portfolio with many versions is still one row. Publishing happens from NEW inside the flow, never from this list.
  */
+/** Rows loaded at first, and with each scroll to the end of the list. */
+const BATCH = 10
+
 export function BookView() {
   const { update } = usePortfolio()
   const [list] = useState(getBook)
@@ -120,8 +122,11 @@ export function BookView() {
   const [creator, setCreator] = useState('all')
   const [sort, setSort] = useState<Sort>({ key: 'id', dir: 'asc' })
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [size, setSize] = useState('10')
-  const [page, setPage] = useState(0)
+  // No pages: the first rows show, and more load while scrolling down. A new search, filter or sort starts again from the top.
+  const [more, setMore] = useState({ key: '', n: BATCH })
+  const [loading, setLoading] = useState(false)
+  const scroller = useRef<HTMLDivElement>(null)
+  const sentinel = useRef<HTMLTableRowElement>(null)
 
   const ql = q.trim().toLowerCase()
   const filtered = status !== 'all' || area !== 'all' || creator !== 'all'
@@ -139,10 +144,22 @@ export function BookView() {
   const kidsOf = (id: string) => list.filter((c) => c.parent === id && ids.has(c.id)).sort(cmp)
   // A parent stays visible (muted) while one of its customized versions matches.
   const tops = list.filter((e) => !e.parent && (ids.has(e.id) || kidsOf(e.id).length > 0)).sort(cmp)
-  const per = Number(size)
-  const pages = Math.max(1, Math.ceil(tops.length / per))
-  const p = Math.min(page, pages - 1)
-  const rows = tops.slice(p * per, p * per + per).flatMap((t) => {
+  const listKey = [q, status, area, creator, type, sort.key, sort.dir].join('|')
+  const shownN = more.key === listKey ? more.n : BATCH
+  const hasMore = shownN < tops.length
+  // When the last row comes into view, the next batch loads (a short loading row first, as it would from the server).
+  useEffect(() => {
+    const el = sentinel.current
+    if (!el || !hasMore || loading) return
+    const io = new IntersectionObserver(([en]) => {
+      if (!en.isIntersecting) return
+      setLoading(true)
+      setTimeout(() => { setMore({ key: listKey, n: shownN + BATCH }); setLoading(false) }, 600)
+    }, { root: scroller.current, rootMargin: '0px 0px 40px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [listKey, shownN, hasMore, loading])
+  const rows = tops.slice(0, shownN).flatMap((t) => {
     const kids = kidsOf(t.id)
     // Collapsed by default; a search, or a parent shown only because a version matches, opens the family.
     const forced = !!ql || !ids.has(t.id)
@@ -203,7 +220,7 @@ export function BookView() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-            <Tabs value={type} onValueChange={(v) => { setType(v as string); setPage(0) }}>
+            <Tabs value={type} onValueChange={(v) => setType(v as string)}>
               <TabsList variant="sub" aria-label="Portfolio type">
                 <Tab value="all" className="text-xs">All types <TabCount>{list.length}</TabCount></Tab>
                 {TYPES.map((t) => <Tab key={t} value={t} className="text-xs">{t} <TabCount>{list.filter((e) => e.type === t).length}</TabCount></Tab>)}
@@ -215,7 +232,7 @@ export function BookView() {
           </div>
         </Section>
 
-        <div className="min-h-0 flex-1 overflow-auto border-t border-line">
+        <div ref={scroller} className="min-h-0 flex-1 overflow-auto border-t border-line">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr>
@@ -266,6 +283,13 @@ export function BookView() {
                   </td>
                 </tr>
               ))}
+              {hasMore && (
+                <tr ref={sentinel}>
+                  <td colSpan={11} className={cn(td, 'px-6 py-3 text-fg-muted')}>
+                    <span className="inline-flex items-center gap-2">{loading && <LoaderCircle className="size-3.5 animate-spin" strokeWidth={1.75} aria-hidden />}{loading ? 'Loading more model portfolios…' : `${tops.length - shownN} more model portfolios`}</span>
+                  </td>
+                </tr>
+              )}
               {!rows.length && (
                 <tr><td colSpan={11} className={cn(td, 'px-6 py-4 text-fg-subtle')}>No model portfolio matches the search and filters.</td></tr>
               )}
@@ -273,19 +297,7 @@ export function BookView() {
           </table>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line-strong px-6 py-2.5 text-xs">
-          <span className="flex flex-wrap items-center gap-x-4 gap-y-1 text-fg-muted">
-            <span>{ASSET_CLASSES.map((c) => <span key={c} className="mr-3 whitespace-nowrap"><Swatch cls={c} />{c}</span>)}</span>
-            <span>Performance as of {BOOK_AS_OF}.</span>
-          </span>
-          <div className="flex items-center gap-2.5">
-            <span className="text-fg-muted">Rows per page</span>
-            <Select aria-label="Rows per page" value={size} onValueChange={(v) => { setSize(v); setPage(0) }} items={['10', '25', '50'].map((v) => ({ value: v, label: v }))} className="h-7 w-18 text-xs" />
-            <span className="tabular-nums">Page {p + 1} of {pages}</span>
-            <Button size="xs" disabled={p === 0} onClick={() => setPage(p - 1)}>Previous</Button>
-            <Button size="xs" disabled={p >= pages - 1} onClick={() => setPage(p + 1)}>Next</Button>
-          </div>
-        </div>
+        <div className="shrink-0 border-t border-line-strong px-6 py-2.5 text-xs text-fg-muted">Performance as of {BOOK_AS_OF}.</div>
       </div>
     </main>
   )

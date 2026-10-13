@@ -163,7 +163,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
       <div className="mt-4 mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
         <header className="shrink-0 px-5 pt-3.5 pb-3">
           <nav aria-label="Breadcrumb" className="mb-1.5 flex items-center gap-1.5 text-xs">
-            <a href="#sma" className="text-link hover:text-link-hover">SMA book</a>
+            <a href="#sma" className="text-link hover:text-link-hover">MP book</a>
             <span aria-hidden className="text-fg-subtle">›</span>
             <span>{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</span>
           </nav>
