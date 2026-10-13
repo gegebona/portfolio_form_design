@@ -1,12 +1,13 @@
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, LoaderCircle, MoreHorizontal } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '../components/ui/button'
 import { SearchInput } from '../components/ui/input'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
-import { Select } from '../components/ui/select'
+import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { Tooltip } from '../components/ui/tag'
-import { ASSET_CLASSES, BOOK_AS_OF, BOOK_USER, CLASS_COLOR, type AssetClass, type BookEntry } from '../data/data'
+import { ASSET_CLASSES, BOOK_AS_OF, CLASS_COLOR, type AssetClass, type BookEntry } from '../data/data'
 import { cn } from '../lib/cn'
 import { getBook } from '../state/book'
 import { f2, openEntry, startCustomized, startNew, usePortfolio } from '../state/portfolio'
@@ -29,15 +30,12 @@ const AUTO_LINE: Record<NonNullable<BookEntry['auto']>, string> = {
   pending: 'Parent update waiting for the data load',
   invalid: 'Parent update not applied, retried at next data load',
 }
-/** The one list filter, as "View all portfolios" in the client book. */
-const VIEWS = [
-  { value: 'all', label: 'View all model portfolios' },
-  { value: 'mine', label: 'View my model portfolios' },
-  { value: 'Standard', label: 'View standard portfolios' },
-  { value: 'Multi', label: 'View multi portfolios' },
-  { value: 'Customized', label: 'View customized versions' },
-  { value: 'Draft', label: 'View drafts' },
-  { value: 'Published', label: 'View published portfolios' },
+/** Type tabs above the table. */
+const TYPE_TABS: { value: string; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'Standard', label: 'Standard' },
+  { value: 'Customized', label: 'Customized' },
+  { value: 'Multi', label: 'Multi' },
 ]
 
 type SortKey = 'id' | 'name' | 'type' | 'area' | 'benchmark' | 'perf1y' | 'creator' | 'status' | 'modified' | 'tasks' | 'editedBy'
@@ -101,7 +99,7 @@ function sortValue(e: BookEntry, k: SortKey): string | number {
 
 
 /**
- * Model portfolio book, in the client book pattern: one toolbar (view, search, task filter, count, create), then a
+ * Model portfolio book, in the client book pattern: search in the header, a toolbar band (type tabs, count, create), then a
  * dense sortable table in the original column order. Customized versions sit indented under their parent and stay
  * collapsed until asked for (the arrow opens them). Rows load while scrolling. Publishing happens from NEW inside the flow, never from this list.
  */
@@ -113,8 +111,10 @@ export function BookView() {
   const [list] = useState(getBook)
 
   const [q, setQ] = useState('')
-  const [view, setView] = useState('all')
-  const [onlyTasks, setOnlyTasks] = useState(false)
+  const [type, setType] = useState('all')
+  // The search lives in the header's top-right slot (rendered by the app shell).
+  const [searchSlot, setSearchSlot] = useState<HTMLElement | null>(null)
+  useEffect(() => setSearchSlot(document.getElementById('header-search')), [])
   const [sort, setSort] = useState<Sort>({ key: 'id', dir: 'asc' })
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   // No pages: the first rows show, and more load while scrolling down. A new search, filter or sort starts again from the top.
@@ -124,10 +124,8 @@ export function BookView() {
   const sentinel = useRef<HTMLTableRowElement>(null)
 
   const ql = q.trim().toLowerCase()
-  const inView = (e: BookEntry) =>
-    view === 'all' || (view === 'mine' ? e.creator === BOOK_USER : e.type === view || e.status === view)
   const matches = (e: BookEntry) =>
-    inView(e) && (!onlyTasks || openTasks(e) > 0) && (!ql || e.name.toLowerCase().includes(ql) || e.id.includes(ql))
+    (type === 'all' || e.type === type) && (!ql || e.name.toLowerCase().includes(ql) || e.id.includes(ql))
   const ids = new Set(list.filter(matches).map((e) => e.id))
   const cmp = (a: BookEntry, b: BookEntry) => {
     const x = sortValue(a, sort.key)
@@ -138,7 +136,7 @@ export function BookView() {
   const kidsOf = (id: string) => list.filter((c) => c.parent === id && ids.has(c.id)).sort(cmp)
   // A parent stays visible (muted) while one of its customized versions matches.
   const tops = list.filter((e) => !e.parent && (ids.has(e.id) || kidsOf(e.id).length > 0)).sort(cmp)
-  const listKey = [q, view, onlyTasks, sort.key, sort.dir].join('|')
+  const listKey = [q, type, sort.key, sort.dir].join('|')
   const shownN = more.key === listKey ? more.n : BATCH
   const hasMore = shownN < tops.length
   // When the last row comes into view, the next batch loads (a short loading row first, as it would from the server).
@@ -190,19 +188,23 @@ export function BookView() {
 
   return (
     <main className="flex min-h-0 w-full flex-1 flex-col">
-      {/* Toolbar, as in the client book: a light grey band across the column, above the table. The view on the left, the
-          filter toggle, the count and the main action on the right. */}
-      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-shell-band px-4 py-2.5">
-          <Select aria-label="View" value={view} onValueChange={setView} items={VIEWS} className="w-64" />
-          <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID" aria-label="Find model portfolio" className="w-72 max-w-full" />
-          <div className="ml-auto flex items-center gap-4">
-            {/* A grey filled toggle, as "Filter by opportunities" in the client book; dark while it filters. */}
-            <Button aria-pressed={onlyTasks} onClick={() => setOnlyTasks(!onlyTasks)} className={cn('border-line-strong bg-surface-strong hover:bg-line-strong', onlyTasks && 'border-fg-secondary bg-fg-secondary text-fg-inverse hover:bg-fg')}>
-              Filter by open tasks
-            </Button>
-            <span className="text-sm whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} portfolios</span>
-            <Button variant="primary" onClick={create}>Create new model portfolio</Button>
-          </div>
+      {searchSlot && createPortal(
+        <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or code" aria-label="Find model portfolio" className="w-72" />,
+        searchSlot,
+      )}
+      {/* Toolbar band, as in the client book: the type tabs on the left, the count and the main action on the right. */}
+      <div className="flex shrink-0 flex-wrap items-end gap-x-3 gap-y-2 border-b border-line bg-shell-band px-4 pt-2">
+        <Tabs value={type} onValueChange={setType}>
+          <TabsList variant="sub" aria-label="Portfolio type">
+            {TYPE_TABS.map((t) => (
+              <Tab key={t.value} value={t.value}>{t.label} <TabCount>{t.value === 'all' ? list.length : list.filter((e) => e.type === t.value).length}</TabCount></Tab>
+            ))}
+          </TabsList>
+        </Tabs>
+        <div className="ml-auto flex items-center gap-4 pb-2">
+          <span className="text-sm whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} portfolios</span>
+          <Button variant="primary" onClick={create}>Create new model portfolio</Button>
+        </div>
       </div>
 
       {/* The table: white rows under a grey header band, inset in the page's lightest grey. */}
@@ -214,7 +216,7 @@ export function BookView() {
                 {head('id', 'Code', 'pl-4')}{head('name', 'Model portfolio name')}{head('tasks', 'Tasks', 'text-center')}{head('type', 'Type')}
                 {head('area', 'Asset allocation')}{head('benchmark', 'Benchmark')}
                 {head('perf1y', 'Performance % (1Y)', 'text-right', `Performance as of ${BOOK_AS_OF}`)}
-                {head('creator', 'Creator')}{head('status', 'Current status')}{head('editedBy', 'Last edited')}{head('modified', 'Last modified date')}
+                {head('creator', 'Creator')}{head('status', 'Current status')}{head('editedBy', 'Last modified by')}{head('modified', 'Last modified date')}
                 <th className={cn(th, 'pr-4 text-right')}>Action</th>
               </tr>
             </thead>

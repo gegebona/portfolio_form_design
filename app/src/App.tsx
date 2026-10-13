@@ -113,7 +113,7 @@ function AppHeader({ route, onNavigate, wide }: { route: Route; onNavigate: (r: 
               href={'#' + l.to}
               onClick={(e) => { e.preventDefault(); onNavigate(l.to) }}
               aria-current={l.active ? 'page' : undefined}
-              className="flex flex-col justify-center border-b-2 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-tab-active"
+              className={cn('flex flex-col border-b-2 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-tab-active', wide ? 'justify-end pb-2' : 'justify-center')}
             >
               {l.label}
               {l.note && <span className="-mt-0.5 text-xs text-fg-muted">{l.note}</span>}
@@ -121,6 +121,8 @@ function AppHeader({ route, onNavigate, wide }: { route: Route; onNavigate: (r: 
           ))}
         </nav>
         <ReduceMotion />
+        {/* Inside the central page the search sits at the top right, as in the client book (the MP book fills it in). */}
+        {wide && <div id="header-search" className="ml-auto self-center" />}
       </div>
     </header>
   )
