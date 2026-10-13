@@ -67,7 +67,9 @@ export default function App() {
     <PortfolioProvider>
       <HashOpener onOpen={go} />
       <Tooltip.Provider delay={300}>
-        <div className="flex h-dvh flex-col overflow-hidden">
+        {/* The MP book (incl. feedback) sits in one centred column, as the client book: header, toolbar and content share
+            its width, and the page grey runs down both sides from the very top. */}
+        <div className={cn('flex h-dvh flex-col overflow-hidden', route === 'sma' && 'mx-auto w-full max-w-340 border-x border-line-strong')}>
           <AppHeader route={route} onNavigate={go} />
           {route === 'sma' ? <SmaApp /> : route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
         </div>

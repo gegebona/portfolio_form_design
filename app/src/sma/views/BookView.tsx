@@ -193,10 +193,10 @@ export function BookView() {
   const shownCount = tops.length + tops.reduce((n, t) => n + kidsOf(t.id).length, 0)
 
   return (
-    <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
-      {/* Toolbar, as in the client book: straight on the page grey, not part of the table. The view on the left, the
+    <main className="flex min-h-0 w-full flex-1 flex-col bg-surface">
+      {/* Toolbar, as in the client book: a light grey band across the column, above the table. The view on the left, the
           filter toggle, the count and the main action on the right. */}
-      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 py-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface-subtle px-6 py-2.5">
           <Select aria-label="View" value={view} onValueChange={setView} items={VIEWS} className="w-64" />
           <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID" aria-label="Find model portfolio" className="w-72 max-w-full" />
           <div className="ml-auto flex items-center gap-4">
@@ -209,8 +209,8 @@ export function BookView() {
           </div>
       </div>
 
-      {/* The table: its own white card, apart from the toolbar and the page grey around it. */}
-      <div className="mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
+      {/* The table, on white under the toolbar band. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pt-3">
         <div ref={scroller} className="min-h-0 flex-1 overflow-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
