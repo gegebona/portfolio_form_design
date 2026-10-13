@@ -52,7 +52,7 @@ export function Overview(props: OverviewProps) {
 }
 
 function OverviewBody({ rows, focus, showChange, compact, quality = false }: OverviewProps) {
-  const grid = cn('grid shrink-0 border-y border-line text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)_minmax(0,0.9fr)]')
+  const grid = cn('mt-3 grid shrink-0 rounded-sm border border-line bg-surface text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)_minmax(0,0.9fr)]')
   const { state } = usePortfolio()
   const failed = QUALITY_CHECKS.filter(([, s]) => s < PASS_SCORE)
   const excl = exclusionSummary(state.prefs)
@@ -64,7 +64,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
       {failed.length ? `${failed.length} of ${QUALITY_CHECKS.length} failed${compact ? ': ' + failed.map(([n]) => n).join(', ') : ''}` : `${QUALITY_CHECKS.length} of ${QUALITY_CHECKS.length} passed`}
     </span>
   )
-  const sec = cn('min-w-0 px-6 first:pl-0 [&+&]:border-l [&+&]:border-line', compact ? 'py-2.5' : 'pt-3 pb-3.5')
+  const sec = cn('min-w-0 px-5 [&+&]:border-l [&+&]:border-line', compact ? 'py-2.5' : 'pt-3 pb-3.5')
   const title = cn('flex min-h-5 items-center justify-between gap-2 font-semibold text-fg', compact ? 'mb-0.5' : 'mb-1.5')
 
   if (compact) {
