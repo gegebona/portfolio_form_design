@@ -6,6 +6,7 @@ import { MultiCombobox } from '../components/ui/combobox'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Radio, RadioGroup, Switch } from '../components/ui/selection'
+import { Tabs as RTabs } from 'radix-ui'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
@@ -51,16 +52,18 @@ export function SimulationView() {
 
   return (
     <Section className="flex min-h-0 flex-1 flex-col pt-3 pb-2.5">
-      {/* One compact row: the screen title and the Current / New switch. Everything above the
-          positions table is kept short so the table gets the height. */}
-      <div className="flex flex-wrap items-end gap-x-7 gap-y-2 border-b border-line">
-        <h2 className="pb-2.5 text-xl">Simulation</h2>
-        <Tabs value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))} className="pb-2.5">
-          <TabsList variant="segment" aria-label="Portfolio version">
-            <Tab value="current" disabled={custom?.version === 0} title={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined}>Current</Tab>
-            <Tab value="new" disabled={!!custom && !custom.hasNew} title={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined}>New {changes > 0 && <span className="text-xs font-normal opacity-80">{changes} {changes === 1 ? 'change' : 'changes'}</span>}</Tab>
-          </TabsList>
-        </Tabs>
+      {/* Version cards, as Current / Solve all / Custom in the client book: folder tabs on the content's top line. The open
+          one takes the content's colour and joins it; the other sits back in grey. The info line stays on the right. */}
+      <h2 className="sr-only">Simulation</h2>
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-2 border-b border-line">
+        <RTabs.Root value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))}>
+          <RTabs.List aria-label="Portfolio version" className="-mb-px flex gap-1.5">
+            <VersionCard value="current" title="Current" disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined}
+              sub={custom?.version === 0 ? 'Not published yet' : pub ? 'Last data load · read-only' : custom ? `Version ${custom.version} · published` : 'Published · read-only'} />
+            <VersionCard value="new" title="New" disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined}
+              sub={changes > 0 ? `${changes} ${changes === 1 ? 'change' : 'changes'}${custom ? ' · not published' : ' · working copy'}` : custom ? 'Pending · not published' : 'Working copy · no changes'} />
+          </RTabs.List>
+        </RTabs.Root>
         {!cur && (
           <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
             <Info className="size-3.5" strokeWidth={1.5} />
@@ -597,5 +600,23 @@ function AddPosition({ onClose }: { onClose: () => void }) {
         </span>
       </div>
     </div>
+  )
+}
+
+/**
+ * One version card (Radix Tabs trigger styled as a folder tab): the version's name, large and light, and one short line
+ * under it on the right. Grey while not shown; when open it takes the content's colour and covers the line below it.
+ */
+function VersionCard({ value, title, sub, disabled, hint }: { value: Mode; title: string; sub: string; disabled?: boolean; hint?: string }) {
+  return (
+    <RTabs.Trigger
+      value={value}
+      disabled={disabled}
+      title={hint}
+      className="flex w-64 cursor-pointer flex-col border border-line bg-shell-side px-3 pt-1.5 pb-1.5 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
+    >
+      <span className="text-lg font-light">{title}</span>
+      <span className="self-end text-xs text-fg-muted">{sub}</span>
+    </RTabs.Trigger>
   )
 }
