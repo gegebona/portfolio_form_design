@@ -40,7 +40,7 @@ const VIEWS = [
   { value: 'Published', label: 'View published portfolios' },
 ]
 
-type SortKey = 'id' | 'name' | 'type' | 'area' | 'benchmark' | 'perf1y' | 'creator' | 'status' | 'modified' | 'tasks' | 'kids'
+type SortKey = 'id' | 'name' | 'type' | 'area' | 'benchmark' | 'perf1y' | 'creator' | 'status' | 'modified' | 'tasks' | 'editedBy'
 type Sort = { key: SortKey; dir: 'asc' | 'desc' }
 /** Asset classes a portfolio holds, in the fixed chart order (Equity, Bonds, Alternatives, Liquidity). */
 const classesOf = (e: BookEntry) => ASSET_CLASSES.filter((c) => (e.alloc[c] ?? 0) > 0).map((c) => [c, e.alloc[c] ?? 0] as [AssetClass, number])
@@ -99,7 +99,6 @@ function sortValue(e: BookEntry, k: SortKey): string | number {
   if (k === 'perf1y') return e.perf1y ?? -Infinity
   if (k === 'modified') return e.modified.split('/').reverse().join('')
   if (k === 'tasks') return openTasks(e)
-  if (k === 'kids') return getBook().filter((c) => c.parent === e.id).length
   return e[k]
 }
 
@@ -107,8 +106,8 @@ function sortValue(e: BookEntry, k: SortKey): string | number {
 
 /**
  * Model portfolio book, in the client book pattern: one toolbar (view, search, task filter, count, create), then a
- * dense sortable table. Customized versions sit under their parent and stay collapsed until asked for (the count chip or
- * the arrow opens them). Rows load while scrolling. Publishing happens from NEW inside the flow, never from this list.
+ * dense sortable table in the original column order. Customized versions sit indented under their parent and stay
+ * collapsed until asked for (the arrow opens them). Rows load while scrolling. Publishing happens from NEW inside the flow, never from this list.
  */
 /** Rows loaded at first, and with each scroll to the end of the list. */
 const BATCH = 10
@@ -195,9 +194,9 @@ export function BookView() {
 
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
-      <div className="my-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
-        {/* Toolbar, as in the client book: the view on the left, the filter toggle and the count on the right. */}
-        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface-subtle px-4 py-2.5">
+      {/* Toolbar, as in the client book: straight on the page grey, not part of the table. The view on the left, the
+          filter toggle, the count and the main action on the right. */}
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 py-3">
           <Select aria-label="View" value={view} onValueChange={setView} items={VIEWS} className="w-64" />
           <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID" aria-label="Find model portfolio" className="w-72 max-w-full" />
           <div className="ml-auto flex items-center gap-4">
@@ -208,52 +207,52 @@ export function BookView() {
             <span className="text-sm whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} portfolios</span>
             <Button variant="primary" onClick={create}>Create new model portfolio</Button>
           </div>
-        </div>
+      </div>
 
-        <div ref={scroller} className="min-h-0 flex-1 overflow-auto px-2">
+      {/* The table: its own white card, apart from the toolbar and the page grey around it. */}
+      <div className="mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
+        <div ref={scroller} className="min-h-0 flex-1 overflow-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr>
-                <th className={cn(th, 'w-7 px-0')}><span className="sr-only">Customized versions</span></th>
-                {head('name', 'Name')}{head('id', 'Code')}{head('type', 'Type')}{head('status', 'Status')}{head('modified', 'Last modified', 'text-right')}
+                {head('id', 'Code', 'pl-4')}{head('name', 'Model portfolio name')}{head('tasks', 'Tasks', 'text-center')}{head('type', 'Type')}
                 {head('area', 'Asset allocation')}{head('benchmark', 'Benchmark')}
-                {head('perf1y', 'Perf. % (1Y)', 'text-right', `Performance as of ${BOOK_AS_OF}`)}
-                {head('tasks', 'Tasks', 'text-center')}{head('kids', 'Customized', 'text-center')}{head('creator', 'Created by')}
-                <th className={cn(th, 'text-right')}>Action</th>
+                {head('perf1y', 'Performance % (1Y)', 'text-right', `Performance as of ${BOOK_AS_OF}`)}
+                {head('creator', 'Creator')}{head('status', 'Current status')}{head('editedBy', 'Last edited')}{head('modified', 'Last modified date')}
+                <th className={cn(th, 'pr-4 text-right')}>Action</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ e, kids, context, forced, isOpen }) => (
                 <tr key={e.id} className={cn('hover:bg-surface-subtle', e.parent && 'bg-surface-subtle hover:bg-surface-muted', context && 'text-fg-muted')}>
-                  <td className={cn(td, 'px-0 text-center')}>
-                    {kids > 0 && !forced && (
-                      <Button variant="ghost" size="icon-sm" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
-                        {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                      </Button>
-                    )}
+                  <td className={cn(td, 'pl-4 whitespace-nowrap tabular-nums')}>MP_{e.id}</td>
+                  <td className={td}>
+                    {/* Customized versions sit indented under their parent; the arrow opens or closes them. */}
+                    <div className={cn('flex items-center gap-1', e.parent && 'pl-6')}>
+                      {kids > 0 && !forced ? (
+                        <Button variant="ghost" size="icon-sm" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${kids} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
+                          {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                        </Button>
+                      ) : !e.parent && <span className="w-5.5 shrink-0" />}
+                      <span className="flex min-w-0 flex-col">
+                        <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="w-fit text-link hover:text-link-hover hover:underline">{e.name}</a>
+                        {/* Automatic parent update: information, not a task (no chip, no action, no status of its own). */}
+                        {e.auto && <span className="text-fg-muted">{AUTO_LINE[e.auto]}</span>}
+                      </span>
+                    </div>
                   </td>
-                  <td className={cn(td, e.parent && 'pl-6')}>
-                    <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="text-link hover:text-link-hover hover:underline">{e.name}</a>
-                    {/* Automatic parent update: information, not a task (no chip, no action, no status of its own). */}
-                    {e.auto && <span className="block text-fg-muted">{AUTO_LINE[e.auto]}</span>}
-                  </td>
-                  <td className={cn(td, 'whitespace-nowrap tabular-nums')}>MP_{e.id}</td>
+                  <td className={cn(td, 'text-center')}><TaskCount e={e} onReview={() => open(e)} /></td>
                   <td className={td}><span className={cn(chip, TYPE_CHIP[e.type])}>{e.type}</span></td>
-                  <td className={td}>{e.status}</td>
-                  <td className={cn(td, 'text-right whitespace-nowrap tabular-nums')}>{e.modified}</td>
                   <td className={td}><AllocCell e={e} /></td>
                   <td className={td}>{e.benchmark}</td>
                   <td className={cn(td, 'text-right tabular-nums', e.perf1y === undefined ? '' : e.perf1y < 0 ? 'text-error' : 'text-link')}>
-                    {e.perf1y === undefined ? <span className="text-fg-subtle" title="No performance yet">—</span> : (e.perf1y < 0 ? '−' : '') + Math.abs(e.perf1y).toFixed(1)}
-                  </td>
-                  <td className={cn(td, 'text-center')}><TaskCount e={e} onReview={() => open(e)} /></td>
-                  <td className={cn(td, 'text-center')}>
-                    {kids > 0 && (
-                      <button type="button" disabled={forced} onClick={() => toggle(e.id)} aria-label={`${kids} customized versions of ${e.name}`} className={cn(chip, 'bg-status-published', !forced && 'cursor-pointer hover:outline hover:outline-fg-subtle')}>{kids}</button>
-                    )}
+                    {e.perf1y === undefined ? <span className="text-fg-subtle" title="No performance yet">—</span> : (e.perf1y < 0 ? '−' : '') + Math.abs(e.perf1y).toFixed(2)}
                   </td>
                   <td className={cn(td, 'whitespace-nowrap')}>{e.creator}</td>
-                  <td className={cn(td, 'text-right')}>
+                  <td className={td}>{e.status}</td>
+                  <td className={cn(td, 'whitespace-nowrap')}>{e.editedBy}</td>
+                  <td className={cn(td, 'whitespace-nowrap tabular-nums')}>{e.modified}</td>
+                  <td className={cn(td, 'pr-4 text-right')}>
                     <Menu
                       trigger={<MenuTrigger render={<Button variant="ghost" size="icon-sm" className="w-7 text-link hover:text-link-hover" aria-label={`Actions for ${e.name}`} />}><MoreHorizontal className="size-4" strokeWidth={2.5} /></MenuTrigger>}
                       items={actions(e)}
@@ -263,13 +262,13 @@ export function BookView() {
               ))}
               {hasMore && (
                 <tr ref={sentinel}>
-                  <td colSpan={13} className={cn(td, 'px-4 py-3 text-fg-muted')}>
+                  <td colSpan={12} className={cn(td, 'px-4 py-3 text-fg-muted')}>
                     <span className="inline-flex items-center gap-2">{loading && <LoaderCircle className="size-3.5 animate-spin" strokeWidth={1.75} aria-hidden />}{loading ? 'Loading more model portfolios…' : `${tops.length - shownN} more model portfolios`}</span>
                   </td>
                 </tr>
               )}
               {!rows.length && (
-                <tr><td colSpan={13} className={cn(td, 'px-4 py-4 text-fg-subtle')}>No model portfolio matches the view and search.</td></tr>
+                <tr><td colSpan={12} className={cn(td, 'px-4 py-4 text-fg-subtle')}>No model portfolio matches the view and search.</td></tr>
               )}
             </tbody>
           </table>
