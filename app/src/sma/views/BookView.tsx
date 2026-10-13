@@ -188,7 +188,7 @@ export function BookView() {
         searchSlot,
       )}
       {/* Toolbar band, as in the client book: the type tabs on the left, the count and the main action on the right. */}
-      <div className="flex shrink-0 flex-wrap items-end gap-x-3 gap-y-2 border-b border-line bg-shell-band px-4 pt-1">
+      <div className="flex shrink-0 flex-wrap items-end gap-x-3 gap-y-2 border-b border-line bg-shell-band px-4 pt-2.5">
         <Tabs value={type} onValueChange={setType}>
           <TabsList variant="sub" aria-label="Portfolio type">
             {TYPE_TABS.map((t) => (
@@ -196,9 +196,10 @@ export function BookView() {
             ))}
           </TabsList>
         </Tabs>
-        <div className="ml-auto flex items-center gap-4 pb-1.5 text-xs">
-          <span className="whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} portfolios</span>
-          <Button variant="primary" size="sm" onClick={create} className="text-xs">Create new model portfolio</Button>
+        {/* The count shares the tab labels' baseline; the button keeps some air above and below. */}
+        <div className="ml-auto flex items-end gap-5 text-xs">
+          <span className="pb-2 whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} portfolios</span>
+          <Button variant="primary" onClick={create} className="mb-2 px-5 text-xs">Create new model portfolio</Button>
         </div>
       </div>
 
