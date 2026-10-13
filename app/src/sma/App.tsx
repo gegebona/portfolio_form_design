@@ -159,30 +159,31 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   }
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
-      <nav aria-label="Breadcrumb" className="mt-3.5 mb-1.5 flex items-center gap-1.5 text-xs">
-        <a href="#sma" className="text-link hover:text-link-hover">SMA book</a>
-        <span aria-hidden className="text-fg-subtle">›</span>
-        <span>{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</span>
-      </nav>
-      {/* The portfolio is the subject of every step: its name leads, its facts follow, and in Simulation a tag says which version is on screen. */}
-      <div className="mb-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 className="text-2xl">{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</h1>
-        <span className="text-xs text-fg-muted">{[state.data.code, state.data.ccy].filter(Boolean).join(' · ')}</span>
-        {custom && (
-          <span className="self-center text-xs text-fg-muted">
-            <span className="mr-1.5 rounded-xs border border-control px-1.5 text-xs/4.5 text-fg">Customized</span>
-            of <ParentLink />
-          </span>
-        )}
-        {step === 'simulation' && (
-          <span className={cn('self-center rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control text-fg-muted' : 'bg-surface-strong')}>
-            {viewingCurrent ? (state.sim.published ? 'Current · last data load, read-only' : custom ? `Current version ${custom.version} · published, read-only` : 'Current version · published, read-only') : custom ? 'New version · pending, not published' : 'New version · working copy'}
-          </span>
-        )}
-      </div>
-
-      {/* Panel: tabs and action bar stay put; only the view scrolls (or its inner lists). */}
-      <div className="mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
+      {/* Panel: the portfolio header (breadcrumb, name, facts), tabs and action bar stay put; only the view scrolls (or its inner lists). */}
+      <div className="mt-4 mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
+        <header className="shrink-0 px-5 pt-3.5 pb-3">
+          <nav aria-label="Breadcrumb" className="mb-1.5 flex items-center gap-1.5 text-xs">
+            <a href="#sma" className="text-link hover:text-link-hover">SMA book</a>
+            <span aria-hidden className="text-fg-subtle">›</span>
+            <span>{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</span>
+          </nav>
+          {/* The portfolio is the subject of every step: its name leads, its facts follow, and in Simulation a tag says which version is on screen. */}
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 className="text-2xl">{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</h1>
+            <span className="text-xs text-fg-muted">{[state.data.code, state.data.ccy].filter(Boolean).join(' · ')}</span>
+            {custom && (
+              <span className="self-center text-xs text-fg-muted">
+                <span className="mr-1.5 rounded-xs border border-control px-1.5 text-xs/4.5 text-fg">Customized</span>
+                of <ParentLink />
+              </span>
+            )}
+            {step === 'simulation' && (
+              <span className={cn('self-center rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control text-fg-muted' : 'bg-surface-strong')}>
+                {viewingCurrent ? (state.sim.published ? 'Current · last data load, read-only' : custom ? `Current version ${custom.version} · published, read-only` : 'Current version · published, read-only') : custom ? 'New version · pending, not published' : 'New version · working copy'}
+              </span>
+            )}
+          </div>
+        </header>
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
           <TabsList variant="step" className="border-b border-line px-5">
             {steps.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
@@ -190,7 +191,8 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
           </TabsList>
         </Tabs>
 
-        <div className={cn('flex min-h-0 flex-1 flex-col overflow-y-auto')}>
+        {/* The working area is a light grey surface, so white fields, cards and tables stand out from it. */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface-subtle">
           {/* Animates only when a step change tags the transition 'forward' / 'back'; other updates inside stay instant. */}
           <ViewTransition update={{ forward: 'step-forward', back: 'step-back', default: 'none' }} default="none">
             <div className="flex min-h-0 flex-1 flex-col">
