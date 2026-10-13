@@ -1,26 +1,27 @@
-import { Menu as BaseMenu } from '@base-ui/react/menu'
-import type { ReactNode } from 'react'
+import { DropdownMenu } from 'radix-ui'
+import { cloneElement, type ReactElement, type ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 import { popupSurface } from './popup'
 
-/** Menu — Base UI Menu: a trigger plus a list of actions. Keyboard: arrows move, Enter picks, Esc closes. */
+/** Menu — Radix Dropdown Menu: a trigger plus a list of actions. Keyboard: arrows move, Enter picks, Esc closes. */
 export function Menu({ trigger, items, align = 'end' }: { trigger: ReactNode; items: { label: string; onClick: () => void }[]; align?: 'start' | 'end' }) {
   return (
-    <BaseMenu.Root>
+    <DropdownMenu.Root modal={false}>
       {trigger}
-      <BaseMenu.Portal>
-        <BaseMenu.Positioner className="z-50 outline-none" sideOffset={4} align={align}>
-          <BaseMenu.Popup className={cn(popupSurface, 'min-w-48 origin-(--transform-origin) py-0.5')}>
-            {items.map((it) => (
-              <BaseMenu.Item key={it.label} onClick={it.onClick} className="flex h-9 cursor-pointer items-center px-3 text-sm outline-none select-none data-highlighted:bg-surface-muted">
-                {it.label}
-              </BaseMenu.Item>
-            ))}
-          </BaseMenu.Popup>
-        </BaseMenu.Positioner>
-      </BaseMenu.Portal>
-    </BaseMenu.Root>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content sideOffset={4} align={align} className={cn(popupSurface, 'z-50 min-w-48 py-0.5')}>
+          {items.map((it) => (
+            <DropdownMenu.Item key={it.label} onSelect={it.onClick} className="flex h-9 cursor-pointer items-center px-3 text-sm outline-none select-none data-highlighted:bg-surface-muted">
+              {it.label}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   )
 }
 
-export const MenuTrigger = BaseMenu.Trigger
+/** The menu's trigger: `render` is the element to use (usually a Button), the children go inside it. */
+export function MenuTrigger({ render, children }: { render: ReactElement<{ children?: ReactNode }>; children?: ReactNode }) {
+  return <DropdownMenu.Trigger asChild>{cloneElement(render, undefined, children)}</DropdownMenu.Trigger>
+}

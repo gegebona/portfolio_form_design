@@ -24,7 +24,8 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: app/package-lock.json
-      - run: npm ci
+      # npm install (not ci): it also brings the lock file up to date when a dependency was added without it.
+      - run: npm install --no-audit --no-fund
         working-directory: app
       - run: npm run publish:pages
         working-directory: app
@@ -32,7 +33,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html .nojekyll
+          git add index.html .nojekyll app/package-lock.json
           git diff --cached --quiet || (git commit -m "Rebuild page" && git push)
       # Copies only the built page to the public preview repository, which GitHub Pages serves. The source and its
       # history stay here: the preview holds a single commit, replaced on every build.

@@ -1,8 +1,7 @@
-import { Tooltip } from '@base-ui/react/tooltip'
 import { useState, type ReactNode } from 'react'
 import { BENCH_EXPOSURE, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
 import { Button } from '../components/ui/button'
-import { TooltipPopup } from '../components/ui/tag'
+import { Tooltip } from '../components/ui/tag'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { AllocationBlock } from './Overview'
 import { cn } from '../lib/cn'
@@ -136,10 +135,9 @@ function Block({ title, className, children }: { title: string; className?: stri
 function Label({ it, className }: { it: Item; className?: string }) {
   if (!it.tip) return <span className={className}>{it.label}</span>
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger render={<span />} className={cn('cursor-help underline decoration-dotted underline-offset-2', className)}>{it.label}</Tooltip.Trigger>
-      <TooltipPopup>{it.tip}</TooltipPopup>
-    </Tooltip.Root>
+    <Tooltip content={it.tip}>
+      <span className={cn('cursor-help underline decoration-dotted underline-offset-2', className)}>{it.label}</span>
+    </Tooltip>
   )
 }
 /** Axis maximum: the largest value rounded up to a step of 5 (or 10 above 30). */

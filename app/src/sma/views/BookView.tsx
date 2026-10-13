@@ -1,4 +1,3 @@
-import { Tooltip } from '@base-ui/react/tooltip'
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, LoaderCircle, MoreHorizontal } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../components/ui/button'
@@ -8,7 +7,7 @@ import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Select } from '../components/ui/select'
 import { Checkbox } from '../components/ui/selection'
-import { TooltipPopup } from '../components/ui/tag'
+import { Tooltip } from '../components/ui/tag'
 import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ASSET_CLASSES, BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, CLASS_COLOR, type AssetClass, type BookEntry, type BookStatus } from '../data/data'
 import { cn } from '../lib/cn'
@@ -52,16 +51,15 @@ function AllocCell({ e }: { e: BookEntry }) {
   const main = byWeight(e)[0]
   const more = classesOf(e).length - 1
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger render={<span />} className="flex items-center gap-2 whitespace-nowrap">
+    <Tooltip content={allocText(e)}>
+      <span className="flex items-center gap-2 whitespace-nowrap">
         <span role="img" aria-label={allocText(e)} className="flex h-2 w-20 shrink-0 gap-0.5 bg-surface-strong">
           {classesOf(e).map(([c, w]) => <span key={c} className="h-full" style={{ width: `${w}%`, background: CLASS_COLOR[c] }} />)}
         </span>
         {main && <span>{main[0]} <span className="tabular-nums">{main[1]}%</span></span>}
         {more > 0 && <span className="text-fg-muted">+{more}</span>}
-      </Tooltip.Trigger>
-      <TooltipPopup>{allocText(e)}</TooltipPopup>
-    </Tooltip.Root>
+      </span>
+    </Tooltip>
   )
 }
 

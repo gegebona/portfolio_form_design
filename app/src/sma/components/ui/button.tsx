@@ -1,10 +1,11 @@
-import { Button as BaseButton } from '@base-ui/react/button'
 import { cva, type VariantProps } from 'class-variance-authority'
+import { Slot } from 'radix-ui'
 import type { ComponentProps } from 'react'
 import { cn } from '../../lib/cn'
 
 /**
- * Button — Base UI Button (a <button> that handles disabled + focus correctly) styled with tokens.
+ * Button — a <button> (type="button" by default) styled with tokens. asChild hands the look to its only child
+ * (Radix Slot), e.g. a link that should look like a button.
  *
  * variant:  primary   one per screen, the main forward action (accent: blue)
  *           secondary everything else (outlined)
@@ -46,8 +47,9 @@ export const buttonVariants = cva(
   },
 )
 
-export type ButtonProps = Omit<ComponentProps<typeof BaseButton>, 'className'> & VariantProps<typeof buttonVariants> & { className?: string }
+export type ButtonProps = ComponentProps<'button'> & VariantProps<typeof buttonVariants> & { asChild?: boolean }
 
-export function Button({ className, variant, tone, size, ...props }: ButtonProps) {
-  return <BaseButton className={cn(buttonVariants({ variant, tone, size }), className)} {...props} />
+export function Button({ className, variant, tone, size, asChild, type = 'button', ...props }: ButtonProps) {
+  const Comp = asChild ? Slot.Root : 'button'
+  return <Comp type={asChild ? undefined : type} className={cn(buttonVariants({ variant, tone, size }), className)} {...props} />
 }

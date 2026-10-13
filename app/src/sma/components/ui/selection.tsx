@@ -1,70 +1,64 @@
-import { Checkbox as BaseCheckbox } from '@base-ui/react/checkbox'
-import { Radio as BaseRadio } from '@base-ui/react/radio'
-import { RadioGroup as BaseRadioGroup } from '@base-ui/react/radio-group'
-import { Switch as BaseSwitch } from '@base-ui/react/switch'
 import { Check } from 'lucide-react'
+import { Checkbox as RCheckbox, RadioGroup as RRadioGroup, Switch as RSwitch } from 'radix-ui'
 import type { ComponentProps } from 'react'
 import { cn } from '../../lib/cn'
 
 /*
- * Selection controls — Base UI Checkbox / Radio / Switch.
- * Base UI renders a <span> plus a hidden native <input>, and marks state with data attributes,
- * so the whole look is Tailwind variants: data-checked:bg-selected, data-disabled:opacity-…
+ * Selection controls — Radix Checkbox / Radio Group / Switch.
+ * Radix renders a <button> and marks state with data-state, so the whole look is Tailwind variants:
+ * data-[state=checked]:bg-selected, data-disabled:opacity-…
  * Chosen = the selected token (blue) everywhere; grey never means "chosen", and red is kept for problems and exclusions.
  */
 
-type CheckboxProps = Omit<ComponentProps<typeof BaseCheckbox.Root>, 'className'> & { className?: string }
+type CheckboxProps = Omit<ComponentProps<typeof RCheckbox.Root>, 'checked' | 'onCheckedChange'> & { checked?: boolean; onCheckedChange?: (checked: boolean) => void }
 
-export function Checkbox({ className, ...props }: CheckboxProps) {
+export function Checkbox({ className, onCheckedChange, ...props }: CheckboxProps) {
   return (
-    <BaseCheckbox.Root
+    <RCheckbox.Root
+      onCheckedChange={(v) => onCheckedChange?.(v === true)}
       className={cn(
         'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-xs border border-control bg-surface text-on-accent',
-        'data-checked:border-selected data-checked:bg-selected data-disabled:cursor-default data-disabled:opacity-50',
+        'data-[state=checked]:border-selected data-[state=checked]:bg-selected data-disabled:cursor-default data-disabled:opacity-50',
         className,
       )}
       {...props}
     >
-      <BaseCheckbox.Indicator className="flex data-unchecked:hidden">
+      <RCheckbox.Indicator className="flex">
         <Check className="size-3" strokeWidth={3} />
-      </BaseCheckbox.Indicator>
-    </BaseCheckbox.Root>
+      </RCheckbox.Indicator>
+    </RCheckbox.Root>
   )
 }
 
-export function RadioGroup({ className, ...props }: Omit<ComponentProps<typeof BaseRadioGroup>, 'className'> & { className?: string }) {
-  return <BaseRadioGroup className={cn('flex flex-col', className)} {...props} />
+export function RadioGroup({ className, ...props }: ComponentProps<typeof RRadioGroup.Root>) {
+  return <RRadioGroup.Root className={cn('flex flex-col', className)} {...props} />
 }
 
-type RadioProps = Omit<ComponentProps<typeof BaseRadio.Root>, 'className'> & { className?: string }
-
-export function Radio({ className, ...props }: RadioProps) {
+export function Radio({ className, ...props }: ComponentProps<typeof RRadioGroup.Item>) {
   return (
-    <BaseRadio.Root
+    <RRadioGroup.Item
       className={cn(
         'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full border border-control bg-surface',
-        'data-checked:border-selected',
+        'data-[state=checked]:border-selected',
         className,
       )}
       {...props}
     >
-      <BaseRadio.Indicator className="size-2 rounded-full bg-selected data-unchecked:hidden" />
-    </BaseRadio.Root>
+      <RRadioGroup.Indicator className="size-2 rounded-full bg-selected" />
+    </RRadioGroup.Item>
   )
 }
 
-type SwitchProps = Omit<ComponentProps<typeof BaseSwitch.Root>, 'className'> & { className?: string }
-
-export function Switch({ className, ...props }: SwitchProps) {
+export function Switch({ className, ...props }: ComponentProps<typeof RSwitch.Root>) {
   return (
-    <BaseSwitch.Root
+    <RSwitch.Root
       className={cn(
-        'relative inline-flex h-4 w-7.5 shrink-0 cursor-pointer rounded-full bg-fg-subtle transition-colors duration-150 data-checked:bg-selected',
+        'relative inline-flex h-4 w-7.5 shrink-0 cursor-pointer rounded-full bg-fg-subtle transition-colors duration-150 data-[state=checked]:bg-selected',
         className,
       )}
       {...props}
     >
-      <BaseSwitch.Thumb className="absolute top-0.5 left-0.5 size-3 rounded-full bg-surface transition-transform duration-150 data-checked:translate-x-3.5" />
-    </BaseSwitch.Root>
+      <RSwitch.Thumb className="absolute top-0.5 left-0.5 size-3 rounded-full bg-surface transition-transform duration-150 data-[state=checked]:translate-x-3.5" />
+    </RSwitch.Root>
   )
 }

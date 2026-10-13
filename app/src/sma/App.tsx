@@ -1,7 +1,7 @@
-import { Tooltip } from '@base-ui/react/tooltip'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { addTransitionType, startTransition, useEffect, useLayoutEffect, useRef, useState, ViewTransition } from 'react'
 import { Button } from './components/ui/button'
+import { TooltipProvider } from './components/ui/tag'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
 import { BOOK_USER, type BookEntry } from './data/data'
@@ -59,9 +59,9 @@ export function SmaApp() {
   return (
     <PortfolioProvider>
       <HashOpener onOpen={go} />
-      <Tooltip.Provider delay={300}>
+      <TooltipProvider delayDuration={300}>
         {route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
-      </Tooltip.Provider>
+      </TooltipProvider>
     </PortfolioProvider>
   )
 }

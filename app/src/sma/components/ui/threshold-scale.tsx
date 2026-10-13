@@ -1,10 +1,9 @@
-import { Toggle } from '@base-ui/react/toggle'
-import { ToggleGroup } from '@base-ui/react/toggle-group'
+import { ToggleGroup } from 'radix-ui'
 import { Fragment } from 'react'
 import { cn } from '../../lib/cn'
 
 /**
- * ThresholdScale — Base UI ToggleGroup of joined segments. Each segment is pressed when it is excluded
+ * ThresholdScale — Radix Toggle Group of joined segments. Each segment is pressed when it is excluded
  * (aria-pressed), so screen readers hear "Ba, excluded". Clicking a grade moves the threshold;
  * a 3px accent bar marks the cut between allowed and excluded.
  */
@@ -21,8 +20,8 @@ export function ThresholdScale({
 }) {
   const value = labels.map((_, i) => String(i)).filter((_, i) => isExcluded(i))
   return (
-    <ToggleGroup
-      multiple
+    <ToggleGroup.Root
+      type="multiple"
       value={value}
       aria-labelledby={labelledBy}
       onValueChange={(next) => {
@@ -35,15 +34,15 @@ export function ThresholdScale({
         <Fragment key={label}>
           {/* 40px bar on a 28px row: negative margins let it overhang without changing the row height. */}
           {i > 0 && i === cutAt && <span aria-hidden className="relative z-2 -my-1.5 mr-1 ml-0.75 h-10 w-0.75 shrink-0 bg-error" />}
-          <Toggle
+          <ToggleGroup.Item
             value={String(i)}
             aria-label={`${label}, ${isExcluded(i) ? 'excluded' : 'allowed'}`}
-            className="-ml-px h-7 min-w-0 flex-1 basis-0 cursor-pointer border border-control bg-surface hover:relative hover:z-1 hover:outline hover:-outline-offset-1 hover:outline-fg-secondary data-pressed:border-excluded-border data-pressed:bg-excluded"
+            className="-ml-px h-7 min-w-0 flex-1 basis-0 cursor-pointer border border-control bg-surface hover:relative hover:z-1 hover:outline hover:-outline-offset-1 hover:outline-fg-secondary data-[state=on]:border-excluded-border data-[state=on]:bg-excluded"
           >
             {label}
-          </Toggle>
+          </ToggleGroup.Item>
         </Fragment>
       ))}
-    </ToggleGroup>
+    </ToggleGroup.Root>
   )
 }
