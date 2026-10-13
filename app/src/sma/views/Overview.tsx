@@ -135,17 +135,17 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
         <div className={sec}>
           <div className={title}><span className="inline-flex items-center gap-1.5"><Ban className="size-3 -translate-y-px text-conflict" strokeWidth={1.75} aria-hidden />Exclusionary preferences</span>{editExclusions}</div>
           {exclusionGroups(state.prefs).length ? (
-            <p className="leading-relaxed">
-              {exclusionGroups(state.prefs).map((g, i) => (
-                <span key={g.label} title={g.values.join(', ')}>
-                  {i > 0 && <span className="text-fg-subtle"> · </span>}
-                  <span className="text-fg-muted">{g.label}: </span>
-                  <span className="text-conflict">{g.values.slice(0, 3).join(', ')}{g.values.length > 3 && ` +${g.values.length - 3}`}</span>
-                </span>
+            // One preference type per row, laid out like the Portfolio facts next to it: type in grey, values in red.
+            <div>
+              {exclusionGroups(state.prefs).map((g) => (
+                <div key={g.label} title={g.values.join(', ')} className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-2.5 border-t border-line py-0.75 first:border-t-0">
+                  <span className="text-fg-muted">{g.label}</span>
+                  <span className="truncate text-conflict">{g.values.slice(0, 3).join(', ')}{g.values.length > 3 && ` +${g.values.length - 3}`}</span>
+                </div>
               ))}
-            </p>
+            </div>
           ) : <p className="text-fg-subtle">Nothing excluded</p>}
-          <div className="mt-1 text-fg-muted">Limits: min. position {state.prefs.minPos || '—'}% · max. {state.prefs.maxInst || '—'} instruments</div>
+          <div className="mt-2 text-fg-muted">Limits: min. position {state.prefs.minPos || '—'}% · max. {state.prefs.maxInst || '—'} instruments</div>
         </div>
       )}
       <div className={sec}>
