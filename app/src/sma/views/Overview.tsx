@@ -145,7 +145,12 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
               ))}
             </div>
           ) : <p className="text-fg-subtle">Nothing excluded</p>}
-          <div className="mt-2 text-fg-muted">Limits: min. position {state.prefs.minPos || '—'}% · max. {state.prefs.maxInst || '—'} instruments</div>
+          {/* Only the limits that are set; nothing at all when neither is. */}
+          {(state.prefs.minPos.trim() || state.prefs.maxInst.trim()) && (
+            <div className="mt-2 text-fg-muted">
+              Limits: {[state.prefs.minPos.trim() && `min. position ${state.prefs.minPos.trim()}%`, state.prefs.maxInst.trim() && `max. ${state.prefs.maxInst.trim()} instruments`].filter(Boolean).join(' · ')}
+            </div>
+          )}
         </div>
       )}
       <div className={sec}>
