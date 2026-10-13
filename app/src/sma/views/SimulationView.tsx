@@ -38,7 +38,10 @@ export function SimulationView() {
   const custom = state.custom
   const pub = state.sim.published
   // When Current was last updated: the customized version's last publication, else the book entry's last change.
-  const lastUpdate = custom?.published || getBook().find((e) => e.id === state.book.id)?.modified || BOOK_AS_OF
+  const entry = getBook().find((e) => e.id === state.book.id)
+  const lastUpdate = custom?.published || entry?.modified || BOOK_AS_OF
+  // Under the New card: when this portfolio was last published, or that it has not been yet.
+  const lastPublished = state.sim.publishedAt ?? (custom ? (custom.version > 0 ? custom.published : undefined) : entry?.status === 'Published' ? entry.modified : undefined)
   const total = cur ? rows.reduce((s, r) => s + r.w, 0) : rows.filter((r) => !r.removed).reduce((s, r) => s + r.nw, 0)
 
   const redistribute = () => update((s) => {
@@ -58,8 +61,8 @@ export function SimulationView() {
       <div className="flex flex-wrap items-end gap-x-6 gap-y-2 border-b border-line">
         <RTabs.Root value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))}>
           <RTabs.List aria-label="Portfolio version" className="-mb-px flex gap-1.5">
-            <VersionCard value="current" title="Current" disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined} />
-            <VersionCard value="new" title="New" disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined} />
+            <VersionCard value="current" title="Current" sub={custom?.version === 0 ? 'Not published yet' : `Last updated: ${lastUpdate}`} disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined} />
+            <VersionCard value="new" title="New" sub={lastPublished ? `Last published: ${lastPublished}` : 'Not published yet'} disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined} />
           </RTabs.List>
         </RTabs.Root>
         {!cur && (
@@ -601,17 +604,19 @@ function AddPosition({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * One version card (Radix Tabs trigger styled as a folder tab) with the version name in the usual 14px. Grey while not shown; when open it takes the content's colour and covers the line below it.
+ * One version card (Radix Tabs trigger styled as a folder tab): the version name (16px) and one short line under it on the
+ * right, as the client book's version cards. Grey while not shown; when open it takes the content's colour and covers the line below it.
  */
-function VersionCard({ value, title, disabled, hint }: { value: Mode; title: string; disabled?: boolean; hint?: string }) {
+function VersionCard({ value, title, sub, disabled, hint }: { value: Mode; title: string; sub: string; disabled?: boolean; hint?: string }) {
   return (
     <RTabs.Trigger
       value={value}
       disabled={disabled}
       title={hint}
-      className="w-64 cursor-pointer border border-line bg-shell-side px-3 py-1.5 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
+      className="flex w-64 cursor-pointer flex-col border border-line bg-shell-side px-3 pt-1.5 pb-1 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
     >
-      <span className="text-sm">{title}</span>
+      <span className="text-base">{title}</span>
+      <span className="self-end text-xs text-fg-muted">{sub}</span>
     </RTabs.Trigger>
   )
 }

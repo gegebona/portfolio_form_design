@@ -59,7 +59,8 @@ export type PortfolioState = {
   /** mode: which version Simulation shows. Current is the published portfolio (read-only); New is the working version. */
   /** published: date of the last publication since the data load. Current stays the data-load version until the next
    *  load; the published weights sit next to it, and New starts again from them. */
-  sim: { rows: SimRow[]; mode: 'current' | 'new'; published?: string }
+  /** publishedAt: date and time of the latest successful publication in this session (any kind), for the New card. */
+  sim: { rows: SimRow[]; mode: 'current' | 'new'; published?: string; publishedAt?: string }
   /** Which book entry is open in the flow, and its open position task (shown at the top of Simulation). */
   /** creating: a brand-new portfolio in its creation workflow (the only time preference warnings are shown). */
   book: { id: string; task: BookTask | null; creating?: boolean }
@@ -144,6 +145,7 @@ export function startNew(s: PortfolioState) {
   s.sim.mode = 'new'
   s.sim.rows = POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false }))
   s.sim.published = undefined
+  s.sim.publishedAt = undefined
 }
 /**
  * A brand-new portfolio in its creation workflow. Warning icons and conflict tags show everywhere; only the creation
@@ -161,6 +163,7 @@ export function restoreSample(s: PortfolioState) {
   s.weights = fresh.weights
   s.sim.rows = fresh.sim.rows
   s.sim.published = undefined
+  s.sim.publishedAt = undefined
   s.custom = null
 }
 
@@ -268,6 +271,7 @@ export function publishSim(s: PortfolioState, id: string, hadCurrent: boolean) {
     r.nw = v; r.removed = false; r.auto = undefined; r.target = undefined
   })
   s.sim.published = hadCurrent ? today : undefined
+  s.sim.publishedAt = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   s.sim.mode = 'current'
   s.book.id = id
   s.book.creating = false
