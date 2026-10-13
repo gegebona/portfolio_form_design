@@ -14,7 +14,7 @@ import { MiniTable } from './ComponentDetail'
 
 /** Client book table: dark 12px header labels on a light grey band, compact rows with hairline dividers, links in blue. */
 const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg'
-const td = 'border-b border-line px-2.5 py-1 align-middle'
+const td = 'border-b border-line px-2.5 py-2 align-middle'
 /** Small filled count chip (tasks, customized versions), as the counts in the client book. */
 const chip = 'inline-flex h-4.5 min-w-6 items-center justify-center rounded-xs px-1.5 text-xs tabular-nums'
 /** Portfolio type in the green chip family of the client book's opportunities: light = Standard, dark = Multi, outline = Customized. */
