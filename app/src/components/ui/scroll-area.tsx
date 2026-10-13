@@ -1,32 +1,55 @@
-import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area'
-import type { ReactNode } from 'react'
+import { ScrollArea as RScrollArea } from 'radix-ui'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 
 /**
- * ScrollArea — Base UI ScrollArea. Base UI marks the root with data-overflow-y-start / -end while there is
- * more content above / below, so the edge hints are pure CSS (group-data-…), no scroll listeners.
+ * ScrollArea — Radix Scroll Area. The root is marked with data-overflow-y-start / -end while there is more content
+ * above / below (measured on scroll and resize), so the edge hints are plain CSS (group-data-…).
  *
  * hints="edges"  no scrollbar; a soft shadow and a small ▲ / ▼ at the right edge show there is more.
  *                Used where a scrollbar would cut a row off from the panel it joins (allocation list).
  * hints="bar"    a thin overlay scrollbar that appears while hovering or scrolling.
  */
 export function ScrollArea({ hints = 'bar', className, viewportClassName, children }: { hints?: 'edges' | 'bar'; className?: string; viewportClassName?: string; children: ReactNode }) {
+  const vp = useRef<HTMLDivElement>(null)
+  const [edge, setEdge] = useState({ start: false, end: false })
+  const measure = useCallback(() => {
+    const el = vp.current
+    if (!el) return
+    const start = el.scrollTop > 1
+    const end = el.scrollTop + el.clientHeight < el.scrollHeight - 1
+    setEdge((e) => (e.start === start && e.end === end ? e : { start, end }))
+  }, [])
+  useEffect(() => {
+    const el = vp.current
+    if (!el) return
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    if (el.firstElementChild) ro.observe(el.firstElementChild)
+    return () => ro.disconnect()
+  }, [measure])
   return (
-    <BaseScrollArea.Root className={cn('group/scroll relative min-h-0', className)}>
-      <BaseScrollArea.Viewport className={cn('h-full overscroll-contain outline-none', viewportClassName)}>
-        <BaseScrollArea.Content>{children}</BaseScrollArea.Content>
-      </BaseScrollArea.Viewport>
+    <RScrollArea.Root
+      type="hover"
+      data-overflow-y-start={edge.start ? '' : undefined}
+      data-overflow-y-end={edge.end ? '' : undefined}
+      className={cn('group/scroll relative min-h-0 overflow-hidden', className)}
+    >
+      <RScrollArea.Viewport ref={vp} onScroll={measure} className={cn('h-full overscroll-contain outline-none [&>div]:block!', viewportClassName)}>
+        {children}
+      </RScrollArea.Viewport>
       {hints === 'edges' ? (
         <>
           <EdgeHint side="top" />
           <EdgeHint side="bottom" />
         </>
       ) : (
-        <BaseScrollArea.Scrollbar className="pointer-events-none m-0.5 flex w-1.5 justify-center opacity-0 transition-opacity data-hovering:pointer-events-auto data-hovering:opacity-100 data-scrolling:opacity-100">
-          <BaseScrollArea.Thumb className="w-full rounded-full bg-line-strong hover:bg-fg-subtle" />
-        </BaseScrollArea.Scrollbar>
+        <RScrollArea.Scrollbar orientation="vertical" className="m-0.5 flex w-1.5 justify-center">
+          <RScrollArea.Thumb className="w-full rounded-full bg-line-strong hover:bg-fg-subtle" />
+        </RScrollArea.Scrollbar>
       )}
-    </BaseScrollArea.Root>
+    </RScrollArea.Root>
   )
 }
 

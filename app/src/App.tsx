@@ -1,7 +1,7 @@
-import { Tooltip } from '@base-ui/react/tooltip'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { addTransitionType, startTransition, useEffect, useLayoutEffect, useRef, useState, ViewTransition } from 'react'
 import { Button } from './components/ui/button'
+import { TooltipProvider } from './components/ui/tag'
 import { Checkbox } from './components/ui/selection'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
@@ -66,7 +66,7 @@ export default function App() {
   return (
     <PortfolioProvider>
       <HashOpener onOpen={go} />
-      <Tooltip.Provider delay={300}>
+      <TooltipProvider delayDuration={300}>
         {/* The MP book (incl. feedback) follows the client book shell: darker grey bands down both sides, and one wide
             central page holding the header, the toolbar band and the content. */}
         <div className={cn(route === 'sma' && 'h-dvh bg-shell-side')}>
@@ -75,7 +75,7 @@ export default function App() {
           {route === 'sma' ? <SmaApp /> : route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
         </div>
         </div>
-      </Tooltip.Provider>
+      </TooltipProvider>
     </PortfolioProvider>
   )
 }

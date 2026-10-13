@@ -1,4 +1,4 @@
-# How this design system works (Tailwind 4 + Base UI)
+# How this design system works (Tailwind 4 + Radix)
 
 A guide for developers who are not designers. It explains the ideas, how they map to code in this project, and how to carry them into the real app at work.
 
@@ -44,7 +44,7 @@ Which tokens produce which classes (the "namespaces"):
 
 ```
 Tailwind defaults ─► UBS colour tokens ─► Semantic tokens ─► Components ─► Screens
- (spacing, type…)    (ubs-text-subtle…)    (text-fg-muted…)    (Base UI + classes)
+ (spacing, type…)    (ubs-text-subtle…)    (text-fg-muted…)    (Radix + classes)  
 ```
 
 1. **Tailwind defaults.** These are kept as they ship:
@@ -75,56 +75,52 @@ By default Tailwind only outputs the CSS variables that some class actually uses
 - **We** put semantic tokens straight into `@theme`. That gives one name per token and is simpler, since we have one theme.
 - If dark mode or multi-brand ever comes, the shadcn layout is the one to switch to.
 
-## 3. Base UI: behaviour without looks
+## 3. Radix: behaviour without looks
 
-[Base UI](https://base-ui.com) (`@base-ui/react`) components are **unstyled**. They handle the hard parts: keyboard, focus, ARIA, positioning, portals, typeahead, form integration. We add all the looks with Tailwind classes.
+[Radix UI](https://www.radix-ui.com) (`radix-ui`) primitives are **unstyled**. They handle the hard parts: keyboard, focus, ARIA, positioning, portals, typeahead. We add all the looks with Tailwind classes (the shadcn/ui approach). Where Radix has no primitive we use the closest standard: [cmdk](https://cmdk.paco.me) inside a Radix Popover for the type-to-search lists, and a plain Tailwind input for the "%" weight field.
 
 Every component is a set of **parts**:
 ```
 Checkbox.Root > Checkbox.Indicator
-Tabs.Root > Tabs.List > Tabs.Tab…, Tabs.Indicator
-Select.Root > Select.Trigger, Select.Portal > Select.Positioner > Select.Popup > Select.Item…
+Tabs.Root > Tabs.List > Tabs.Trigger…;  Tabs.Content
+Select.Root > Select.Trigger, Select.Portal > Select.Content > Select.Viewport > Select.Item…
 ```
 
 State is exposed as **data attributes** on the parts, and Tailwind styles them with variants:
 
-| Base UI sets | You write |
+| Radix sets | You write |
 |---|---|
-| `data-checked` / `data-unchecked` | `data-checked:bg-accent`, `data-unchecked:hidden` |
-| `data-active` (tabs) | `data-active:text-fg` |
-| `data-highlighted` (list items) | `data-highlighted:bg-surface-muted` |
-| `data-selected` (list items) | `data-selected:bg-excluded-subtle` |
-| `data-open`, `data-popup-open` | `data-popup-open:border-control-active` |
-| `data-disabled`, `data-pressed` | `data-disabled:opacity-50`, `data-pressed:bg-excluded` |
-| `data-starting-style` / `data-ending-style` | `data-starting-style:opacity-0` (enter/exit animation) |
-| `data-overflow-y-start` / `-end` (scroll area) | `group-data-overflow-y-end/scroll:opacity-100` |
+| `data-state="checked"` (checkbox, radio, switch) | `data-[state=checked]:bg-selected` |
+| `data-state="active"` (tabs) | `data-[state=active]:border-tab-active` |
+| `data-state="open"` (select, popover, menu triggers) | `data-[state=open]:border-control-active` |
+| `data-state="on"` (toggle group items) | `data-[state=on]:bg-excluded` |
+| `data-highlighted` (menu and select items) | `data-highlighted:bg-surface-muted` |
+| `data-disabled`, `data-placeholder` | `data-disabled:opacity-50`, `data-placeholder:text-fg-subtle` |
+| `data-overflow-y-start` / `-end` (set by our scroll area wrapper) | `group-data-overflow-y-end/scroll:opacity-100` |
 
 Notes:
-- Base UI does **not** use Radix's `data-state="open"`. Snippets that use `data-[state=open]:` won't work.
-- Some parts expose **CSS variables** you can use in classes:
-  - Tabs: `--active-tab-left` / `--active-tab-width`, used as `w-(--active-tab-width) translate-x-(--active-tab-left)` for the sliding line;
-  - Select / Combobox: `--anchor-width`, `--available-height`.
-- **`render` prop:** puts Base UI behaviour on your own component, e.g. `<Menu.Trigger render={<Button variant="ghost" />} />`.
+- Some parts expose **CSS variables** you can use in classes: `--radix-select-trigger-width`, `--radix-popover-trigger-width`, `--radix-select-content-available-height`.
+- **`asChild`:** puts Radix behaviour on your own element, e.g. `<DropdownMenu.Trigger asChild><Button variant="ghost" /></DropdownMenu.Trigger>`.
 - **Portals:** popups render at the end of `<body>`. The app root has `isolation: isolate` (in `index.css`) so they always sit on top.
 
 ## 4. The component recipe
 
-Each file in `src/components/ui/` wraps Base UI parts once, with our classes, and exposes a small API:
+Each file in `src/components/ui/` wraps Radix parts once, with our classes, and exposes a small API:
 
 ```tsx
 // src/components/ui/selection.tsx (simplified)
 export function Checkbox({ className, ...props }) {
   return (
-    <BaseCheckbox.Root
+    <RCheckbox.Root
       className={cn(
         'flex size-4 items-center justify-center border border-control bg-surface text-white',
-        'data-checked:border-accent data-checked:bg-accent',
+        'data-[state=checked]:border-selected data-[state=checked]:bg-selected',
         className,                      // callers can still override
       )}
       {...props}
     >
-      <BaseCheckbox.Indicator className="flex data-unchecked:hidden"><Check /></BaseCheckbox.Indicator>
-    </BaseCheckbox.Root>
+      <RCheckbox.Indicator className="flex"><Check /></RCheckbox.Indicator>
+    </RCheckbox.Root>
   )
 }
 ```
@@ -191,7 +187,7 @@ Rules:
    - the components in `src/components/ui/` you need.
 3. **Dependencies:**
    ```
-   tailwindcss @tailwindcss/vite @base-ui/react
+   tailwindcss @tailwindcss/vite radix-ui cmdk
    clsx tailwind-merge class-variance-authority lucide-react
    ```
 4. **UBS tokens.** If the work app already ships the UBS `--col-*` variables, point the `--color-ubs-*` tokens at them (`--color-ubs-text-subtle: var(--col-text-subtle)`) instead of copying the hex values. Then UBS updates, including dark mode (`light-dark()`), flow through automatically.

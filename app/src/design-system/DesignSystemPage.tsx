@@ -56,7 +56,7 @@ export function DesignSystemPage() {
           <header className="mb-4 border border-line-strong bg-surface px-7 py-6">
             <h1 className="mb-1 text-2xl">Design system</h1>
             <p className="max-w-180 text-fg-muted">Tokens and components behind the New model portfolio flow — the same ones the screens use, so this page is always up to date.</p>
-            <p className="mt-2.5 text-xs text-fg-muted">Tailwind CSS 4.3 (CSS-first theme) · Base UI 1.9 (<C>@base-ui/react</C>) · React 19 · colours from the UBS tokens on ubs.com</p>
+            <p className="mt-2.5 text-xs text-fg-muted">Tailwind CSS 4.3 (CSS-first theme) · Radix UI (<C>radix-ui</C>) + cmdk · React 19 · colours from the UBS tokens on ubs.com</p>
           </header>
           <HowItWorks />
           <Colour />
@@ -104,7 +104,7 @@ function WhereThingsLive() {
       <DocTable className="mt-5" heads={['What', 'File']} rows={[
         ['All tokens (colours, font)', <C key="1">src/styles/theme.css</C>],
         ['Page defaults (body, focus ring, scrollbars)', <C key="2">src/index.css</C>],
-        ['Components (Base UI + classes)', <C key="3">src/components/ui/*.tsx</C>],
+        ['Components (Radix + Tailwind classes)', <C key="3">src/components/ui/*.tsx</C>],
         ['Class merging helper', <C key="4">src/lib/cn.ts — cn(…) lets a className prop override defaults</C>],
         ['Screens', <C key="5">src/views/*.tsx</C>],
         ['This page', <C key="6">src/design-system/*</C>],

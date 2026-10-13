@@ -8,7 +8,7 @@ export function HowItWorks() {
     { title: 'Tailwind defaults', body: 'Spacing (4px steps), type sizes, weights, radius, shadows, breakpoints — kept as they ship.', eg: 'p-4 · text-sm · shadow-lg' },
     { title: 'UBS colour tokens', body: 'The colours ubs.com publishes (--col-*), under their UBS names. Tailwind colours only where UBS has none.', eg: 'ubs-text-subtle · ubs-background-brand' },
     { title: 'Semantic tokens', body: 'What a colour is for. Every --color-* becomes bg-*, text-*, border-* …', eg: 'text-fg-muted · bg-accent' },
-    { title: 'Components', body: 'Base UI parts (behaviour, a11y) + Tailwind classes (look). States via data-* variants.', eg: 'data-checked:bg-accent' },
+    { title: 'Components', body: 'Radix parts (behaviour, a11y) + Tailwind classes (look). States via data-* variants.', eg: 'data-[state=checked]:bg-selected' },
     { title: 'Screens', body: 'Compose components; only layout classes here (grid, gap, padding).', eg: 'grid gap-7 px-6' },
   ]
   return (
@@ -16,7 +16,7 @@ export function HowItWorks() {
       id="how"
       kicker="Start here"
       title="How this design system works"
-      lead={<>Everything visual is a <b className="font-semibold">token</b> in one CSS file (<C>src/styles/theme.css</C>). Tailwind 4 turns tokens into classes, so the design system <i>is</i> the class list: if a value isn’t a token, there is no class for it. Components are Base UI parts styled with those classes.</>}
+      lead={<>Everything visual is a <b className="font-semibold">token</b> in one CSS file (<C>src/styles/theme.css</C>). Tailwind 4 turns tokens into classes, so the design system <i>is</i> the class list: if a value isn’t a token, there is no class for it. Components are Radix parts styled with those classes.</>}
     >
       <div className="mt-5 flex flex-wrap items-stretch gap-2">
         {layers.map((l, i) => (
@@ -37,7 +37,7 @@ export function HowItWorks() {
         <li>Use <b className="font-semibold text-fg">semantic</b> colour classes in components (<C>text-fg-muted</C>), not the UBS tokens directly (<C>text-ubs-text-subtle</C>). Changing what “muted text” means is then one line in theme.css.</li>
         <li>Colours come from UBS. Tailwind’s default palette is switched off (<C>--color-*: initial</C>), so <C>bg-blue-500</C> doesn’t exist. Only where UBS has no fitting colour is a Tailwind colour added back, explicitly and marked in theme.css (today: <C>red-50</C> behind conflict tags, <C>white</C> on the red).</li>
         <li>Sizes come from Tailwind’s built-in scales. 1 spacing step = 4px; halves and quarters are allowed (<C>p-2.5</C> = 10px). Avoid arbitrary values like <C>p-[13px]</C>.</li>
-        <li>Style Base UI state with its data attributes: <C>data-checked:</C>, <C>data-active:</C>, <C>data-highlighted:</C>, <C>data-open:</C>, <C>data-disabled:</C>. Base UI does not use Radix’s <C>data-state</C>.</li>
+        <li>Style Radix state with its data attributes: <C>data-[state=checked]:</C>, <C>data-[state=active]:</C>, <C>data-[state=open]:</C>, <C>data-highlighted:</C>, <C>data-disabled:</C>.</li>
         <li>Variants of a component live in one place (<C>cva</C> in the component file), not in every screen.</li>
       </ul>
 
@@ -63,7 +63,7 @@ export function HowItWorks() {
 
 /* usage */
 <p className="text-fg-muted">…</p>
-<Checkbox.Root className="data-checked:bg-accent" />
+<Checkbox.Root className="data-[state=checked]:bg-selected" />
 `}</Code>
     </DocSection>
   )

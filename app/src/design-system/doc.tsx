@@ -73,7 +73,7 @@ export function useCssVar(name: string) {
   return v
 }
 
-/** Anatomy line: Base UI parts as a tree. */
+/** Anatomy line: Radix parts as a tree. */
 export function Anatomy({ children }: { children: string }) {
   return <div className="mt-2 font-mono text-xs text-fg-secondary">{children}</div>
 }

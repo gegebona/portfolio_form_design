@@ -1,6 +1,6 @@
-import { Tooltip } from '@base-ui/react/tooltip'
 import { TriangleAlert } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Tooltip as RTooltip } from 'radix-ui'
+import type { ReactElement, ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 import { Popover, PopoverTrigger } from './popover'
 
@@ -77,24 +77,25 @@ export function ConflictNote({ children, className }: { children: ReactNode; cla
 
 export function CurrencyTag({ ccy, portfolioCcy }: { ccy: string; portfolioCcy: string }) {
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger render={<span />} className="shrink-0 rounded-xs border border-line-strong px-1.5 text-xs/4.5 whitespace-nowrap text-fg-muted">
-        in {ccy}
-      </Tooltip.Trigger>
-      <TooltipPopup>Benchmark currency differs from the portfolio currency ({portfolioCcy})</TooltipPopup>
-    </Tooltip.Root>
+    <Tooltip content={`Benchmark currency differs from the portfolio currency (${portfolioCcy})`}>
+      <span className="shrink-0 rounded-xs border border-line-strong px-1.5 text-xs/4.5 whitespace-nowrap text-fg-muted">in {ccy}</span>
+    </Tooltip>
   )
 }
 
-/** Dark tooltip bubble, shared by every tooltip. */
-export function TooltipPopup({ children }: { children: ReactNode }) {
+/** Radix Tooltip with the shared dark bubble. The child is the trigger (it keeps its own element). */
+export function Tooltip({ content, children }: { content: ReactNode; children: ReactElement }) {
   return (
-    <Tooltip.Portal>
-      <Tooltip.Positioner sideOffset={6} className="z-50">
-        <Tooltip.Popup className="rounded-xs bg-surface-inverse px-2 py-0.75 text-xs text-fg-inverse transition-opacity duration-100 data-ending-style:opacity-0 data-starting-style:opacity-0">
-          {children}
-        </Tooltip.Popup>
-      </Tooltip.Positioner>
-    </Tooltip.Portal>
+    <RTooltip.Root>
+      <RTooltip.Trigger asChild>{children}</RTooltip.Trigger>
+      <RTooltip.Portal>
+        <RTooltip.Content sideOffset={6} className="z-50 rounded-xs bg-surface-inverse px-2 py-0.75 text-xs text-fg-inverse">
+          {content}
+        </RTooltip.Content>
+      </RTooltip.Portal>
+    </RTooltip.Root>
   )
 }
+
+/** Wraps the app once: tooltips open after a short rest of the pointer. */
+export const TooltipProvider = RTooltip.Provider

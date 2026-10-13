@@ -17,14 +17,14 @@ import { CATEGORIES, RATINGS } from '../data/data'
 import { Anatomy, C, Cap, Code, Demo, DocSection, DocTable, H3 } from './doc'
 
 const stateTable = (rows: [string, string, string][]) => (
-  <DocTable heads={['State', 'Base UI marks it with', 'Tailwind classes']} rows={rows.map(([s, a, c]) => [s, <C key="a">{a}</C>, <C key="c">{c}</C>])} />
+  <DocTable heads={['State', 'Radix marks it with', 'Tailwind classes']} rows={rows.map(([s, a, c]) => [s, <C key="a">{a}</C>, <C key="c">{c}</C>])} />
 )
 
 export function ButtonDoc() {
   return (
-    <DocSection id="c-button" kicker="Components" title="Button" badge="Base UI Button"
+    <DocSection id="c-button" kicker="Components" title="Button" badge="button + Radix Slot"
       lead={<>One <b className="font-semibold">primary</b> per screen (the forward step), <b className="font-semibold">secondary</b> for everything else, <b className="font-semibold">link</b> for actions inside content, <b className="font-semibold">ghost</b> for icon buttons. Variants are declared once with <C>cva</C>.</>}>
-      <Anatomy>{'Button  (renders <button>, handles disabled + focus)'}</Anatomy>
+      <Anatomy>{'Button  (renders <button type="button">; asChild hands the look to its child via Radix Slot)'}</Anatomy>
       <H3>Variants × states</H3>
       <Demo>
         <Cap label="Primary"><Button variant="primary">Component allocation</Button></Cap>
@@ -57,8 +57,8 @@ export function FieldDoc() {
   return (
     <DocSection id="c-field" kicker="Components" title="Text field & select" badge="Field · Input · Select"
       lead={<>All boxed controls share one look: 32px, <C>border-control</C>, darker <C>border-control-active</C> while focused or open. Field ties label, control and description together for screen readers.</>}>
-      <Anatomy>{'Field.Root > Field.Label, Input, Field.Description'}</Anatomy>
-      <Anatomy>{'Select.Root > Select.Trigger (Value, Icon), Portal > Positioner > Popup > List > Item (ItemIndicator, ItemText)'}</Anatomy>
+      <Anatomy>{'Field (div) > Label.Root (Radix, htmlFor = control id), Input, description'}</Anatomy>
+      <Anatomy>{'Select.Root > Select.Trigger (Value, Icon), Portal > Content > Viewport > Item (ItemIndicator, ItemText)'}</Anatomy>
       <H3>Variants</H3>
       <Demo className="items-end">
         <Field label="Text" className="w-56"><Input value={v} onValueChange={setV} /></Field>
@@ -70,9 +70,9 @@ export function FieldDoc() {
       <H3>States</H3>
       {stateTable([
         ['Focused', ':focus (native)', 'focus:border-control-active'],
-        ['Select open', 'data-popup-open', 'data-popup-open:border-control-active'],
+        ['Select open', 'data-state=open', 'data-[state=open]:border-control-active'],
         ['Option under keyboard / mouse', 'data-highlighted', 'data-highlighted:bg-surface-muted'],
-        ['Popup entering / leaving', 'data-starting-style / data-ending-style', 'data-starting-style:opacity-0 data-starting-style:scale-98'],
+        ['Placeholder shown', 'data-placeholder (Trigger)', 'data-placeholder:text-fg-subtle'],
         ['Disabled', 'disabled / data-disabled', 'disabled:bg-surface-muted disabled:text-fg-disabled'],
       ])}
       <H3>Usage</H3>
@@ -90,9 +90,9 @@ export function ComboboxDoc() {
   const cat = CATEGORIES[1]
   const [sel, setSel] = useState<string[]>(['energy', 'ind'])
   return (
-    <DocSection id="c-combobox" kicker="Components" title="Combobox (multi-select)" badge="Base UI Combobox"
+    <DocSection id="c-combobox" kicker="Components" title="Combobox (multi-select)" badge="cmdk + Radix Popover"
       lead="Type to filter, pick several. Chosen values are not shown inside the field: each screen renders them where they belong (exclusion chips under the field, instrument rows in a list), so the field stays one line.">
-      <Anatomy>{'Combobox.Root multiple > InputGroup (Input, Trigger), Portal > Positioner > Popup > Empty, List > Item (ItemIndicator)'}</Anatomy>
+      <Anatomy>{'Command > Popover.Root > Popover.Anchor (input, chevron button), Portal > Content > Command.List > Empty, Item…'}</Anatomy>
       <H3>Live</H3>
       <Demo className="items-start">
         <MultiCombobox options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="w-55" />
@@ -100,8 +100,8 @@ export function ComboboxDoc() {
       </Demo>
       <H3>States</H3>
       {stateTable([
-        ['Open', 'data-popup-open (InputGroup, Trigger)', 'data-popup-open:border-control-active · in-data-popup-open:rotate-180 (chevron)'],
-        ['Option chosen', 'data-selected (Item)', 'data-selected:bg-excluded-subtle · group-data-selected:bg-accent (checkbox look)'],
+        ['Open', 'data-state=open (field)', 'data-[state=open]:border-control-active · rotate-180 (chevron)'],
+        ['Option chosen', 'data-checked (Item, set by the wrapper)', 'data-checked:bg-excluded-subtle · checkbox look filled'],
         ['Option highlighted', 'data-highlighted (Item)', 'data-highlighted:bg-surface-muted'],
         ['No results', 'Combobox.Empty renders its text', 'empty:p-0 (no padding when there is nothing to say)'],
       ])}
@@ -124,8 +124,8 @@ export function SelectionDoc() {
   const [s, setS] = useState(false)
   return (
     <DocSection id="c-selection" kicker="Components" title="Checkbox, radio & switch" badge="Checkbox · Radio · Switch"
-      lead={<>Chosen = accent red on every control. Base UI renders a <C>&lt;span&gt;</C> plus a hidden native input and marks state with data attributes — so the whole look is Tailwind variants. Wrap in a <C>&lt;label&gt;</C> to make the text clickable.</>}>
-      <Anatomy>{'Checkbox.Root > Checkbox.Indicator     RadioGroup > Radio.Root > Radio.Indicator     Switch.Root > Switch.Thumb'}</Anatomy>
+      lead={<>Chosen = accent red on every control. Radix renders a <C>&lt;button&gt;</C> and marks state with <C>data-state</C> — so the whole look is Tailwind variants. Wrap in a <C>&lt;label&gt;</C> to make the text clickable.</>}>
+      <Anatomy>{'Checkbox.Root > Checkbox.Indicator     RadioGroup.Root > RadioGroup.Item > RadioGroup.Indicator     Switch.Root > Switch.Thumb'}</Anatomy>
       <H3>Variants × states</H3>
       <Demo>
         <Cap label="Checkbox"><label className="flex items-center gap-2"><Checkbox checked={a} onCheckedChange={setA} />Also exclude not rated</label></Cap>
@@ -141,11 +141,11 @@ export function SelectionDoc() {
       </Demo>
       <H3>States</H3>
       {stateTable([
-        ['Checked', 'data-checked', 'data-checked:bg-accent data-checked:border-accent'],
-        ['Unchecked (indicator)', 'data-unchecked', 'data-unchecked:hidden'],
-        ['Switch on', 'data-checked (Root and Thumb)', 'data-checked:bg-accent · data-checked:translate-x-3.5'],
+        ['Checked', 'data-state=checked', 'data-[state=checked]:bg-selected data-[state=checked]:border-selected'],
+        ['Unchecked (indicator)', 'Indicator not rendered', '— (Radix only mounts the indicator while checked)'],
+        ['Switch on', 'data-state=checked (Root and Thumb)', 'data-[state=checked]:bg-selected · data-[state=checked]:translate-x-3.5'],
         ['Disabled', 'data-disabled', 'data-disabled:opacity-50'],
-        ['Row holding a checked control', 'data-checked on a child', 'has-data-checked:bg-surface-muted (benchmark rows)'],
+        ['Row holding a checked control', 'data-state=checked on a child', 'has-data-[state=checked]:bg-surface-muted'],
       ])}
     </DocSection>
   )
@@ -156,9 +156,9 @@ export function TabsDoc() {
   const [t2, setT2] = useState('bb')
   const [t3, setT3] = useState('new')
   return (
-    <DocSection id="c-tabs" kicker="Components" title="Tabs" badge="Base UI Tabs"
-      lead={<>One look for every tab type; only label size and the colour of inactive labels differ. The red line is <C>Tabs.Indicator</C>, positioned by Base UI’s <C>--active-tab-left</C> / <C>--active-tab-width</C>, so it slides between tabs.</>}>
-      <Anatomy>{'Tabs.Root > Tabs.List > Tabs.Tab…, Tabs.Indicator;  Tabs.Panel'}</Anatomy>
+    <DocSection id="c-tabs" kicker="Components" title="Tabs" badge="Radix Tabs"
+      lead={<>One look for every tab type; only label size and the colour of inactive labels differ. The line is the active trigger’s own bottom border (<C>data-[state=active]:border-tab-active</C>).</>}>
+      <Anatomy>{'Tabs.Root > Tabs.List > Tabs.Trigger…;  Tabs.Content'}</Anatomy>
       <H3>Variants</H3>
       <div className="flex flex-col gap-2">
         <Cap label="step — screens of the flow (14px)"><Demo className="py-0"><Tabs value={t1} onValueChange={(v) => setT1(v as string)}><TabsList variant="step"><Tab value="a">Preferences</Tab><Tab value="b">Component selection</Tab><Tab value="c" disabled>Reporting</Tab></TabsList></Tabs></Demo></Cap>
@@ -167,7 +167,7 @@ export function TabsDoc() {
       </div>
       <H3>Spec & states</H3>
       {stateTable([
-        ['Active', 'data-active (Tab)', 'data-active:text-fg + Indicator: w-(--active-tab-width) translate-x-(--active-tab-left)'],
+        ['Active', 'data-state=active (Trigger)', 'data-[state=active]:text-fg data-[state=active]:border-tab-active'],
         ['Hover', ':hover', 'hover:border-line-strong (3px light line)'],
         ['Disabled', 'data-disabled', 'data-disabled:text-fg-disabled'],
         ['Spacing', '—', 'gap-6 between tabs · pb-1.5 label → line · h-0.75 line'],
@@ -215,13 +215,13 @@ export function ChipsTagsDoc() {
 export function ScaleDoc() {
   const [cut, setCut] = useState(4)
   return (
-    <DocSection id="c-scale" kicker="Components" title="Threshold scale" badge="Base UI ToggleGroup"
+    <DocSection id="c-scale" kicker="Components" title="Threshold scale" badge="Radix Toggle Group"
       lead="Pick a grade to exclude it and everything below. Each segment is a Toggle that is pressed when excluded, so screen readers hear “Ba, excluded”. A 3px accent bar marks the cut.">
-      <Anatomy>{'ToggleGroup multiple > Toggle…'}</Anatomy>
+      <Anatomy>{'ToggleGroup.Root type="multiple" > ToggleGroup.Item…  (pressed: data-state=on)'}</Anatomy>
       <Demo className="mt-4"><ThresholdScale labels={RATINGS} isExcluded={(i) => i >= cut} cutAt={cut} onPick={(i) => setCut(i === cut ? RATINGS.length : i)} className="w-130" /></Demo>
       <H3>States</H3>
       {stateTable([
-        ['Excluded', 'data-pressed', 'data-pressed:bg-excluded data-pressed:border-excluded-border'],
+        ['Excluded', 'data-state=on', 'data-[state=on]:bg-excluded data-[state=on]:border-excluded-border'],
         ['Hover', ':hover', 'hover:outline hover:outline-fg-secondary'],
       ])}
     </DocSection>
@@ -233,7 +233,7 @@ export function WeightDoc() {
   return (
     <DocSection id="c-weight" kicker="Components" title="Weight field & slider" badge="NumberField · Slider"
       lead="The field is for exact numbers, the slider for quick moves; both edit the same value. Field: 2 decimals, ↑/↓ step 0.1, Shift 1, mouse wheel while focused. Slider: the share line in the asset-class colour, with a small handle.">
-      <Anatomy>{'NumberField.Root > Group > Input (+ “%”)      Slider.Root > Control > Track > Indicator, Thumb'}</Anatomy>
+      <Anatomy>{'WeightField: box > input (+ “%”), plain Tailwind (Radix has no number field)      Slider.Root > Track > Range, Thumb'}</Anatomy>
       <Demo className="mt-4 max-w-105 flex-col items-stretch">
         <div className="flex items-center gap-3"><span className="flex-1">LUX KEY – EUR Equity Value</span><WeightField value={w} onValueChange={setW} aria-label="Weight" /></div>
         <WeightSlider value={w} onValueChange={setW} color="var(--color-chart-1)" aria-label="Weight slider" />
@@ -242,7 +242,7 @@ export function WeightDoc() {
       {stateTable([
         ['Focused field', ':focus inside Group', 'has-[input:focus]:border-control-active'],
         ['Dragging', 'data-dragging', '(available; not styled — the handle follows the pointer)'],
-        ['Colour', 'style --fill', 'bg-(--fill) on Indicator and Thumb'],
+        ['Colour', 'style --fill', 'bg-(--fill) on Range and Thumb'],
       ])}
       <H3>Usage</H3>
       <Code>{`
@@ -257,10 +257,10 @@ export function OverlaysDoc() {
   const [open, setOpen] = useState(false)
   return (
     <DocSection id="c-overlays" kicker="Components" title="Modal, menu & tooltip" badge="Dialog · Menu · Tooltip"
-      lead={<>Every floating surface shares <C>popupSurface</C>: white, <C>border-line-strong</C>, <C>shadow-pop</C>, and a short fade/scale driven by <C>data-starting-style</C> / <C>data-ending-style</C>. Base UI renders them in a portal; the app root has <C>isolation: isolate</C> so they always sit on top.</>}>
-      <Anatomy>{'Dialog.Root > Portal > Backdrop, Popup > Title, Description, Close'}</Anatomy>
-      <Anatomy>{'Menu.Root > Trigger, Portal > Positioner > Popup > Item…'}</Anatomy>
-      <Anatomy>{'Tooltip.Provider > Root > Trigger, Portal > Positioner > Popup'}</Anatomy>
+      lead={<>Every floating surface shares <C>popupSurface</C>: white, <C>border-line-strong</C>, <C>shadow-pop</C>. Radix renders them in a portal; the app root has <C>isolation: isolate</C> so they always sit on top.</>}>
+      <Anatomy>{'Dialog.Root > Portal > Overlay, Content > Title, Description, Close'}</Anatomy>
+      <Anatomy>{'DropdownMenu.Root > Trigger, Portal > Content > Item…'}</Anatomy>
+      <Anatomy>{'Tooltip.Provider > Root > Trigger (asChild), Portal > Content'}</Anatomy>
       <Demo className="mt-4">
         <Button onClick={() => setOpen(true)}>Open modal</Button>
         <Menu
@@ -286,9 +286,9 @@ export function OverlaysDoc() {
 
 export function ScrollDoc() {
   return (
-    <DocSection id="c-scroll" kicker="Components" title="Scroll area" badge="Base UI ScrollArea"
-      lead={<>Base UI marks the root with <C>data-overflow-y-start</C> / <C>-end</C> while there is more content above / below, so edge hints are pure CSS. Where a scrollbar would cut a selected row off from its details panel, use <C>hints=&quot;edges&quot;</C>: no bar, a soft shadow and a ▲ / ▼ at the right edge.</>}>
-      <Anatomy>{'ScrollArea.Root > Viewport > Content;  Scrollbar > Thumb'}</Anatomy>
+    <DocSection id="c-scroll" kicker="Components" title="Scroll area" badge="Radix Scroll Area"
+      lead={<>The wrapper marks the root with <C>data-overflow-y-start</C> / <C>-end</C> (measured on scroll and resize) while there is more content above / below, so edge hints are pure CSS. Where a scrollbar would cut a selected row off from its details panel, use <C>hints=&quot;edges&quot;</C>: no bar, a soft shadow and a ▲ / ▼ at the right edge.</>}>
+      <Anatomy>{'ScrollArea.Root > Viewport;  Scrollbar > Thumb'}</Anatomy>
       <div className="mt-4 flex flex-wrap gap-6">
         <Cap label='hints="edges"'>
           <ScrollArea hints="edges" className="h-40 w-64 border border-line bg-surface">
