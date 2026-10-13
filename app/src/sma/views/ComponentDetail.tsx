@@ -113,6 +113,13 @@ export function ComponentDetail({ c }: { c: Component }) {
                     )
                   })}
             </tbody>
+            {/* The total closes the table, so the weights read as shares of the whole building block. */}
+            <tfoot>
+              <tr className="font-semibold">
+                <td className={cn(td, 'border-t border-t-line-strong border-b-0')} colSpan={3}>Total</td>
+                <td className={cn(td, 'border-t border-t-line-strong border-b-0 text-right tabular-nums')}>{f2(list.reduce((t, h) => t + h.w, 0))}</td>
+              </tr>
+            </tfoot>
           </table>
       </div>
     </>
