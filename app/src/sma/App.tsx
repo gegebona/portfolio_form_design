@@ -217,7 +217,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
 /** Action bar (the page's own pale tone with a top rule, so it reads as the panel's footer without a heavy band): Back + Cancel on the left, Save as draft + the forward step (the one primary) on the right. */
 function ActionBar({ back, next, onSave, saveDisabled, note }: { saveDisabled?: boolean; back?: { label: string; onClick: () => void }; next: { label: string; onClick: () => void; disabled?: boolean }; /** Omitted where nothing can be saved (the read-only Current version). */ onSave?: () => void; /** Short status next to the actions: what is still needed, or why saving is unavailable. */ note?: string }) {
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-t border-line-strong bg-surface-muted px-6 py-3">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-t border-line-strong bg-shell-band px-6 py-3">
       <div className="flex items-center gap-2.5">
         {back && (
           <Button variant="secondary" size="lg" onClick={back.onClick}>
