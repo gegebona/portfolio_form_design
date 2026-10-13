@@ -118,7 +118,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   /**
    * Writes the portfolio to the book. Save as draft keeps an existing entry's status (a new one is a Draft) and returns
    * to the book; Publish sets it to Published, drops task decisions that are settled (deferred ones stay) and stays on
-   * this portfolio's Simulation, on Current.
+   * this portfolio's Simulation, on New.
    */
   const save = (publish?: boolean) => {
     const a = portfolioAlloc(state)

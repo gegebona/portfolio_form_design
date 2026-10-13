@@ -79,7 +79,8 @@ export function SimulationView() {
         )}
       </div>
       {/* The Exposure view carries its own asset allocation, so the summary strip would only repeat it there. */}
-      {view !== 'exposure' && <Overview rows={[{ label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} onToggleCompact={() => setCompact(!compact)} />}
+      {/* After a publication the card compares the last published weights with New; before, Current with New. */}
+      {view !== 'exposure' && <Overview rows={[pub && !cur ? { label: 'Last published', alloc: simAlloc(state, 'published') } : { label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} onToggleCompact={() => setCompact(!compact)} />}
       {custom?.auto && <AutoUpdate />}
 
       <div className="mt-2 flex min-h-0 flex-1 flex-col">

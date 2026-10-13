@@ -257,7 +257,7 @@ export function startCustomized(s: PortfolioState, parent: BookEntry) {
 }
 
 /**
- * Publishing keeps the user on the portfolio's Simulation, on Current. A portfolio that already had a Current (from the
+ * Publishing keeps the user on the portfolio's Simulation, on New. A portfolio that already had a Current (from the
  * data load) keeps it until the next load: the new figures become the Published weights, shown next to Current, and New
  * starts again from them (no pending change). A portfolio published for the first time has no data-load version yet, so
  * what was published becomes its Current.
@@ -272,7 +272,8 @@ export function publishSim(s: PortfolioState, id: string, hadCurrent: boolean) {
   })
   s.sim.published = hadCurrent ? today : undefined
   s.sim.publishedAt = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-  s.sim.mode = 'current'
+  // The user stays on New, which starts again from what was just published.
+  s.sim.mode = 'new'
   s.book.id = id
   s.book.creating = false
   if (s.book.task && s.book.task.status !== 'Deferred') s.book.task = null
@@ -443,9 +444,9 @@ export function benchmarkAlloc(s: PortfolioState): Alloc {
   })
   return a
 }
-export function simAlloc(s: PortfolioState, mode: 'current' | 'new'): Alloc {
+export function simAlloc(s: PortfolioState, mode: 'current' | 'new' | 'published'): Alloc {
   const a = emptyAlloc()
-  s.sim.rows.forEach((r) => { if (mode === 'current') a[r.cls] += r.w; else if (!r.removed) a[r.cls] += r.nw })
+  s.sim.rows.forEach((r) => { if (mode === 'current') a[r.cls] += r.w; else if (mode === 'published') a[r.cls] += r.pw ?? 0; else if (!r.removed) a[r.cls] += r.nw })
   return a
 }
 
