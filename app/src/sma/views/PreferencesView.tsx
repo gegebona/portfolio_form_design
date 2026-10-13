@@ -44,7 +44,7 @@ export function PreferencesView() {
 
       <Section
         title="Exclusions"
-        description="Please configure the exclusionary preferences specific to the model portfolio in the fields below."
+        description="Select a suggestion to exclude it in one click, or search the dropdown for any other value."
         actions={<Button variant="link" onClick={clearAll}>Clear all</Button>}
         className="pt-4"
       >
@@ -115,7 +115,6 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   return (
     <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} k={cat.id}>
       <div className="flex items-start gap-1.5">
-        {sugg.length > 0 && <span className="mr-0.5 flex h-8 shrink-0 items-center text-xs text-fg-muted">Suggested</span>}
         <div ref={box} className={cn('relative flex min-w-0 flex-1 gap-1.5 py-0.75', more ? 'flex-wrap' : 'overflow-hidden')}>
           {sugg.map((id, i) => {
             const l = optionLabel(cat.id, id)
@@ -155,12 +154,13 @@ function RatingRow() {
   return (
     <Row label="Credit rating" labelId="rating-label" count={limited ? `${RATINGS[p.rating]} and below excluded` : 'Click a grade to exclude it and below'} k="rating">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {/* Shown from the lowest grade up (C … Aaa), like the ESG scores: what is excluded sits on the left. */}
         <ThresholdScale
           aria-labelledby="rating-label"
-          labels={RATINGS}
-          isExcluded={(i) => i >= p.rating}
-          cutAt={p.rating}
-          onPick={(i) => update((s) => { s.prefs.rating = i === s.prefs.rating ? RATINGS.length : i; setOwnValue(s, 'rating') })}
+          labels={[...RATINGS].reverse()}
+          isExcluded={(j) => RATINGS.length - 1 - j >= p.rating}
+          cutAt={RATINGS.length - p.rating}
+          onPick={(j) => update((s) => { const r = RATINGS.length - 1 - j; s.prefs.rating = r === s.prefs.rating ? RATINGS.length : r; setOwnValue(s, 'rating') })}
           className="flex-[0_1_24rem]"
         />
         <label className="inline-flex cursor-pointer items-center gap-1.5">
