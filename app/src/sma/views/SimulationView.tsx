@@ -10,9 +10,9 @@ import { Tabs as RTabs } from 'radix-ui'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
-import { ADDABLE_POSITIONS, ASSET_CLASSES, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
+import { ADDABLE_POSITIONS, ASSET_CLASSES, BOOK_AS_OF, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
 import { cn } from '../lib/cn'
-import { setBookTaskStatus } from '../state/book'
+import { getBook, setBookTaskStatus } from '../state/book'
 import { addOwnPosition, f2, isCreating, near100, parentCode, PREF_LABEL, removeOwnPosition, setOwnWeight, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { ExposureView } from './ExposureView'
 import { Overview, Swatch } from './Overview'
@@ -37,6 +37,8 @@ export function SimulationView() {
   const cur = mode === 'current'
   const custom = state.custom
   const pub = state.sim.published
+  // When Current was last updated: the customized version's last publication, else the book entry's last change.
+  const lastUpdate = custom?.published || getBook().find((e) => e.id === state.book.id)?.modified || BOOK_AS_OF
   const total = cur ? rows.reduce((s, r) => s + r.w, 0) : rows.filter((r) => !r.removed).reduce((s, r) => s + r.nw, 0)
 
   const redistribute = () => update((s) => {
@@ -69,8 +71,7 @@ export function SimulationView() {
         {cur && (
           <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
             <Info className="size-3.5" strokeWidth={1.5} />
-            {pub ? `Read-only — Current is the last data load; the version published on ${pub} applies from the next load.` : 'Read-only — the portfolio as it is today.'}
-            {(!custom || custom.hasNew) && <Button variant="link" className="text-xs" onClick={() => switchTable(() => setMode('new'))}>Switch to New</Button>}
+            {pub ? `Read-only — Current is the last data load; the version published on ${pub} applies from the next load.` : `Read-only — last updated on ${lastUpdate}.`}
           </div>
         )}
       </div>
