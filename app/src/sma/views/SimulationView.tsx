@@ -228,8 +228,8 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
       <thead>
         <tr>
           <th className={th}>Asset class</th><th className={th}>Instrument / account</th><th className={th}>Building block</th><th className={th}>Currency</th>
-          <th className={cn(th, 'text-right')}>Price</th><th className={cn(th, 'text-right')}>ESG</th><th className={cn(th, 'text-right')}>{cur && !pub ? 'Weight %' : 'Current %'}</th>
-          {pub && <th className={cn(th, 'text-right')} title={`Published on ${state.sim.published}`}>Published %</th>}
+          <th className={cn(th, 'text-right')}>Price</th><th className={cn(th, 'text-right')}>ESG</th><th className={cn(th, 'text-right')} title="Weight at the last data load">{cur && !pub ? 'Weight %' : 'Current %'}</th>
+          {pub && <th className={cn(th, 'text-right')} title={`Weights published on ${state.sim.published}; replaced by each new publication`}>Last published %</th>}
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
           {!cur && <th className={th}>{custom ? 'Automatic update' : <span className="sr-only">Actions</span>}</th>}
         </tr>
@@ -304,7 +304,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     <Menu
                       trigger={<MenuTrigger render={<Button variant="ghost" size="icon" aria-label={`Actions for ${r.name}`} />}><MoreHorizontal className="size-4" /></MenuTrigger>}
                       items={[
-                        { label: pub ? 'Reset to published weight' : 'Reset to current weight', onClick: () => edit(r.id, (x) => { x.nw = pub ? (x.pw ?? 0) : x.w }) },
+                        { label: pub ? 'Reset to last published weight' : 'Reset to current weight', onClick: () => edit(r.id, (x) => { x.nw = pub ? (x.pw ?? 0) : x.w }) },
                         { label: 'Remove position…', onClick: () => setRemoving({ id: r.id, method: 'proportional' }) },
                       ]}
                     />
@@ -418,8 +418,8 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
           <th className={cn(th, 'text-right')}>Price</th>
           <th className={cn(th, 'text-right')}>ESG</th>
           <th className={cn(th, 'text-right')}>Share of group %</th>
-          <th className={cn(th, 'text-right')}>{cur && !pub ? 'Weight %' : 'Current %'}</th>
-          {pub && <th className={cn(th, 'text-right')}>Published %</th>}
+          <th className={cn(th, 'text-right')} title="Weight at the last data load">{cur && !pub ? 'Weight %' : 'Current %'}</th>
+          {pub && <th className={cn(th, 'text-right')} title={`Weights published on ${state.sim.published}`}>Last published %</th>}
           {!cur && <><th className={cn(th, 'text-right')}>New %</th><th className={cn(th, 'text-right')}>Change</th></>}
         </tr>
       </thead>
