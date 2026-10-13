@@ -62,7 +62,7 @@ export function SimulationView() {
         <RTabs.Root value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))}>
           <RTabs.List aria-label="Portfolio version" className="-mb-px flex gap-1.5">
             <VersionCard value="current" title="Current" sub={custom?.version === 0 ? 'Not published yet' : `Last updated: ${lastUpdate}`} disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined} />
-            <VersionCard value="new" title="New" sub={lastPublished ? `Last published: ${lastPublished}` : 'Not published yet'} disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined} />
+            <VersionCard value="new" title="New" sub={lastPublished ? `Last published: ${lastPublished}` : 'No publication yet'} disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined} />
           </RTabs.List>
         </RTabs.Root>
         {!cur && (
