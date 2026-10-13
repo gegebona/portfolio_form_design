@@ -17,6 +17,7 @@ import { ComponentsView } from './views/ComponentsView'
 import { AllocationView } from './views/AllocationView'
 import { ReportingView } from './views/ReportingView'
 import { SimulationView } from './views/SimulationView'
+import { SmaApp } from './sma/App'
 
 const STEPS = [
   { id: 'data', label: 'Model portfolio data' },
@@ -28,10 +29,12 @@ const STEPS = [
 type StepId = (typeof STEPS)[number]['id']
 /** Reporting is a tab of the flow but not a step of the creation sequence, so Back / forward skip it. */
 type FlowStep = StepId | 'reporting'
-type Route = FlowStep | 'design' | 'book'
+/** sma: the SMA book, an independent copy of the prototype with its own routes under #sma. */
+type Route = FlowStep | 'design' | 'book' | 'sma'
 
 function readHash(): Route {
   const h = location.hash.slice(1)
+  if (h === 'sma' || h.startsWith('sma/')) return 'sma'
   return h === 'design' || h === 'reporting' || STEPS.some((s) => s.id === h) ? (h as Route) : 'book'
 }
 
@@ -53,7 +56,12 @@ export default function App() {
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])
-  const go = (r: Route) => { history.replaceState(null, '', '#' + r); show(r) }
+  const go = (r: Route) => {
+    history.replaceState(null, '', '#' + r)
+    // The SMA book routes itself: tell it the hash moved back to its book.
+    if (r === 'sma') window.dispatchEvent(new HashChangeEvent('hashchange'))
+    show(r)
+  }
 
   return (
     <PortfolioProvider>
@@ -61,7 +69,7 @@ export default function App() {
       <Tooltip.Provider delay={300}>
         <div className="flex h-dvh flex-col overflow-hidden">
           <AppHeader route={route} onNavigate={go} />
-          {route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
+          {route === 'sma' ? <SmaApp /> : route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
         </div>
       </Tooltip.Provider>
     </PortfolioProvider>
@@ -86,7 +94,8 @@ function HashOpener({ onOpen }: { onOpen: (r: Route) => void }) {
 
 function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route) => void }) {
   const links = [
-    { id: 'book', label: 'Model portfolio book', active: route !== 'design', to: 'book' as Route },
+    { id: 'book', label: 'Model portfolio book', active: route !== 'design' && route !== 'sma', to: 'book' as Route },
+    { id: 'sma', label: 'SMA book', active: route === 'sma', to: 'sma' as Route },
     { id: 'design', label: 'Design system', active: route === 'design', to: 'design' as Route },
   ]
   return (
