@@ -53,8 +53,8 @@ function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Cus
         <div className="mt-6" aria-live="polite">
           <ViewTransition key={sel.id} name="bench-detail" share="swap">
           <div>
-            <h3 className="text-xl font-light">{sel.name}</h3>
-            <div className="mt-0.5 text-xs text-fg-muted">Currency {sel.ccy} · {sel.parts.length} {sel.parts.length === 1 ? 'index' : 'indices'}</div>
+            <h3 className="text-lg">{sel.name}</h3>
+            <div className="mt-0.5 text-xs text-fg-muted">{sel.parts.length} {sel.parts.length === 1 ? 'index' : 'indices'}</div>
             {sel.ccy !== pccy && (
               <div className="mt-3 flex max-w-155 items-start gap-2 border border-line bg-surface px-3 py-2 text-xs text-fg-secondary">
                 <Info className="mt-px size-3.5 shrink-0" strokeWidth={1.5} />
