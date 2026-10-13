@@ -100,8 +100,8 @@ function sortValue(e: BookEntry, k: SortKey): string | number {
 
 /**
  * Model portfolio book, in the client book pattern: search in the header, a toolbar band (type tabs, count, create), then a
- * dense sortable table in the original column order. Customized versions sit indented under their parent and stay
- * collapsed until asked for (the arrow opens them). Rows load while scrolling. Publishing happens from NEW inside the flow, never from this list.
+ * dense sortable table in the original column order. Customized versions sit indented under their parent, on a grey
+ * row, open by default (the arrow folds them away). Rows load while scrolling. Publishing happens from NEW inside the flow, never from this list.
  */
 /** Rows loaded at first, and with each scroll to the end of the list. */
 const BATCH = 10
@@ -116,7 +116,8 @@ export function BookView() {
   const [searchSlot, setSearchSlot] = useState<HTMLElement | null>(null)
   useEffect(() => setSearchSlot(document.getElementById('header-search')), [])
   const [sort, setSort] = useState<Sort>({ key: 'id', dir: 'asc' })
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  // Customized versions are shown under their parent by default; the arrow folds a family away.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   // No pages: the first rows show, and more load while scrolling down. A new search, filter or sort starts again from the top.
   const [more, setMore] = useState({ key: '', n: BATCH })
   const [loading, setLoading] = useState(false)
@@ -153,9 +154,9 @@ export function BookView() {
   }, [listKey, shownN, hasMore, loading])
   const rows = tops.slice(0, shownN).flatMap((t) => {
     const kids = kidsOf(t.id)
-    // Collapsed by default; a search, or a parent shown only because a version matches, opens the family.
+    // Open by default; a search, or a parent shown only because a version matches, always opens the family.
     const forced = !!ql || !ids.has(t.id)
-    const isOpen = forced || expanded.has(t.id)
+    const isOpen = forced || !collapsed.has(t.id)
     return [{ e: t, kids: kids.length, context: !ids.has(t.id), forced, isOpen }, ...(isOpen ? kids.map((e) => ({ e, kids: 0, context: false, forced: false, isOpen: false })) : [])]
   })
 
@@ -169,7 +170,7 @@ export function BookView() {
     ...(e.status === 'Published' && e.type === 'Standard' ? [{ label: 'Create customized version', onClick: () => { update((s) => startCustomized(s, e)); location.hash = 'sma/data' } }] : []),
   ]
 
-  const toggle = (id: string) => setExpanded((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const toggle = (id: string) => setCollapsed((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const sortBy = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
 
   const head = (key: SortKey, label: string, className?: string, title?: string) => {
@@ -222,11 +223,11 @@ export function BookView() {
             </thead>
             <tbody>
               {rows.map(({ e, kids, context, forced, isOpen }) => (
-                <tr key={e.id} className={cn('hover:bg-surface-subtle', e.parent && 'bg-surface-subtle hover:bg-surface-muted', context && 'text-fg-muted')}>
+                <tr key={e.id} className={cn('hover:bg-surface-subtle', e.parent && 'bg-shell-band hover:bg-surface-muted', context && 'text-fg-muted')}>
                   <td className={cn(td, 'pl-4 whitespace-nowrap tabular-nums')}>MP_{e.id}</td>
                   <td className={td}>
                     {/* Customized versions sit indented under their parent; the arrow opens or closes them. */}
-                    <div className={cn('flex items-center gap-1', e.parent && 'pl-6')}>
+                    <div className={cn('flex items-center gap-1', e.parent && 'pl-11')}>
                       {kids > 0 && !forced ? (
                         <Button variant="ghost" size="icon-sm" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${kids} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
                           {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
