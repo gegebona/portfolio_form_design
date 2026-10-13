@@ -90,7 +90,7 @@ export function ReportingView() {
         </div>
       </Section>
 
-      <Section title="Report outline" description="What the PDF will contain, in page order." className="min-w-0 flex-[1_1_20rem] bg-surface-muted">
+      <Section title="Report outline" description="What the PDF will contain, in page order." className="min-w-0 flex-[1_1_20rem]">
         <div className="mt-4 border border-line bg-surface p-4">
           <div className="text-lg">{name}</div>
           <div className="mt-0.5 text-xs text-fg-muted">{family} · {region} · {language} · {horizon}</div>
