@@ -14,7 +14,7 @@ import { MiniTable } from './ComponentDetail'
 
 /** Client book table: dark 12px header labels on white, compact rows with hairline dividers, links in blue. */
 const th = 'sticky top-0 z-2 border-b border-line-strong bg-surface px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg'
-const td = 'border-b border-line px-2.5 py-1.5 align-middle'
+const td = 'border-b border-line px-2.5 py-1 align-middle'
 /** Small filled count chip (tasks, customized versions), as the counts in the client book. */
 const chip = 'inline-flex h-4.5 min-w-6 items-center justify-center rounded-xs px-1.5 text-xs tabular-nums'
 /** Customized versions: what the latest automatic update from the parent left behind. */
@@ -195,7 +195,8 @@ export function BookView() {
           <Select aria-label="View" value={view} onValueChange={setView} items={VIEWS} className="w-64" />
           <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID" aria-label="Find model portfolio" className="w-72 max-w-full" />
           <div className="ml-auto flex items-center gap-4">
-            <Button aria-pressed={onlyTasks} onClick={() => setOnlyTasks(!onlyTasks)} className={cn(onlyTasks && 'border-control-active bg-surface-strong font-semibold')}>
+            {/* A grey filled toggle, as "Filter by opportunities" in the client book; dark while it filters. */}
+            <Button aria-pressed={onlyTasks} onClick={() => setOnlyTasks(!onlyTasks)} className={cn('border-line-strong bg-surface-strong hover:bg-line-strong', onlyTasks && 'border-fg-secondary bg-fg-secondary text-fg-inverse hover:bg-fg')}>
               Filter by open tasks
             </Button>
             <span className="text-sm whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} model portfolios</span>
@@ -248,7 +249,7 @@ export function BookView() {
                   <td className={cn(td, 'whitespace-nowrap')}>{e.creator}</td>
                   <td className={cn(td, 'text-right')}>
                     <Menu
-                      trigger={<MenuTrigger render={<Button variant="ghost" size="icon" className="text-link hover:text-link-hover" aria-label={`Actions for ${e.name}`} />}><MoreHorizontal className="size-4" strokeWidth={2.5} /></MenuTrigger>}
+                      trigger={<MenuTrigger render={<Button variant="ghost" size="icon-sm" className="w-7 text-link hover:text-link-hover" aria-label={`Actions for ${e.name}`} />}><MoreHorizontal className="size-4" strokeWidth={2.5} /></MenuTrigger>}
                       items={actions(e)}
                     />
                   </td>
