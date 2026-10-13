@@ -192,7 +192,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         </Tabs>
 
         {/* The working area is a light grey surface, so white fields, cards and tables stand out from it. */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-surface-muted">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-shell-panel">
           {/* Animates only when a step change tags the transition 'forward' / 'back'; other updates inside stay instant. */}
           <ViewTransition update={{ forward: 'step-forward', back: 'step-back', default: 'none' }} default="none">
             <div className="flex min-h-0 flex-1 flex-col">
