@@ -67,7 +67,7 @@ function AllocCell({ e }: { e: BookEntry }) {
 }
 
 /**
- * Tasks cell: an amber count chip of Open tasks (the client book's alert yellow) (what needs attention); deferred tasks only show as an outlined chip.
+ * Tasks cell: an amber count chip of Open tasks (what needs attention, in the client book's alert yellow); deferred tasks only show as an outlined chip.
  * Hovering or clicking opens the list of every task with its status.
  */
 function TaskCount({ e, onReview }: { e: BookEntry; onReview: () => void }) {
@@ -235,7 +235,7 @@ export function BookView() {
                         </Button>
                       ) : !e.parent && <span className="w-5.5 shrink-0" />}
                       <span className="flex min-w-0 flex-col">
-                        <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="w-fit text-link hover:text-link-hover hover:underline">{e.name}</a>
+                        <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="w-fit whitespace-nowrap text-link hover:text-link-hover hover:underline">{e.name}</a>
                         {/* Automatic parent update: information, not a task (no chip, no action, no status of its own). */}
                         {e.auto && <span className="text-fg-muted">{AUTO_LINE[e.auto]}</span>}
                       </span>
