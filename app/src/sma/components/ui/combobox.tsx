@@ -9,8 +9,8 @@ import { popupSurface } from './popup'
 export type ComboOption = { id: string; label: string; sub?: string }
 
 /**
- * MultiCombobox — type to filter, pick several. Radix has no combobox, so this is the shadcn pattern: cmdk (filtering
- * and keyboard: ↑ ↓ move, Enter picks) in a Radix Popover anchored to the field.
+ * MultiCombobox — type to filter, pick several. Radix has no combobox, so this is the shadcn pattern: cmdk (keyboard:
+ * ↑ ↓ move, Enter picks) in a Radix Popover anchored to the field.
  * The chosen values are NOT shown inside the field; screens render them where they belong
  * (exclusion chips under the field, instrument rows in a list), so the field stays one line.
  * Each option shows a checkbox look, driven by the item's data-checked attribute.
@@ -35,13 +35,15 @@ export function MultiCombobox({
   const [q, setQ] = useState('')
   const anchor = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
+  const needle = q.trim().toLowerCase()
+  const shown = needle ? options.filter((o) => (o.label + ' ' + (o.sub ?? '')).toLowerCase().includes(needle)) : options
   const toggle = (oid: string) => {
     onValueChange(value.includes(oid) ? value.filter((v) => v !== oid) : [...value, oid])
     setQ('')
     if (closeOnSelect) setOpen(false)
   }
   return (
-    <Command loop shouldFilter className="contents" onKeyDown={(e) => { if (e.key === 'ArrowDown' && !open) setOpen(true) }}>
+    <Command loop shouldFilter={false} className="contents" onKeyDown={(e) => { if (e.key === 'ArrowDown' && !open) setOpen(true) }}>
       <Popover.Root open={open} onOpenChange={setOpen}>
         <Popover.Anchor asChild>
           <div
@@ -54,13 +56,18 @@ export function MultiCombobox({
             )}
           >
             <Search className="size-3.5 shrink-0 text-fg-subtle" strokeWidth={1.75} aria-hidden />
-            <Command.Input
+            {/* A plain input (cmdk's own would replace the id the label points at); cmdk still drives ↑ ↓ Enter from the root. */}
+            <input
               ref={input}
               id={id}
+              role="combobox"
+              aria-expanded={open}
+              aria-autocomplete="list"
+              autoComplete="off"
               aria-label={ariaLabel}
               placeholder={placeholder}
               value={q}
-              onValueChange={(v) => { setQ(v); setOpen(true) }}
+              onChange={(e) => { setQ(e.target.value); setOpen(true) }}
               onClick={() => setOpen(true)}
               className="h-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-fg-subtle"
             />
@@ -82,13 +89,12 @@ export function MultiCombobox({
           >
             <Command.List className="max-h-[min(14.5rem,var(--radix-popover-content-available-height))] overflow-y-auto py-0.5">
               <Command.Empty className="px-2.5 py-2 text-fg-muted">No matches</Command.Empty>
-              {options.map((o) => {
+              {shown.map((o) => {
                 const on = value.includes(o.id)
                 return (
                   <Command.Item
                     key={o.id}
                     value={o.id}
-                    keywords={[o.label, o.sub ?? '']}
                     onSelect={() => toggle(o.id)}
                     data-checked={on || undefined}
                     className={cn(
