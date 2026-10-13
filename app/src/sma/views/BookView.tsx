@@ -24,12 +24,6 @@ const TYPE_CHIP: Record<BookEntry['type'], string> = {
   Multi: 'bg-tag-green-strong text-fg-inverse',
   Customized: 'border border-tag-green-strong text-tag-green-strong',
 }
-/** Customized versions: what the latest automatic update from the parent left behind. */
-const AUTO_LINE: Record<NonNullable<BookEntry['auto']>, string> = {
-  ready: 'New version from parent update, not published',
-  pending: 'Parent update waiting for the data load',
-  invalid: 'Parent update not applied, retried at next data load',
-}
 /** Type tabs above the table. */
 const TYPE_TABS: { value: string; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -235,8 +229,6 @@ export function BookView() {
                       ) : !e.parent && <span className="w-5.5 shrink-0" />}
                       <span className="flex min-w-0 flex-col">
                         <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="w-fit whitespace-nowrap text-link hover:text-link-hover hover:underline">{e.name}</a>
-                        {/* Automatic parent update: information, not a task (no chip, no action, no status of its own). */}
-                        {e.auto && <span className="text-fg-muted">{AUTO_LINE[e.auto]}</span>}
                       </span>
                     </div>
                   </td>
