@@ -34,10 +34,10 @@ export function PreferencesView() {
       <Section screenHeading className="border-b border-line pt-4 pb-4" title="Preferences" description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'}>
         <div className="mt-3 flex flex-wrap items-end gap-x-10 gap-y-3">
           <Field label="Minimum position size" description={lockNote}>
-            <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-37.5', custom && 'bg-surface-muted text-fg-muted')} />
+            <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-44', custom && 'bg-surface-muted text-fg-muted')} />
           </Field>
           <Field label="Maximum number of instruments" description={lockNote}>
-            <Input disabled={!!custom} value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-67.5" />
+            <Input disabled={!!custom} value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-44" />
           </Field>
         </div>
       </Section>
