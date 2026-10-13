@@ -181,15 +181,16 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   const needsDecision = (r: SimRow) => conflict(r) || (task?.rowId === r.id && task.status === 'Open')
   const rows = (cur ? state.sim.rows.filter((r) => showZero || r.w > 0 || (r.pw ?? 0) > 0) : state.sim.rows.filter((r) => !r.removed && (showZero || r.w > 0 || r.nw > 0 || (r.pw ?? 0) > 0)))
     .slice()
-    // Rows that need a decision first (an undecided warning or an open task), then cash (set apart visually), then every
+    // Rows that need a decision first (an undecided warning while creating, or an open task), then cash (set apart visually), then every
     // other position by descending weight. The order uses the current weight so rows do not jump while a new weight
     // is being typed; new positions (no current weight) follow by new weight.
-    .sort((a, b) => (cur ? 0 : Number(needsDecision(b) || flagOnly(b)) - Number(needsDecision(a) || flagOnly(a)) || Number(!!b.own || b.auto === 'added') - Number(!!a.own || a.auto === 'added')) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
+    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a)) || Number(!!b.own || b.auto === 'added') - Number(!!a.own || a.auto === 'added')) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
   // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
   const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
   const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
   const flagged = cur || creating ? 0 : rows.filter(flagOnly).length
-  const summary = creating ? toReview + keptN > 0 : flagged > 0
+  // The warnings line and Keep / Remove belong to the creation workflow; an existing portfolio only flags the row itself.
+  const summary = creating ? toReview + keptN > 0 : false
   const shown = onlyWarnings && !cur && summary ? rows.filter((r) => excluded(r)) : rows
   const edit = (id: string, fn: (r: SimRow) => void) => update((s) => { fn(s.sim.rows.find((r) => r.id === id)!) })
   /**
@@ -246,7 +247,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method, amountFor) : null
           return (
             <Fragment key={r.id}>
-            <tr className={cn('group', c || flag ? '*:bg-excluded-subtle' : t ? (t.status === 'Open' ? '*:bg-task/25' : '*:bg-task/10') : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
+            <tr className={cn('group', t ? (t.status === 'Open' ? '*:bg-task/25' : '*:bg-task/10') : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>{r.cls}</td>
               <td className={td}>
                 {r.name}
