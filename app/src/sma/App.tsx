@@ -208,7 +208,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
           next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
           onSave={viewingCurrent || (custom && custom.version > 0) ? undefined : () => save()}
           saveDisabled={blocked}
-          note={custom && step === 'simulation' ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : blocked ? `Still needed: ${missing.join(', ')}.` : step === 'components' && !hasComponents ? 'Select at least one component to continue.' : step === 'allocation' && !allocOk ? 'The allocation must total exactly 100% to open Simulation.' : step === 'simulation' ? publishBlock : undefined}
+          note={custom && step === 'simulation' ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : step === 'simulation' ? publishBlock : undefined}
         />}
       </div>
     </main>

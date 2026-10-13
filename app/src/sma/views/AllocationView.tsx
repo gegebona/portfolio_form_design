@@ -70,7 +70,7 @@ export function AllocationView() {
                 </Button>}
               </div>
               {sel.comp ? <ComponentDetail c={sel.comp} />
-                : <p className="mt-3 text-fg-secondary">{sel.kind === 'inst' ? 'Single instrument held directly in the model portfolio. Price, currency and ESG data are shown in Simulation.' : `Cash held in ${sel.cashCcy} for liquidity.`}</p>}
+                : <p className="mt-3 text-fg-secondary">{sel.kind === 'inst' ? 'Standalone instrument with a locked weight: the weight you set here stays fixed for the whole life of the model portfolio. Automatic redistributions never change or remove it.' : `Cash held in ${sel.cashCcy} for liquidity.`}</p>}
             </>
           ) : <p className="text-fg-subtle">Add components on the Component selection tab.</p>}
         </div>
