@@ -2,49 +2,46 @@ import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, LoaderCircle, MoreHorizo
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../components/ui/button'
 import { SearchInput } from '../components/ui/input'
-import { Section } from '../components/ui/layout'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Select } from '../components/ui/select'
-import { Checkbox } from '../components/ui/selection'
 import { Tooltip } from '../components/ui/tag'
-import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
-import { ASSET_CLASSES, BOOK_AS_OF, BOOK_STATUSES, BOOK_USER, CLASS_COLOR, type AssetClass, type BookEntry, type BookStatus } from '../data/data'
+import { ASSET_CLASSES, BOOK_AS_OF, BOOK_USER, CLASS_COLOR, type AssetClass, type BookEntry } from '../data/data'
 import { cn } from '../lib/cn'
 import { getBook } from '../state/book'
 import { f2, openEntry, startCustomized, startNew, usePortfolio } from '../state/portfolio'
 import { MiniTable } from './ComponentDetail'
 
-/** Same table look as the Simulation positions table: muted sticky header, 12px rows, hairline dividers. */
-const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg-muted'
+/** Client book table: dark 12px header labels on white, compact rows with hairline dividers, links in blue. */
+const th = 'sticky top-0 z-2 border-b border-line-strong bg-surface px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg'
 const td = 'border-b border-line px-2.5 py-1.5 align-middle'
-const tagBase = 'inline-block rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap'
-/** Portfolio type reads at a glance: grey fill = Standard, lavender fill = Multi, outline = Customized. */
-const TYPE_TAG: Record<BookEntry['type'], string> = {
-  Standard: 'bg-surface-strong',
-  Multi: 'bg-type-multi',
-  Customized: 'border border-control',
-}
-/** Status tags: green = Published, yellow = Draft. The label is always printed. */
-const STATUS_TAG: Record<BookStatus, string> = {
-  Published: 'bg-status-published text-fg',
-  Draft: 'bg-status-draft text-fg',
-}
-const TYPES: BookEntry['type'][] = ['Standard', 'Multi', 'Customized']
+/** Small filled count chip (tasks, customized versions), as the counts in the client book. */
+const chip = 'inline-flex h-4.5 min-w-6 items-center justify-center rounded-xs px-1.5 text-xs tabular-nums'
 /** Customized versions: what the latest automatic update from the parent left behind. */
 const AUTO_LINE: Record<NonNullable<BookEntry['auto']>, string> = {
   ready: 'New version from parent update, not published',
   pending: 'Parent update waiting for the data load',
   invalid: 'Parent update not applied, retried at next data load',
 }
+/** The one list filter, as "View all portfolios" in the client book. */
+const VIEWS = [
+  { value: 'all', label: 'View all model portfolios' },
+  { value: 'mine', label: 'View my model portfolios' },
+  { value: 'Standard', label: 'View standard portfolios' },
+  { value: 'Multi', label: 'View multi portfolios' },
+  { value: 'Customized', label: 'View customized versions' },
+  { value: 'Draft', label: 'View drafts' },
+  { value: 'Published', label: 'View published portfolios' },
+]
 
-type SortKey = 'id' | 'name' | 'type' | 'area' | 'benchmark' | 'perf1y' | 'creator' | 'status' | 'modified'
+type SortKey = 'id' | 'name' | 'type' | 'area' | 'benchmark' | 'perf1y' | 'creator' | 'status' | 'modified' | 'tasks' | 'kids'
 type Sort = { key: SortKey; dir: 'asc' | 'desc' }
 /** Asset classes a portfolio holds, in the fixed chart order (Equity, Bonds, Alternatives, Liquidity). */
 const classesOf = (e: BookEntry) => ASSET_CLASSES.filter((c) => (e.alloc[c] ?? 0) > 0).map((c) => [c, e.alloc[c] ?? 0] as [AssetClass, number])
 /** The same, largest first: the first entry is the portfolio's main asset class. */
 const byWeight = (e: BookEntry) => classesOf(e).sort((a, b) => b[1] - a[1])
 const allocText = (e: BookEntry) => byWeight(e).map(([c, w]) => `${c} ${w}%`).join(', ')
+const openTasks = (e: BookEntry) => (e.tasks ?? []).filter((t) => t.status === 'Open').length
 
 /** Asset class cell: a mini allocation bar in the chart colours, the main class with its share, and "+n" for the rest (full split on hover). */
 function AllocCell({ e }: { e: BookEntry }) {
@@ -64,18 +61,18 @@ function AllocCell({ e }: { e: BookEntry }) {
 }
 
 /**
- * Tasks cell. The blue tag counts Open tasks only (they are what needs attention); deferred tasks stay reachable
- * through a quiet outlined tag; accepted and rejected ones show nothing. The panel lists every task with its status.
+ * Tasks cell: a blue count chip of Open tasks (what needs attention); deferred tasks only show as an outlined chip.
+ * Hovering or clicking opens the list of every task with its status.
  */
-function TaskTag({ e, onReview }: { e: BookEntry; onReview: () => void }) {
+function TaskCount({ e, onReview }: { e: BookEntry; onReview: () => void }) {
   const tasks = e.tasks ?? []
-  const openN = tasks.filter((t) => t.status === 'Open').length
+  const openN = openTasks(e)
   const deferredN = tasks.filter((t) => t.status === 'Deferred').length
   if (!openN && !deferredN) return null
   const label = openN ? `${openN} open` : `${deferredN} deferred`
   return (
     <Popover
-      trigger={<PopoverTrigger openOnHover delay={150} className={cn(tagBase, 'cursor-pointer hover:underline', openN ? 'bg-task' : 'border border-line-strong text-fg-muted')} aria-label={`${label} position task${openN + deferredN > 1 ? 's' : ''} for ${e.name}`}>{label}</PopoverTrigger>}
+      trigger={<PopoverTrigger openOnHover delay={150} className={cn(chip, 'cursor-pointer', openN ? 'bg-task' : 'border border-line-strong text-fg-muted')} aria-label={`${label} position task${openN + deferredN > 1 ? 's' : ''} for ${e.name}`}>{openN || deferredN}</PopoverTrigger>}
       className="w-160"
       title="Position tasks"
       description="An underlying component changed the weight of a position. Accept, reject or defer it in Simulation."
@@ -95,16 +92,17 @@ function sortValue(e: BookEntry, k: SortKey): string | number {
   if (k === 'area') { const m = byWeight(e)[0]; return m ? `${m[0]} ${String(999 - m[1]).padStart(3, '0')}` : '' }
   if (k === 'perf1y') return e.perf1y ?? -Infinity
   if (k === 'modified') return e.modified.split('/').reverse().join('')
+  if (k === 'tasks') return openTasks(e)
+  if (k === 'kids') return getBook().filter((c) => c.parent === e.id).length
   return e[k]
 }
 
-const uniq = (v: string[]) => [...new Set(v)].sort()
 
 
 /**
- * Model portfolio book: the landing list of every model portfolio.
- * Type tabs + filters + search narrow it; column headers sort it; customized versions sit under their parent
- * and stay collapsed until asked for, so a portfolio with many versions is still one row. Publishing happens from NEW inside the flow, never from this list.
+ * Model portfolio book, in the client book pattern: one toolbar (view, search, task filter, count, create), then a
+ * dense sortable table. Customized versions sit under their parent and stay collapsed until asked for (the count chip or
+ * the arrow opens them). Rows load while scrolling. Publishing happens from NEW inside the flow, never from this list.
  */
 /** Rows loaded at first, and with each scroll to the end of the list. */
 const BATCH = 10
@@ -114,10 +112,8 @@ export function BookView() {
   const [list] = useState(getBook)
 
   const [q, setQ] = useState('')
-  const [type, setType] = useState('all')
-  const [status, setStatus] = useState('all')
-  const [area, setArea] = useState('all')
-  const [creator, setCreator] = useState('all')
+  const [view, setView] = useState('all')
+  const [onlyTasks, setOnlyTasks] = useState(false)
   const [sort, setSort] = useState<Sort>({ key: 'id', dir: 'asc' })
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   // No pages: the first rows show, and more load while scrolling down. A new search, filter or sort starts again from the top.
@@ -127,11 +123,10 @@ export function BookView() {
   const sentinel = useRef<HTMLTableRowElement>(null)
 
   const ql = q.trim().toLowerCase()
-  const filtered = status !== 'all' || area !== 'all' || creator !== 'all'
+  const inView = (e: BookEntry) =>
+    view === 'all' || (view === 'mine' ? e.creator === BOOK_USER : e.type === view || e.status === view)
   const matches = (e: BookEntry) =>
-    (type === 'all' || e.type === type) && (status === 'all' || e.status === status) && (area === 'all' || (e.alloc[area as AssetClass] ?? 0) > 0) &&
-    (creator === 'all' || e.creator === creator) &&
-    (!ql || e.name.toLowerCase().includes(ql) || e.id.includes(ql))
+    inView(e) && (!onlyTasks || openTasks(e) > 0) && (!ql || e.name.toLowerCase().includes(ql) || e.id.includes(ql))
   const ids = new Set(list.filter(matches).map((e) => e.id))
   const cmp = (a: BookEntry, b: BookEntry) => {
     const x = sortValue(a, sort.key)
@@ -142,7 +137,7 @@ export function BookView() {
   const kidsOf = (id: string) => list.filter((c) => c.parent === id && ids.has(c.id)).sort(cmp)
   // A parent stays visible (muted) while one of its customized versions matches.
   const tops = list.filter((e) => !e.parent && (ids.has(e.id) || kidsOf(e.id).length > 0)).sort(cmp)
-  const listKey = [q, status, area, creator, type, sort.key, sort.dir].join('|')
+  const listKey = [q, view, onlyTasks, sort.key, sort.dir].join('|')
   const shownN = more.key === listKey ? more.n : BATCH
   const hasMore = shownN < tops.length
   // When the last row comes into view, the next batch loads (a short loading row first, as it would from the server).
@@ -177,105 +172,83 @@ export function BookView() {
 
   const toggle = (id: string) => setExpanded((c) => { const n = new Set(c); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const sortBy = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }))
-  const clear = () => { setStatus('all'); setArea('all'); setCreator('all') }
 
-
-  const head = (key: SortKey, label: string, className?: string) => {
+  const head = (key: SortKey, label: string, className?: string, title?: string) => {
     const on = sort.key === key
     const Arrow = sort.dir === 'asc' ? ArrowUp : ArrowDown
     return (
-      <th className={cn(th, className)} aria-sort={on ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}>
-        <button type="button" onClick={() => sortBy(key)} className={cn('inline-flex cursor-pointer items-center gap-1 hover:text-fg', on && 'text-fg')}>
+      <th className={cn(th, className)} aria-sort={on ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined} title={title}>
+        <button type="button" onClick={() => sortBy(key)} className="inline-flex cursor-pointer items-center gap-1 hover:underline">
           {label}
           {on && <Arrow className="size-3" strokeWidth={1.75} aria-hidden />}
         </button>
       </th>
     )
   }
-  const options = (all: string, values: string[]) => [{ value: 'all', label: all }, ...values.map((v) => ({ value: v, label: v }))]
+  const shownCount = tops.length + tops.reduce((n, t) => n + kidsOf(t.id).length, 0)
 
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
       <div className="my-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
-        <Section
-          title="MP book"
-          description="All model portfolios and their customized versions."
-          actions={<Button variant="primary" onClick={create}>Create new model portfolio</Button>}
-          className="pb-0"
-        >
-          {/* Filters, type tabs and paging use the table's own 12px text, so the controls do not outweigh the list they filter. */}
-          <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2">
-            <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID…" aria-label="Find model portfolio" className="h-7 w-75 max-w-full text-xs" />
-            <Select aria-label="Status" value={status} onValueChange={setStatus} items={options('All statuses', BOOK_STATUSES)} className="h-7 w-36 text-xs" />
-            <Select aria-label="Asset class" value={area} onValueChange={setArea} items={options('All asset classes', ASSET_CLASSES.filter((c) => list.some((e) => (e.alloc[c] ?? 0) > 0)))} className="h-7 w-40 text-xs" />
-            <Select aria-label="Created by" value={creator} onValueChange={setCreator} items={options('All creators', uniq(list.map((e) => e.creator)))} className="h-7 w-36 text-xs" />
-            <label className="ml-2 flex cursor-pointer items-center gap-2 text-xs">
-              {/* A shortcut for the creator filter: ticking it selects the signed-in user there, so the two can never disagree. */}
-              <Checkbox checked={creator === BOOK_USER} onCheckedChange={(v) => setCreator(v ? BOOK_USER : 'all')} />
-              My portfolios
-            </label>
-            {filtered && <Button variant="link" className="ml-2 text-xs" onClick={clear}>Clear filters</Button>}
+        {/* Toolbar, as in the client book: the view on the left, the filter toggle and the count on the right. */}
+        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface-muted px-4 py-2.5">
+          <Select aria-label="View" value={view} onValueChange={setView} items={VIEWS} className="w-64" />
+          <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID" aria-label="Find model portfolio" className="w-72 max-w-full" />
+          <div className="ml-auto flex items-center gap-4">
+            <Button aria-pressed={onlyTasks} onClick={() => setOnlyTasks(!onlyTasks)} className={cn(onlyTasks && 'border-control-active bg-surface-strong font-semibold')}>
+              Filter by open tasks
+            </Button>
+            <span className="text-sm whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} model portfolios</span>
+            <Button variant="primary" onClick={create}>Create new model portfolio</Button>
           </div>
+        </div>
 
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-            <Tabs value={type} onValueChange={(v) => setType(v as string)}>
-              <TabsList variant="sub" aria-label="Portfolio type">
-                <Tab value="all" className="text-xs">All types <TabCount>{list.length}</TabCount></Tab>
-                {TYPES.map((t) => <Tab key={t} value={t} className="text-xs">{t} <TabCount>{list.filter((e) => e.type === t).length}</TabCount></Tab>)}
-              </TabsList>
-            </Tabs>
-            <div className="pb-1.5 text-xs text-fg-muted" aria-live="polite">
-              {ids.size === list.length ? `${list.length} model portfolios` : `${ids.size} of ${list.length} model portfolios`}
-            </div>
-          </div>
-        </Section>
-
-        <div ref={scroller} className="min-h-0 flex-1 overflow-auto border-t border-line">
+        <div ref={scroller} className="min-h-0 flex-1 overflow-auto px-2">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr>
-                {head('id', 'ID', 'pl-6')}{head('name', 'Model portfolio name')}{head('type', 'Type')}<th className={th}>Tasks</th>
-                {head('area', 'Asset allocation')}{head('benchmark', 'Benchmark')}{head('perf1y', 'Performance % (1Y)', 'text-right')}
-                {head('creator', 'Created by')}{head('status', 'Status')}{head('modified', 'Last modified')}
-                <th className={cn(th, 'pr-6')}><span className="sr-only">Actions</span></th>
+                <th className={cn(th, 'w-7 px-0')}><span className="sr-only">Customized versions</span></th>
+                {head('name', 'Name')}{head('id', 'ID')}{head('type', 'Type')}{head('status', 'Status')}{head('modified', 'Last modified', 'text-right')}
+                {head('area', 'Asset allocation')}{head('benchmark', 'Benchmark')}
+                {head('perf1y', 'Perf. % (1Y)', 'text-right', `Performance as of ${BOOK_AS_OF}`)}
+                {head('tasks', 'Tasks', 'text-center')}{head('kids', 'Customized', 'text-center')}{head('creator', 'Created by')}
+                <th className={cn(th, 'text-right')}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(({ e, kids, context, forced, isOpen }) => (
                 <tr key={e.id} className={cn('hover:bg-surface-subtle', e.parent && 'bg-surface-subtle hover:bg-surface-muted', context && 'text-fg-muted')}>
-                  <td className={cn(td, 'pl-6 text-fg-muted tabular-nums')}>{e.id}</td>
-                  <td className={td}>
-                    <div className={cn('flex items-center gap-1.5', e.parent && 'pl-5.5')}>
-                      {kids > 0 && !forced ? (
-                        <Button variant="ghost" size="icon-sm" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
-                          {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                        </Button>
-                      ) : <span className="w-5.5 shrink-0" />}
-                      <span className="flex min-w-0 flex-col">
-                        <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="w-fit text-link hover:text-link-hover hover:underline">{e.name}</a>
-                        {/* Automatic parent update: information, not a task (no tag, no action, no status of its own). */}
-                        {e.auto && <span className="text-fg-muted">{AUTO_LINE[e.auto]}</span>}
-                      </span>
-                      {kids > 0 && <span className="whitespace-nowrap text-fg-muted">{kids} customized</span>}
-                    </div>
+                  <td className={cn(td, 'px-0 text-center')}>
+                    {kids > 0 && !forced && (
+                      <Button variant="ghost" size="icon-sm" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
+                        {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                      </Button>
+                    )}
                   </td>
-                  <td className={td}><span className={cn(tagBase, TYPE_TAG[e.type])}>{e.type}</span></td>
-                  <td className={td}>
-                    <TaskTag e={e} onReview={() => open(e)} />
+                  <td className={cn(td, e.parent && 'pl-6')}>
+                    <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="text-link hover:text-link-hover hover:underline">{e.name}</a>
+                    {/* Automatic parent update: information, not a task (no chip, no action, no status of its own). */}
+                    {e.auto && <span className="block text-fg-muted">{AUTO_LINE[e.auto]}</span>}
                   </td>
+                  <td className={cn(td, 'whitespace-nowrap tabular-nums')}>MP_{e.id}</td>
+                  <td className={td}>{e.type}</td>
+                  <td className={td}>{e.status}</td>
+                  <td className={cn(td, 'text-right whitespace-nowrap tabular-nums')}>{e.modified}</td>
                   <td className={td}><AllocCell e={e} /></td>
                   <td className={td}>{e.benchmark}</td>
-                  <td className={cn(td, 'text-right tabular-nums', e.perf1y !== undefined && e.perf1y < 0 && 'text-error')}>
-                    {e.perf1y === undefined ? <span className="text-fg-subtle" title="No performance yet">—</span> : (e.perf1y < 0 ? '−' : '') + Math.abs(e.perf1y).toFixed(2)}
+                  <td className={cn(td, 'text-right tabular-nums', e.perf1y === undefined ? '' : e.perf1y < 0 ? 'text-error' : 'text-link')}>
+                    {e.perf1y === undefined ? <span className="text-fg-subtle" title="No performance yet">—</span> : (e.perf1y < 0 ? '−' : '') + Math.abs(e.perf1y).toFixed(1)}
+                  </td>
+                  <td className={cn(td, 'text-center')}><TaskCount e={e} onReview={() => open(e)} /></td>
+                  <td className={cn(td, 'text-center')}>
+                    {kids > 0 && (
+                      <button type="button" disabled={forced} onClick={() => toggle(e.id)} aria-label={`${kids} customized versions of ${e.name}`} className={cn(chip, 'bg-status-published', !forced && 'cursor-pointer hover:outline hover:outline-fg-subtle')}>{kids}</button>
+                    )}
                   </td>
                   <td className={cn(td, 'whitespace-nowrap')}>{e.creator}</td>
-                  <td className={td}>
-                    <span className={cn(tagBase, STATUS_TAG[e.status])}>{e.status}</span>
-                  </td>
-                  <td className={cn(td, 'whitespace-nowrap tabular-nums')}>{e.modified}<span className="text-fg-muted"> · {e.editedBy}</span></td>
-                  <td className={cn(td, 'pr-6 text-right')}>
+                  <td className={cn(td, 'text-right')}>
                     <Menu
-                      trigger={<MenuTrigger render={<Button variant="ghost" size="icon" aria-label={`Actions for ${e.name}`} />}><MoreHorizontal className="size-4" /></MenuTrigger>}
+                      trigger={<MenuTrigger render={<Button variant="ghost" size="icon" className="text-link hover:text-link-hover" aria-label={`Actions for ${e.name}`} />}><MoreHorizontal className="size-4" strokeWidth={2.5} /></MenuTrigger>}
                       items={actions(e)}
                     />
                   </td>
@@ -283,19 +256,17 @@ export function BookView() {
               ))}
               {hasMore && (
                 <tr ref={sentinel}>
-                  <td colSpan={11} className={cn(td, 'px-6 py-3 text-fg-muted')}>
+                  <td colSpan={13} className={cn(td, 'px-4 py-3 text-fg-muted')}>
                     <span className="inline-flex items-center gap-2">{loading && <LoaderCircle className="size-3.5 animate-spin" strokeWidth={1.75} aria-hidden />}{loading ? 'Loading more model portfolios…' : `${tops.length - shownN} more model portfolios`}</span>
                   </td>
                 </tr>
               )}
               {!rows.length && (
-                <tr><td colSpan={11} className={cn(td, 'px-6 py-4 text-fg-subtle')}>No model portfolio matches the search and filters.</td></tr>
+                <tr><td colSpan={13} className={cn(td, 'px-4 py-4 text-fg-subtle')}>No model portfolio matches the view and search.</td></tr>
               )}
             </tbody>
           </table>
         </div>
-
-        <div className="shrink-0 border-t border-line-strong px-6 py-2.5 text-xs text-fg-muted">Performance as of {BOOK_AS_OF}.</div>
       </div>
     </main>
   )
