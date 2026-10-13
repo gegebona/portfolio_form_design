@@ -70,7 +70,7 @@ export default function App() {
         {/* The MP book (incl. feedback) follows the client book shell: darker grey bands down both sides, and one wide
             central page holding the header, the toolbar band and the content. */}
         <div className={cn(route === 'sma' && 'h-dvh bg-shell-side')}>
-        <div className={cn('flex h-dvh flex-col overflow-hidden', route === 'sma' && 'mx-auto w-[92.5%] bg-shell-well')}>
+        <div className={cn('flex h-dvh flex-col overflow-hidden', route === 'sma' && 'mx-auto w-[85%] bg-shell-well')}>
           <AppHeader route={route} onNavigate={go} wide={route === 'sma'} />
           {route === 'sma' ? <SmaApp /> : route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
         </div>

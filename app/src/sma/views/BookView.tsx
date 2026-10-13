@@ -67,7 +67,7 @@ function AllocCell({ e }: { e: BookEntry }) {
 }
 
 /**
- * Tasks cell: a blue count chip of Open tasks (what needs attention); deferred tasks only show as an outlined chip.
+ * Tasks cell: an amber count chip of Open tasks (the client book's alert yellow) (what needs attention); deferred tasks only show as an outlined chip.
  * Hovering or clicking opens the list of every task with its status.
  */
 function TaskCount({ e, onReview }: { e: BookEntry; onReview: () => void }) {
@@ -78,7 +78,7 @@ function TaskCount({ e, onReview }: { e: BookEntry; onReview: () => void }) {
   const label = openN ? `${openN} open` : `${deferredN} deferred`
   return (
     <Popover
-      trigger={<PopoverTrigger openOnHover delay={150} className={cn(chip, 'cursor-pointer', openN ? 'bg-task' : 'border border-line-strong text-fg-muted')} aria-label={`${label} position task${openN + deferredN > 1 ? 's' : ''} for ${e.name}`}>{openN || deferredN}</PopoverTrigger>}
+      trigger={<PopoverTrigger openOnHover delay={150} className={cn(chip, 'cursor-pointer', openN ? 'bg-tag-yellow-strong' : 'border border-line-strong text-fg-muted')} aria-label={`${label} position task${openN + deferredN > 1 ? 's' : ''} for ${e.name}`}>{openN || deferredN}</PopoverTrigger>}
       className="w-160"
       title="Position tasks"
       description="An underlying component changed the weight of a position. Accept, reject or defer it in Simulation."

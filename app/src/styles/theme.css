@@ -143,6 +143,7 @@
   --color-shell-side: #E4E4E4;
   --color-shell-band: #F2F2F2;
   --color-shell-well: #F7F7F7;
+  --color-tag-yellow-strong: #EFB52E;                              /* amber count chip, as the alerts in the client book: task notifications */
   --color-type-multi: var(--color-ubs-background-tags-05);        /* lavender tag: Multi portfolios */
   --color-task: var(--color-ubs-background-tags-08);              /* blue tag: open position tasks */
 
