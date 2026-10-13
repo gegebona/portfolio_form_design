@@ -93,9 +93,9 @@ function HashOpener({ onOpen }: { onOpen: (r: Route) => void }) {
 }
 
 function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route) => void }) {
-  const links = [
+  const links: { id: string; label: string; note?: string; active: boolean; to: Route }[] = [
     { id: 'book', label: 'Model portfolio book', active: route !== 'design' && route !== 'sma', to: 'book' as Route },
-    { id: 'sma', label: 'SMA book', active: route === 'sma', to: 'sma' as Route },
+    { id: 'sma', label: 'SMA book', note: 'incl. feedback', active: route === 'sma', to: 'sma' as Route },
     { id: 'design', label: 'Design system', active: route === 'design', to: 'design' as Route },
   ]
   return (
@@ -109,9 +109,10 @@ function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route)
               href={'#' + l.to}
               onClick={(e) => { e.preventDefault(); onNavigate(l.to) }}
               aria-current={l.active ? 'page' : undefined}
-              className="flex items-center border-b-2 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-tab-active"
+              className="flex flex-col justify-center border-b-2 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-tab-active"
             >
               {l.label}
+              {l.note && <span className="-mt-0.5 text-xs text-fg-muted">{l.note}</span>}
             </a>
           ))}
         </nav>
