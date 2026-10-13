@@ -209,7 +209,7 @@ export function BookView() {
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr>
-                {head('id', 'Code', 'pl-4')}{head('name', 'Model portfolio name')}{head('tasks', 'Tasks', 'text-center')}{head('type', 'Type')}
+                <th className={cn(th, 'w-8 px-0')}><span className="sr-only">Customized versions</span></th>{head('id', 'Code', 'pl-1')}{head('name', 'Model portfolio name')}{head('tasks', 'Tasks', 'text-center')}{head('type', 'Type')}
                 {head('area', 'Asset allocation')}{head('benchmark', 'Benchmark')}
                 {head('perf1y', 'Performance % (1Y)', 'text-right', `Performance as of ${BOOK_AS_OF}`)}
                 {head('creator', 'Creator')}{head('status', 'Current status')}{head('editedBy', 'Last modified by')}{head('modified', 'Last modified date')}
@@ -219,19 +219,18 @@ export function BookView() {
             <tbody>
               {rows.map(({ e, kids, context, forced, isOpen }) => (
                 <tr key={e.id} className={cn('hover:bg-surface-subtle', e.parent && 'bg-shell-band hover:bg-surface-muted', context && 'text-fg-muted')}>
-                  <td className={cn(td, 'pl-4 whitespace-nowrap tabular-nums')}>MP_{e.id}</td>
-                  <td className={td}>
-                    {/* Customized versions sit indented under their parent; the arrow opens or closes them. */}
-                    <div className={cn('flex items-center gap-1', e.parent && 'pl-11')}>
-                      {kids > 0 && !forced ? (
-                        <Button variant="ghost" size="icon-sm" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${kids} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
-                          {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                        </Button>
-                      ) : !e.parent && <span className="w-5.5 shrink-0" />}
-                      <span className="flex min-w-0 flex-col">
-                        <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="w-fit whitespace-nowrap text-link hover:text-link-hover hover:underline">{e.name}</a>
-                      </span>
-                    </div>
+                  {/* Its own narrow column, so names line up with their header; a parent's arrow folds its customized versions. */}
+                  <td className={cn(td, 'px-0 pl-2')}>
+                    {kids > 0 && !forced && (
+                      <Button variant="ghost" size="icon-sm" aria-expanded={isOpen} aria-label={`${isOpen ? 'Hide' : 'Show'} ${kids} customized versions of ${e.name}`} onClick={() => toggle(e.id)}>
+                        {isOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                      </Button>
+                    )}
+                  </td>
+                  <td className={cn(td, 'pl-1 whitespace-nowrap tabular-nums')}>MP_{e.id}</td>
+                  <td className={cn(td, e.parent && 'pl-6')}>
+                    {/* Customized versions sit indented under their parent. */}
+                    <a href="#sma/simulation" onClick={(ev) => { ev.preventDefault(); open(e) }} className="whitespace-nowrap text-link hover:text-link-hover hover:underline">{e.name}</a>
                   </td>
                   <td className={cn(td, 'text-center')}><TaskCount e={e} onReview={() => open(e)} /></td>
                   <td className={td}><span className={cn(chip, TYPE_CHIP[e.type])}>{e.type}</span></td>
@@ -254,13 +253,13 @@ export function BookView() {
               ))}
               {hasMore && (
                 <tr ref={sentinel}>
-                  <td colSpan={12} className={cn(td, 'px-4 py-3 text-fg-muted')}>
+                  <td colSpan={13} className={cn(td, 'px-4 py-3 text-fg-muted')}>
                     <span className="inline-flex items-center gap-2">{loading && <LoaderCircle className="size-3.5 animate-spin" strokeWidth={1.75} aria-hidden />}{loading ? 'Loading more model portfolios…' : `${tops.length - shownN} more model portfolios`}</span>
                   </td>
                 </tr>
               )}
               {!rows.length && (
-                <tr><td colSpan={12} className={cn(td, 'px-4 py-4 text-fg-subtle')}>No model portfolio matches the view and search.</td></tr>
+                <tr><td colSpan={13} className={cn(td, 'px-4 py-4 text-fg-subtle')}>No model portfolio matches the view and search.</td></tr>
               )}
             </tbody>
           </table>
