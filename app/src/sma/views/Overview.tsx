@@ -133,7 +133,7 @@ function OverviewBody({ rows, focus, showChange, compact, quality = false }: Ove
       )}
       {!quality && (
         <div className={sec}>
-          <div className={title}><span className="inline-flex items-center gap-1.5"><Ban className="size-3 text-conflict" strokeWidth={1.75} aria-hidden />Exclusionary preferences</span>{editExclusions}</div>
+          <div className={title}><span className="inline-flex items-center gap-1.5"><Ban className="size-3 -translate-y-px text-conflict" strokeWidth={1.75} aria-hidden />Exclusionary preferences</span>{editExclusions}</div>
           {exclusionGroups(state.prefs).length ? (
             <p className="leading-relaxed">
               {exclusionGroups(state.prefs).map((g, i) => (
