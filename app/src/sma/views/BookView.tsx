@@ -12,11 +12,17 @@ import { getBook } from '../state/book'
 import { f2, openEntry, startCustomized, startNew, usePortfolio } from '../state/portfolio'
 import { MiniTable } from './ComponentDetail'
 
-/** Client book table: dark 12px header labels on white, compact rows with hairline dividers, links in blue. */
-const th = 'sticky top-0 z-2 border-b border-line-strong bg-surface px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg'
+/** Client book table: dark 12px header labels on a light grey band, compact rows with hairline dividers, links in blue. */
+const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg'
 const td = 'border-b border-line px-2.5 py-1 align-middle'
 /** Small filled count chip (tasks, customized versions), as the counts in the client book. */
 const chip = 'inline-flex h-4.5 min-w-6 items-center justify-center rounded-xs px-1.5 text-xs tabular-nums'
+/** Portfolio type in the green chip family of the client book's opportunities: light = Standard, dark = Multi, outline = Customized. */
+const TYPE_CHIP: Record<BookEntry['type'], string> = {
+  Standard: 'bg-status-published',
+  Multi: 'bg-tag-green-strong text-fg-inverse',
+  Customized: 'border border-tag-green-strong text-tag-green-strong',
+}
 /** Customized versions: what the latest automatic update from the parent left behind. */
 const AUTO_LINE: Record<NonNullable<BookEntry['auto']>, string> = {
   ready: 'New version from parent update, not published',
@@ -191,7 +197,7 @@ export function BookView() {
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
       <div className="my-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
         {/* Toolbar, as in the client book: the view on the left, the filter toggle and the count on the right. */}
-        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface-muted px-4 py-2.5">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface-subtle px-4 py-2.5">
           <Select aria-label="View" value={view} onValueChange={setView} items={VIEWS} className="w-64" />
           <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID" aria-label="Find model portfolio" className="w-72 max-w-full" />
           <div className="ml-auto flex items-center gap-4">
@@ -199,7 +205,7 @@ export function BookView() {
             <Button aria-pressed={onlyTasks} onClick={() => setOnlyTasks(!onlyTasks)} className={cn('border-line-strong bg-surface-strong hover:bg-line-strong', onlyTasks && 'border-fg-secondary bg-fg-secondary text-fg-inverse hover:bg-fg')}>
               Filter by open tasks
             </Button>
-            <span className="text-sm whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} model portfolios</span>
+            <span className="text-sm whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} portfolios</span>
             <Button variant="primary" onClick={create}>Create new model portfolio</Button>
           </div>
         </div>
@@ -209,11 +215,11 @@ export function BookView() {
             <thead>
               <tr>
                 <th className={cn(th, 'w-7 px-0')}><span className="sr-only">Customized versions</span></th>
-                {head('name', 'Name')}{head('id', 'ID')}{head('type', 'Type')}{head('status', 'Status')}{head('modified', 'Last modified', 'text-right')}
+                {head('name', 'Name')}{head('id', 'Code')}{head('type', 'Type')}{head('status', 'Status')}{head('modified', 'Last modified', 'text-right')}
                 {head('area', 'Asset allocation')}{head('benchmark', 'Benchmark')}
                 {head('perf1y', 'Perf. % (1Y)', 'text-right', `Performance as of ${BOOK_AS_OF}`)}
                 {head('tasks', 'Tasks', 'text-center')}{head('kids', 'Customized', 'text-center')}{head('creator', 'Created by')}
-                <th className={cn(th, 'text-right')}>Actions</th>
+                <th className={cn(th, 'text-right')}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -232,7 +238,7 @@ export function BookView() {
                     {e.auto && <span className="block text-fg-muted">{AUTO_LINE[e.auto]}</span>}
                   </td>
                   <td className={cn(td, 'whitespace-nowrap tabular-nums')}>MP_{e.id}</td>
-                  <td className={td}>{e.type}</td>
+                  <td className={td}><span className={cn(chip, TYPE_CHIP[e.type])}>{e.type}</span></td>
                   <td className={td}>{e.status}</td>
                   <td className={cn(td, 'text-right whitespace-nowrap tabular-nums')}>{e.modified}</td>
                   <td className={td}><AllocCell e={e} /></td>

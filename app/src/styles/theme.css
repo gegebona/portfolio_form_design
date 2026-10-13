@@ -138,6 +138,7 @@
   --color-tab-active: var(--color-ubs-focus-ring);                /* line under the active tab and nav item (blue; red stays for the main action and problems) */
   --color-status-published: var(--color-ubs-background-tags-06);  /* green tag */
   --color-status-draft: var(--color-ubs-background-tags-10);      /* yellow tag */
+  --color-tag-green-strong: #2F6E4A;                               /* dark green chip (white text), the strong variant of the green tag */
   --color-type-multi: var(--color-ubs-background-tags-05);        /* lavender tag: Multi portfolios */
   --color-task: var(--color-ubs-background-tags-08);              /* blue tag: open position tasks */
 

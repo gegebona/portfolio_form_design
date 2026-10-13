@@ -199,14 +199,10 @@ export function BookView() {
   return (
     <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
       <div className="my-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
-        <Section
-          title="Model portfolio book"
-          description="All model portfolios and their customized versions."
-          actions={<Button variant="primary" onClick={create}>Create new model portfolio</Button>}
-          className="pb-0"
-        >
-          {/* Filters, type tabs and paging use the table's own 12px text, so the controls do not outweigh the list they filter. */}
-          <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2">
+        <Section className="pb-0">
+          {/* No page title: the filters lead, and the one main action sits at their right end. Filters and type tabs use the
+              table's own 12px text, so the controls do not outweigh the list they filter. */}
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
             <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID…" aria-label="Find model portfolio" className="h-7 w-75 max-w-full text-xs" />
             <Select aria-label="Status" value={status} onValueChange={setStatus} items={options('All statuses', BOOK_STATUSES)} className="h-7 w-36 text-xs" />
             <Select aria-label="Asset class" value={area} onValueChange={setArea} items={options('All asset classes', ASSET_CLASSES.filter((c) => list.some((e) => (e.alloc[c] ?? 0) > 0)))} className="h-7 w-40 text-xs" />
@@ -217,6 +213,7 @@ export function BookView() {
               My portfolios
             </label>
             {filtered && <Button variant="link" className="ml-2 text-xs" onClick={clear}>Clear filters</Button>}
+            <Button variant="primary" onClick={create} className="ml-auto">Create new model portfolio</Button>
           </div>
 
           <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
