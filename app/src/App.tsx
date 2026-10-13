@@ -67,11 +67,13 @@ export default function App() {
     <PortfolioProvider>
       <HashOpener onOpen={go} />
       <Tooltip.Provider delay={300}>
-        {/* The MP book (incl. feedback) sits in one centred column, as the client book: header, toolbar and content share
-            its width, and the page grey runs down both sides from the very top. */}
-        <div className={cn('flex h-dvh flex-col overflow-hidden', route === 'sma' && 'mx-auto w-full max-w-340 border-x border-line-strong')}>
-          <AppHeader route={route} onNavigate={go} />
+        {/* The MP book (incl. feedback) follows the client book shell: darker grey bands down both sides, and one wide
+            central page holding the header, the toolbar band and the content. */}
+        <div className={cn(route === 'sma' && 'h-dvh bg-shell-side')}>
+        <div className={cn('flex h-dvh flex-col overflow-hidden', route === 'sma' && 'mx-auto w-[92.5%] bg-shell-well')}>
+          <AppHeader route={route} onNavigate={go} wide={route === 'sma'} />
           {route === 'sma' ? <SmaApp /> : route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
+        </div>
         </div>
       </Tooltip.Provider>
     </PortfolioProvider>
@@ -94,7 +96,7 @@ function HashOpener({ onOpen }: { onOpen: (r: Route) => void }) {
   return null
 }
 
-function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route) => void }) {
+function AppHeader({ route, onNavigate, wide }: { route: Route; onNavigate: (r: Route) => void; /** Inside the central page: the header uses the page's full width. */ wide?: boolean }) {
   const links: { id: string; label: string; note?: string; active: boolean; to: Route }[] = [
     { id: 'book', label: 'Model portfolio book', active: route !== 'design' && route !== 'sma', to: 'book' as Route },
     { id: 'sma', label: 'MP book', note: 'incl. feedback', active: route === 'sma', to: 'sma' as Route },
@@ -102,7 +104,7 @@ function AppHeader({ route, onNavigate }: { route: Route; onNavigate: (r: Route)
   ]
   return (
     <header className="shrink-0 border-b border-line-strong bg-surface">
-      <div className="mx-auto flex min-h-14 max-w-340 items-stretch gap-12 px-6">
+      <div className={cn('mx-auto flex min-h-14 items-stretch gap-12 px-6', !wide && 'max-w-340')}>
         <div className="flex h-6.5 w-22 items-center justify-center self-center border border-dashed border-line-strong text-xs tracking-widest text-fg-muted">[LOGO]</div>
         <nav className="flex gap-8" aria-label="Applications">
           {links.map((l) => (

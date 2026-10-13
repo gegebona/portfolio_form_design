@@ -13,7 +13,7 @@ import { f2, openEntry, startCustomized, startNew, usePortfolio } from '../state
 import { MiniTable } from './ComponentDetail'
 
 /** Client book table: dark 12px header labels on a light grey band, compact rows with hairline dividers, links in blue. */
-const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg'
+const th = 'sticky top-0 z-2 border-b border-line bg-shell-band px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg'
 const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 /** Small filled count chip (tasks, customized versions), as the counts in the client book. */
 const chip = 'inline-flex h-4.5 min-w-6 items-center justify-center rounded-xs px-1.5 text-xs tabular-nums'
@@ -193,10 +193,10 @@ export function BookView() {
   const shownCount = tops.length + tops.reduce((n, t) => n + kidsOf(t.id).length, 0)
 
   return (
-    <main className="flex min-h-0 w-full flex-1 flex-col bg-surface">
+    <main className="flex min-h-0 w-full flex-1 flex-col">
       {/* Toolbar, as in the client book: a light grey band across the column, above the table. The view on the left, the
           filter toggle, the count and the main action on the right. */}
-      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-surface-subtle px-6 py-2.5">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-shell-band px-4 py-2.5">
           <Select aria-label="View" value={view} onValueChange={setView} items={VIEWS} className="w-64" />
           <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or ID" aria-label="Find model portfolio" className="w-72 max-w-full" />
           <div className="ml-auto flex items-center gap-4">
@@ -209,9 +209,9 @@ export function BookView() {
           </div>
       </div>
 
-      {/* The table, on white under the toolbar band. */}
+      {/* The table: white rows under a grey header band, inset in the page's lightest grey. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pt-3">
-        <div ref={scroller} className="min-h-0 flex-1 overflow-auto">
+        <div ref={scroller} className="min-h-0 flex-1 overflow-auto border-x border-t border-line bg-surface">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr>

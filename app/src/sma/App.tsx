@@ -158,7 +158,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
     onStep('simulation')
   }
   return (
-    <main className="mx-auto flex min-h-0 w-full max-w-340 flex-1 flex-col px-6">
+    <main className="flex min-h-0 w-full flex-1 flex-col px-4">
       {/* Panel: the portfolio header (breadcrumb, name, facts), tabs and action bar stay put; only the view scrolls (or its inner lists). */}
       <div className="mt-4 mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
         <header className="shrink-0 px-5 pt-3.5 pb-3">

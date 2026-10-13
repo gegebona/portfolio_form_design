@@ -139,6 +139,10 @@
   --color-status-published: var(--color-ubs-background-tags-06);  /* green tag */
   --color-status-draft: var(--color-ubs-background-tags-10);      /* yellow tag */
   --color-tag-green-strong: #2F6E4A;                               /* dark green chip (white text), the strong variant of the green tag */
+  /* Client book shell (MP book incl. feedback): darker neutral side bands, the central page in lighter neutral greys. */
+  --color-shell-side: #E4E4E4;
+  --color-shell-band: #F2F2F2;
+  --color-shell-well: #F7F7F7;
   --color-type-multi: var(--color-ubs-background-tags-05);        /* lavender tag: Multi portfolios */
   --color-task: var(--color-ubs-background-tags-08);              /* blue tag: open position tasks */
 
