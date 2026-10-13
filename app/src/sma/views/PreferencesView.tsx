@@ -1,5 +1,5 @@
 import { Ban, Lock } from 'lucide-react'
-import { useState, ViewTransition, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { ExclusionChip, RemoveButton, SuggestionChip } from '../components/ui/chip'
 import { MultiCombobox } from '../components/ui/combobox'
@@ -11,7 +11,6 @@ import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, RATINGS, type Exclusion
 import { cn } from '../lib/cn'
 import { instrumentByIsin, optionLabel, parentCode, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
 
-const SHOW = 3 // suggestions shown before "+N more" (three keep them and the search on one line)
 
 export function PreferencesView() {
   const { state, update } = usePortfolio()
@@ -83,32 +82,55 @@ function Row({ label, htmlFor, labelId, count, k, children }: { label: string; h
   )
 }
 
-/** One exclusion category: one-click suggestions then the search field on the first line, chosen exclusions on the second. */
+/**
+ * One exclusion category. Line 1: one-click suggestions first (the quickest way to exclude), filling the row up to the
+ * search field, which sits at the right end, next to the excluded instruments column. Suggestions that do not fit wait
+ * behind "+N more". Line 2: what is excluded.
+ */
 function CategoryRow({ cat }: { cat: ExclusionCategory }) {
   const { state, animate } = usePortfolio()
   const [more, setMore] = useState(false)
   const sel = state.prefs.sel[cat.id]
   const setSel = (next: string[]) => animate((s) => { s.prefs.sel[cat.id] = next; setOwnValue(s, cat.id) })
-  const sugg = cat.suggested.filter((id) => !sel.includes(id))
-  const visible = more ? sugg : sugg.slice(0, SHOW)
+  // The suggested values first, then every other option, so the line is never half empty.
+  const sugg = [...cat.suggested, ...cat.options.map((o) => o.id).filter((id) => !cat.suggested.includes(id))].filter((id) => !sel.includes(id))
+  const box = useRef<HTMLDivElement>(null)
+  const [fit, setFit] = useState(sugg.length)
+  // How many chips fit on one line, measured on resize and whenever the list changes.
+  useLayoutEffect(() => {
+    const el = box.current
+    if (!el) return
+    const measure = () => {
+      const max = el.clientWidth
+      let n = 0
+      for (const c of Array.from(el.children) as HTMLElement[]) { if (c.offsetLeft + c.offsetWidth <= max + 0.5) n++; else break }
+      setFit(n)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [sugg.join(), more])
+  const hidden = more ? 0 : sugg.length - fit
   return (
     <Row label={cat.label.replace(' exclusions', '')} htmlFor={'f-' + cat.id} count={sel.length ? `${sel.length} excluded` : 'Nothing excluded'} k={cat.id}>
-      {/* Line 1: the one-click suggestions first (the quickest way to exclude), then the search for anything else.
-          Line 2: what is excluded. */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {sugg.length > 0 && (
-          <>
-            <span className="mr-0.5 text-xs text-fg-muted">Suggested</span>
-            {visible.map((id) => {
-              const l = optionLabel(cat.id, id)
-              return <SuggestionChip key={id} onClick={() => setSel([...sel, id])} aria-label={'Exclude ' + l}>{l}</SuggestionChip>
-            })}
-            {sugg.length > SHOW && (
-              <Button variant="link" className="text-xs" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${sugg.length - SHOW} more`}</Button>
-            )}
-          </>
+      <div className="flex items-start gap-1.5">
+        {sugg.length > 0 && <span className="mr-0.5 flex h-8 shrink-0 items-center text-xs text-fg-muted">Suggested</span>}
+        <div ref={box} className={cn('flex min-w-0 flex-1 gap-1.5 py-0.75', more ? 'flex-wrap' : 'overflow-hidden')}>
+          {sugg.map((id, i) => {
+            const l = optionLabel(cat.id, id)
+            const off = !more && i >= fit
+            return (
+              <span key={id} className={cn('shrink-0', off && 'invisible')} inert={off} aria-hidden={off || undefined}>
+                <SuggestionChip onClick={() => setSel([...sel, id])} aria-label={'Exclude ' + l}>{l}</SuggestionChip>
+              </span>
+            )
+          })}
+        </div>
+        {(hidden > 0 || more) && (
+          <Button variant="link" className="h-8 shrink-0 text-xs" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${hidden} more`}</Button>
         )}
-        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className={cn('w-44 shrink-0', sugg.length > 0 && 'ml-2')} />
+        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="ml-2 w-44 shrink-0" />
       </div>
       {sel.length > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
