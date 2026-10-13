@@ -15,7 +15,7 @@ export function DataView() {
   if (state.custom) return <CustomDataView />
   return (
     <div className="flex flex-wrap">
-      <Section screenHeading title="Model portfolio data" description="Please enter the data specific to the model portfolio." className="w-75 shrink-0 border-r border-line">
+      <Section screenHeading title="Model portfolio data" description="Please enter the data specific to the model portfolio." className="w-90 shrink-0 border-r border-line">
         <div className="mt-5 flex flex-col gap-4">
           <Field label="Model portfolio code" error={touched.code && !d.code.trim() && 'Required'}>
             <Input aria-invalid={touched.code && !d.code.trim()} onBlur={() => setTouched((t) => ({ ...t, code: true }))} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
@@ -113,7 +113,7 @@ function CustomDataView() {
         screenHeading
         title="Model portfolio data"
         description={<>{creating ? 'You are creating a customized version of ' : 'Customized version of '}<ParentLink />.</>}
-        className="w-75 shrink-0 border-r border-line"
+        className="w-90 shrink-0 border-r border-line"
       >
         <div className="mt-5 flex flex-col gap-4">
           <Field label="Model portfolio code" error={touched.code && !d.code.trim() && 'Required'}>
