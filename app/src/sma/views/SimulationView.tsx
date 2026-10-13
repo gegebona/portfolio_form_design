@@ -58,10 +58,8 @@ export function SimulationView() {
       <div className="flex flex-wrap items-end gap-x-6 gap-y-2 border-b border-line">
         <RTabs.Root value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))}>
           <RTabs.List aria-label="Portfolio version" className="-mb-px flex gap-1.5">
-            <VersionCard value="current" title="Current" disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined}
-              sub={custom?.version === 0 ? 'Not published yet' : pub ? 'Last data load · read-only' : custom ? `Version ${custom.version} · published` : 'Published · read-only'} />
-            <VersionCard value="new" title="New" disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined}
-              sub={changes > 0 ? `${changes} ${changes === 1 ? 'change' : 'changes'}${custom ? ' · not published' : ' · working copy'}` : custom ? 'Pending · not published' : 'Working copy · no changes'} />
+            <VersionCard value="current" title="Current" disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined} />
+            <VersionCard value="new" title="New" disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined} />
           </RTabs.List>
         </RTabs.Root>
         {!cur && (
@@ -604,19 +602,17 @@ function AddPosition({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * One version card (Radix Tabs trigger styled as a folder tab): the version's name, large and light, and one short line
- * under it on the right. Grey while not shown; when open it takes the content's colour and covers the line below it.
+ * One version card (Radix Tabs trigger styled as a folder tab): the version's name, large and light. Grey while not shown; when open it takes the content's colour and covers the line below it.
  */
-function VersionCard({ value, title, sub, disabled, hint }: { value: Mode; title: string; sub: string; disabled?: boolean; hint?: string }) {
+function VersionCard({ value, title, disabled, hint }: { value: Mode; title: string; disabled?: boolean; hint?: string }) {
   return (
     <RTabs.Trigger
       value={value}
       disabled={disabled}
       title={hint}
-      className="flex w-64 cursor-pointer flex-col border border-line bg-shell-side px-3 pt-1.5 pb-1.5 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
+      className="w-64 cursor-pointer border border-line bg-shell-side px-3 py-1 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
     >
       <span className="text-lg font-light">{title}</span>
-      <span className="self-end text-xs text-fg-muted">{sub}</span>
     </RTabs.Trigger>
   )
 }
