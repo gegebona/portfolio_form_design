@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Info, Lock, MoreHorizontal, TriangleAlert } from 'lucide-react'
+import { ChevronDown, ChevronRight, Info, Lock, MoreVertical, TriangleAlert } from 'lucide-react'
 import { addTransitionType, Fragment, startTransition, useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
@@ -306,7 +306,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
                     </span>
                   ) : (
                     <Menu
-                      trigger={<MenuTrigger render={<Button variant="ghost" size="icon" aria-label={`Actions for ${r.name}`} />}><MoreHorizontal className="size-4" /></MenuTrigger>}
+                      trigger={<MenuTrigger render={<Button variant="ghost" size="icon" aria-label={`Actions for ${r.name}`} />}><MoreVertical className="size-4" /></MenuTrigger>}
                       items={[
                         { label: pub ? 'Reset to last published weight' : 'Reset to current weight', onClick: () => edit(r.id, (x) => { x.nw = pub ? (x.pw ?? 0) : x.w }) },
                         { label: 'Remove position…', onClick: () => setRemoving({ id: r.id, method: 'proportional' }) },

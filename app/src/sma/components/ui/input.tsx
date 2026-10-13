@@ -8,7 +8,7 @@ import { cn } from '../../lib/cn'
  * Corners: rounded-sm on controls, buttons, cards and panels; rounded-xs on tags and checkboxes (both set in theme.css).
  */
 export const controlBox =
-  'flex h-8 items-center rounded-sm border border-control bg-surface text-sm text-fg has-[input:focus]:border-control-active data-[state=open]:border-control-active'
+  'flex h-8 items-center rounded-sm border border-control bg-surface text-sm text-fg has-[input:focus]:border-control-active has-[input:focus]:bg-field-focus data-[state=open]:border-control-active data-[state=open]:bg-field-focus'
 
 /** Id of the control inside a Field, so its label points at it (inputs and selects pick it up). */
 const FieldId = createContext<string | undefined>(undefined)
@@ -24,7 +24,7 @@ export function Input({ className, onValueChange, id, ...props }: InputProps) {
       id={id ?? fid}
       onChange={(e) => onValueChange?.(e.target.value)}
       className={cn(
-        'h-8 rounded-sm border border-control bg-surface px-2.5 text-sm text-fg outline-none placeholder:text-fg-subtle focus:border-control-active disabled:bg-surface-muted disabled:text-fg-disabled',
+        'h-8 rounded-sm border border-control bg-surface px-2.5 text-sm text-fg outline-none placeholder:text-fg-subtle focus:border-control-active focus:bg-field-focus aria-invalid:border-conflict aria-invalid:bg-field-required disabled:border-line disabled:bg-surface disabled:text-fg-muted',
         className,
       )}
       {...props}
@@ -58,8 +58,9 @@ export function Field({ label, description, error, className, children }: { labe
   const id = useId()
   return (
     <FieldId.Provider value={id}>
-      <div className={cn('flex flex-col gap-1', className)}>
-        <Label.Root htmlFor={id} className="text-sm text-fg">{label}</Label.Root>
+      <div className={cn('group/field flex flex-col gap-1', className)}>
+        {/* Platinum: the label turns blue while its field has focus, red when the field is required and empty. */}
+        <Label.Root htmlFor={id} className={cn('text-sm text-fg-muted group-focus-within/field:text-link', error && 'text-conflict group-focus-within/field:text-conflict')}>{label}</Label.Root>
         {children}
         {description && <p className="text-xs text-fg-muted">{description}</p>}
         {error && <p className="text-xs text-error">{error}</p>}

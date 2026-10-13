@@ -34,7 +34,7 @@ export function Select({
         id={id ?? fid}
         aria-label={ariaLabel}
         className={cn(
-          'group flex h-8 min-w-0 cursor-pointer items-center justify-between gap-2 rounded-sm border border-control bg-surface pr-2 pl-2.5 text-left text-sm text-fg outline-none data-[state=open]:border-control-active data-placeholder:text-fg-subtle',
+          'group flex h-8 min-w-0 cursor-pointer items-center justify-between gap-2 rounded-sm border border-control bg-surface pr-2 pl-2.5 text-left text-sm text-fg outline-none focus-visible:border-control-active data-[state=open]:border-control-active data-[state=open]:bg-field-focus data-placeholder:text-fg-subtle',
           className,
         )}
       >
@@ -50,12 +50,12 @@ export function Select({
               <RSelect.Item
                 key={it.value}
                 value={enc(it.value)}
-                className="grid h-8 cursor-pointer grid-cols-[1rem_1fr] items-center gap-2 pr-4 pl-2 text-sm outline-none select-none data-highlighted:bg-surface-muted"
+                className="flex h-8 cursor-pointer items-center justify-between gap-4 px-3 text-sm outline-none select-none data-highlighted:bg-surface-subtle data-[state=checked]:bg-field-focus"
               >
-                <RSelect.ItemIndicator className="col-start-1 flex text-selected">
-                  <Check className="size-3.5" strokeWidth={2.25} />
+                <RSelect.ItemText>{it.label}</RSelect.ItemText>
+                <RSelect.ItemIndicator className="flex text-fg-muted">
+                  <Check className="size-3.5" strokeWidth={1.75} />
                 </RSelect.ItemIndicator>
-                <span className="col-start-2"><RSelect.ItemText>{it.label}</RSelect.ItemText></span>
               </RSelect.Item>
             ))}
           </RSelect.Viewport>

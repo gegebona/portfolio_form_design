@@ -410,7 +410,7 @@ function Performance({ mode }: { mode: Mode }) {
         >
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} stroke={t === 0 ? '#8E8D83' : '#E0DFD7'} strokeWidth={t === 0 ? 1 : 0.75} />
+              <line x1={L} x2={W - R} y1={y(t)} y2={y(t)} style={{ stroke: t === 0 ? 'var(--color-fg-subtle)' : 'var(--color-line)' }} strokeWidth={t === 0 ? 1 : 0.75} />
               <text x={L - 6} y={y(t) + 3.5} textAnchor="end" className="fill-fg-muted text-[11px]">{t}%</text>
             </g>
           ))}
@@ -418,11 +418,11 @@ function Performance({ mode }: { mode: Mode }) {
           {series.map((s) => <polyline key={s.name} fill="none" stroke={s.color} strokeWidth={s.w} strokeLinejoin="round" points={s.c.map((v, i) => `${x(i)},${y(v)}`).join(' ')} />)}
           {hover !== null && (
             <g>
-              <line x1={x(hover)} x2={x(hover)} y1={8} y2={H - B} stroke="#404040" strokeDasharray="3 3" strokeWidth={0.75} />
+              <line x1={x(hover)} x2={x(hover)} y1={8} y2={H - B} style={{ stroke: 'var(--color-fg-secondary)' }} strokeDasharray="3 3" strokeWidth={0.75} />
               <g transform={`translate(${Math.min(x(hover) + 8, W - 190)}, 12)`}>
-                <rect width={180} height={52} rx={2} fill="#fff" stroke="#E0DFD7" />
+                <rect width={180} height={52} rx={2} style={{ fill: 'var(--color-surface)', stroke: 'var(--color-line)' }} />
                 <text x={8} y={16} className="fill-fg text-[11px] font-semibold">{dmy(days[hover].d)}</text>
-                {series.map((s, k) => <text key={s.name} x={8} y={31 + k * 14} className="text-[11px]" fill={s.name === 'Portfolio' ? '#1C1C1C' : '#5A5D5C'}>{s.name} {sign(s.c[hover])}</text>)}
+                {series.map((s, k) => <text key={s.name} x={8} y={31 + k * 14} className="text-[11px]" style={{ fill: s.name === 'Portfolio' ? 'var(--color-fg)' : 'var(--color-fg-muted)' }}>{s.name} {sign(s.c[hover])}</text>)}
               </g>
             </g>
           )}

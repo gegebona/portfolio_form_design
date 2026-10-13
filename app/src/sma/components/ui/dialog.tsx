@@ -21,14 +21,14 @@ export function Modal({
   return (
     <RDialog.Root open={open} onOpenChange={onOpenChange}>
       <RDialog.Portal>
-        <RDialog.Overlay className="fixed inset-0 z-40 bg-fg/45" />
+        <RDialog.Overlay className="fixed inset-0 z-40 bg-fg-subtle/80" />
         <RDialog.Content
           {...(meta ? {} : { 'aria-describedby': undefined })}
           className="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-4rem)] w-225 max-w-[calc(100vw-2rem)] -translate-1/2 flex-col bg-surface text-fg shadow-pop outline-none"
         >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-6 pt-5 pb-4">
             <div className="flex min-w-0 flex-col">
-              <RDialog.Title className="text-xl">{title}</RDialog.Title>
+              <RDialog.Title className="text-xl font-light text-fg-muted">{title}</RDialog.Title>
               {meta && <RDialog.Description className="text-xs text-fg-muted">{meta}</RDialog.Description>}
               {headerExtra && <div className="mt-2">{headerExtra}</div>}
             </div>

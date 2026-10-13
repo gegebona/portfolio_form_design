@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, LoaderCircle, MoreHorizontal } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, LoaderCircle, MoreVertical } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '../components/ui/button'
@@ -14,7 +14,7 @@ import { MiniTable } from './ComponentDetail'
 import { Donut, Swatch } from './Overview'
 
 /** Client book table: dark 12px header labels on a light grey band, compact rows with hairline dividers, links in blue. */
-const th = 'sticky top-0 z-2 border-b border-line bg-shell-band px-1.5 py-2 text-left font-normal whitespace-nowrap text-fg'
+const th = 'sticky top-0 z-2 border-b border-line bg-shell-band px-1.5 py-2 text-left font-normal whitespace-nowrap text-fg-muted'
 const td = 'border-b border-line px-1.5 py-1.5 align-middle'
 /** Small filled count chip (tasks, customized versions), as the counts in the client book. */
 const chip = 'inline-flex h-4.5 min-w-6 items-center justify-center rounded-xs px-1.5 text-xs tabular-nums'
@@ -260,7 +260,7 @@ export function BookView() {
                   <td className={td}><span className={cn(chip, TYPE_CHIP[e.type])}>{e.type}</span></td>
                   <td className={td}><AllocCell e={e} /></td>
                   <td className={cn(td, 'min-w-36')}>{e.benchmark}</td>
-                  <td className={cn(td, 'text-right tabular-nums', e.perf1y === undefined ? '' : e.perf1y < 0 ? 'text-error' : 'text-link')}>
+                  <td className={cn(td, 'text-right tabular-nums', e.perf1y === undefined ? '' : e.perf1y < 0 ? 'text-error' : 'text-positive')}>
                     {e.perf1y === undefined ? <span className="text-fg-subtle" title="No performance yet">—</span> : (e.perf1y < 0 ? '−' : '') + Math.abs(e.perf1y).toFixed(2)}
                   </td>
                   <td className={cn(td, 'whitespace-nowrap')}>{e.creator}</td>
@@ -269,7 +269,7 @@ export function BookView() {
                   <td className={cn(td, 'whitespace-nowrap tabular-nums')}>{e.modified}</td>
                   <td className={cn(td, 'pr-4 text-right')}>
                     <Menu
-                      trigger={<MenuTrigger render={<Button variant="ghost" size="icon-sm" className="w-7 text-link hover:text-link-hover" aria-label={`Actions for ${e.name}`} />}><MoreHorizontal className="size-4" strokeWidth={2.5} /></MenuTrigger>}
+                      trigger={<MenuTrigger render={<Button variant="ghost" size="icon-sm" className="w-7 text-fg hover:text-fg" aria-label={`Actions for ${e.name}`} />}><MoreVertical className="size-4" strokeWidth={2} /></MenuTrigger>}
                       items={actions(e)}
                     />
                   </td>

@@ -144,7 +144,11 @@
   --color-shell-band: #F2F2F2;
   --color-shell-well: #F7F7F7;
   --color-shell-panel: #FAFAFA;                                     /* working area of the flow: almost white, so white fields read by their borders */
-  --color-tag-yellow-strong: #EFB52E;                              /* amber count chip, as the alerts in the client book: task notifications */
+  --color-tag-yellow-strong: #EFB52E;
+  --color-positive: var(--color-ubs-chart-07);                     /* positive figures */
+  --color-tertiary: var(--color-ubs-background-ui-80);             /* tertiary button fill */
+  --color-field-focus: var(--color-ubs-background-ui-10);          /* field background while focused */
+  --color-field-required: var(--color-red-50);                     /* field background when required and empty */                              /* amber count chip, as the alerts in the client book: task notifications */
   --color-type-multi: var(--color-ubs-background-tags-05);        /* lavender tag: Multi portfolios */
   --color-task: var(--color-ubs-background-tags-08);              /* blue tag: open position tasks */
 
@@ -154,4 +158,69 @@
   --color-chart-3: var(--color-ubs-chart-12);   /* Alternatives */
   --color-chart-4: var(--color-ubs-chart-07);   /* Liquidity */
   --color-chart-neutral: var(--color-ubs-graph-chart-02);
+}
+
+/*
+ * Platinum UI — the firm's UI standard (colour palette + component sheet), applied to the MP book (incl. feedback) only.
+ * The app sets data-theme="platinum" on <html> while that book is open, so popups rendered in portals follow it too.
+ * Neutrals: white content, Stone 50 side areas, Neutral 100 table headers and banners, Neutral 200 row separators,
+ * Neutral 300 outer table borders. Text: Neutral 900 body, Neutral 600 labels. Custom A blue for links, focus and the
+ * on-state of tabs; slate (chart 2 dark) for primary buttons and chosen controls, black on hover. Metric red / green for
+ * negative / positive values, Yellow 500 for warnings. Charts use the custom chart companions.
+ */
+html[data-theme="platinum"] {
+  --color-fg: #171717;
+  --color-fg-secondary: #0a0a0a;
+  --color-fg-muted: #525252;
+  --color-fg-subtle: #a1a1a1;
+  --color-fg-disabled: #a1a1a1;
+  --color-ubs-text-disabled: #bfbfbf;
+  --color-link: #007ba8;
+  --color-link-hover: #005b7d;
+
+  --color-page: #e5e5e5;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f5f5f5;
+  --color-surface-muted: #f5f5f5;
+  --color-surface-strong: #e5e5e5;
+  --color-surface-inverse: #171717;
+
+  --color-line: #e5e5e5;
+  --color-line-strong: #d4d4d4;
+  --color-control: #d4d4d4;
+  --color-control-active: #007ba8;
+  --color-focus: #007ba8;
+
+  --color-accent: #435568;
+  --color-accent-hover: #0a0a0a;
+  --color-tertiary: #737373;
+  --color-error: #c81219;
+  --color-conflict: #b91c1c;
+  --color-positive: #498100;
+  --color-field-focus: #edf2f4;
+  --color-field-required: #f4eded;
+
+  --color-excluded: #f4eded;
+  --color-excluded-border: #ddc3c3;
+  --color-excluded-subtle: #f9f4f4;
+  --color-suggested: #f5f5f5;
+  --color-suggested-border: #d4d4d4;
+
+  --color-selected: #435568;
+  --color-tab-active: #007ba8;
+  --color-status-published: #c5ddc5;
+  --color-tag-green-strong: #537f53;
+  --color-tag-yellow-strong: #f0b100;
+  --color-task: #f0b100;
+
+  --color-shell-side: #e5e5e5;
+  --color-shell-band: #f5f5f5;
+  --color-shell-well: #fafaf9;
+  --color-shell-panel: #fafaf9;
+
+  --color-chart-1: #467077;
+  --color-chart-2: #947100;
+  --color-chart-3: #915f36;
+  --color-chart-4: #537f53;
+  --color-chart-neutral: #bfbfbf;
 }

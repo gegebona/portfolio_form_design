@@ -8,7 +8,8 @@ import { cn } from '../../lib/cn'
  * (Radix Slot), e.g. a link that should look like a button.
  *
  * variant:  primary   one per screen, the main forward action (accent: blue)
- *           secondary everything else (outlined)
+ *           secondary everything else (outlined; black on hover, as Platinum)
+ *           tertiary  grey filled, for the least important action (Platinum)
  *           link      text actions inside content ("Fill remaining", "Clear all")
  *           ghost     icon-only and quiet actions (row ×, ⋯)
  * tone:     onDark    the same variants on the dark action bar
@@ -21,7 +22,8 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary: 'bg-accent text-on-accent hover:bg-accent-hover disabled:bg-line-strong disabled:text-fg-subtle',
-        secondary: 'border border-control bg-surface text-fg hover:bg-surface-muted disabled:border-line disabled:bg-surface disabled:text-fg-disabled',
+        secondary: 'border border-control bg-surface text-fg hover:border-fg-secondary hover:bg-fg-secondary hover:text-fg-inverse disabled:border-line disabled:bg-surface disabled:text-fg-disabled',
+        tertiary: 'bg-tertiary text-fg-inverse hover:bg-fg-secondary disabled:bg-line-strong disabled:text-fg-subtle',
         link: 'h-auto px-0.5 text-link hover:underline disabled:text-fg-disabled disabled:no-underline',
         ghost: 'text-fg-secondary hover:bg-surface-muted hover:text-fg disabled:text-fg-disabled',
       },

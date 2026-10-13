@@ -22,7 +22,7 @@ export const Tabs = RTabs.Root
 export function TabsList({ variant = 'step', className, children, ...props }: ComponentProps<typeof RTabs.List> & { variant?: Variant; children: ReactNode }) {
   return (
     <VariantContext.Provider value={variant}>
-      <RTabs.List className={cn('relative z-0 flex gap-6', variant === 'segment' && 'gap-0', className)} {...props}>
+      <RTabs.List className={cn('relative z-0 flex gap-0', className)} {...props}>
         {children}
       </RTabs.List>
     </VariantContext.Provider>
@@ -42,8 +42,8 @@ export function Tab({ className, ...props }: ComponentProps<typeof RTabs.Trigger
     <RTabs.Trigger
       className={cn(
         'inline-flex cursor-pointer items-center gap-1.5 border-b-2 border-transparent pb-1.5 whitespace-nowrap outline-none focus-visible:outline-2 focus-visible:outline-focus',
-        'hover:border-line-strong hover:text-fg data-[state=active]:cursor-default data-[state=active]:text-fg',
-        'data-disabled:cursor-default data-disabled:text-fg-disabled data-disabled:hover:border-transparent',
+        'px-3 hover:bg-surface-subtle hover:text-fg active:bg-link active:text-fg-inverse data-[state=active]:cursor-default data-[state=active]:text-fg data-[state=active]:hover:bg-transparent',
+        'data-disabled:cursor-default data-disabled:text-fg-disabled data-disabled:hover:bg-transparent',
         tabVariant[variant],
         className,
       )}

@@ -13,7 +13,7 @@ export type ComboOption = { id: string; label: string; sub?: string }
  * ↑ ↓ move, Enter picks) in a Radix Popover anchored to the field.
  * The chosen values are NOT shown inside the field; screens render them where they belong
  * (exclusion chips under the field, instrument rows in a list), so the field stays one line.
- * Each option shows a checkbox look, driven by the item's data-checked attribute.
+ * Chosen options are shaded with a check on the right (Platinum combo box), driven by the item's data-checked attribute.
  * tone: 'exclude' (red: picking means excluding, on Preferences) or 'select' (blue: picking means adding).
  * The list closes with its own Done button, with Esc, or by clicking outside; closeOnSelect closes it after each pick.
  */
@@ -50,7 +50,7 @@ export function MultiCombobox({
             ref={anchor}
             data-state={open ? 'open' : 'closed'}
             className={cn(
-              'flex h-8 items-center gap-1.5 rounded-sm border border-control bg-surface pl-2 text-sm text-fg data-[state=open]:border-control-active has-[input:focus]:border-control-active',
+              'flex h-8 items-center gap-1.5 rounded-sm border border-control bg-surface pl-2 text-sm text-fg data-[state=open]:border-control-active data-[state=open]:bg-field-focus has-[input:focus]:border-control-active has-[input:focus]:bg-field-focus',
               showTrigger ? 'pr-0.5' : 'pr-2',
               className,
             )}
@@ -97,16 +97,10 @@ export function MultiCombobox({
                     value={o.id}
                     onSelect={() => toggle(o.id)}
                     data-checked={on || undefined}
-                    className={cn(
-                      'group flex min-h-8 cursor-pointer items-center gap-2 px-2.5 outline-none select-none data-[selected=true]:bg-surface-muted',
-                      tone === 'exclude' && 'data-checked:bg-excluded-subtle data-checked:data-[selected=true]:bg-excluded',
-                    )}
+                    className="flex min-h-8 cursor-pointer items-center gap-2 px-3 outline-none select-none data-checked:bg-field-focus data-[selected=true]:bg-surface-subtle data-checked:data-[selected=true]:bg-field-focus"
                   >
-                    <span className={cn('flex size-3.5 shrink-0 items-center justify-center rounded-xs border border-control bg-surface text-on-accent', on && (tone === 'exclude' ? 'border-error bg-error' : 'border-selected bg-selected'))}>
-                      {on && <Check className="size-2.5" strokeWidth={3.5} />}
-                    </span>
-                    <span>{o.label}</span>
-                    {o.sub && <span className="text-fg-subtle">{o.sub}</span>}
+                    <span className="min-w-0 flex-1">{o.label}{o.sub && <span className="ml-2 text-fg-subtle">{o.sub}</span>}</span>
+                    {on && <Check className={cn('size-3.5 shrink-0', tone === 'exclude' ? 'text-conflict' : 'text-fg-muted')} strokeWidth={1.75} aria-hidden />}
                   </Command.Item>
                 )
               })}

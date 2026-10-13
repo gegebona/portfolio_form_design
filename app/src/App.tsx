@@ -56,6 +56,11 @@ export default function App() {
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])
+  // The MP book (incl. feedback) runs on the firm's Platinum UI palette: switch the tokens on <html> while it is open.
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-theme', route === 'sma')
+    if (route === 'sma') document.documentElement.setAttribute('data-theme', 'platinum')
+  }, [route])
   const go = (r: Route) => {
     history.replaceState(null, '', '#' + r)
     // The SMA book routes itself: tell it the hash moved back to its book.
