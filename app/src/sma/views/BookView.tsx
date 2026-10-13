@@ -49,18 +49,14 @@ const byWeight = (e: BookEntry) => classesOf(e).sort((a, b) => b[1] - a[1])
 const allocText = (e: BookEntry) => byWeight(e).map(([c, w]) => `${c} ${w}%`).join(', ')
 const openTasks = (e: BookEntry) => (e.tasks ?? []).filter((t) => t.status === 'Open').length
 
-/** Asset class cell: a mini allocation bar in the chart colours, the main class with its share, and "+n" for the rest (full split on hover). */
+/** Asset class cell: a mini allocation bar in the chart colours; the split shows on hover (keeps the table narrow). */
 function AllocCell({ e }: { e: BookEntry }) {
-  const main = byWeight(e)[0]
-  const more = classesOf(e).length - 1
   return (
     <Tooltip content={allocText(e)}>
       <span className="flex items-center gap-2 whitespace-nowrap">
         <span role="img" aria-label={allocText(e)} className="flex h-2 w-20 shrink-0 gap-0.5 bg-surface-strong">
           {classesOf(e).map(([c, w]) => <span key={c} className="h-full" style={{ width: `${w}%`, background: CLASS_COLOR[c] }} />)}
         </span>
-        {main && <span>{main[0]} <span className="tabular-nums">{main[1]}%</span></span>}
-        {more > 0 && <span className="text-fg-muted">+{more}</span>}
       </span>
     </Tooltip>
   )
@@ -244,7 +240,7 @@ export function BookView() {
                   <td className={cn(td, 'text-center')}><TaskCount e={e} onReview={() => open(e)} /></td>
                   <td className={td}><span className={cn(chip, TYPE_CHIP[e.type])}>{e.type}</span></td>
                   <td className={td}><AllocCell e={e} /></td>
-                  <td className={td}>{e.benchmark}</td>
+                  <td className={cn(td, 'min-w-44')}>{e.benchmark}</td>
                   <td className={cn(td, 'text-right tabular-nums', e.perf1y === undefined ? '' : e.perf1y < 0 ? 'text-error' : 'text-link')}>
                     {e.perf1y === undefined ? <span className="text-fg-subtle" title="No performance yet">—</span> : (e.perf1y < 0 ? '−' : '') + Math.abs(e.perf1y).toFixed(2)}
                   </td>
