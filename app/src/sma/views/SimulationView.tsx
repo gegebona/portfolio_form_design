@@ -37,8 +37,6 @@ export function SimulationView() {
   const cur = mode === 'current'
   const custom = state.custom
   const pub = state.sim.published
-  // Changes are counted against the last published version when there is one, otherwise against Current.
-  const changes = rows.filter((r) => r.removed || Math.abs(r.nw - (pub ? (r.pw ?? 0) : r.w)) >= 0.005).length
   const total = cur ? rows.reduce((s, r) => s + r.w, 0) : rows.filter((r) => !r.removed).reduce((s, r) => s + r.nw, 0)
 
   const redistribute = () => update((s) => {
@@ -602,7 +600,7 @@ function AddPosition({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * One version card (Radix Tabs trigger styled as a folder tab): the version's name, large and light. Grey while not shown; when open it takes the content's colour and covers the line below it.
+ * One version card (Radix Tabs trigger styled as a folder tab) with the version name in the usual 14px. Grey while not shown; when open it takes the content's colour and covers the line below it.
  */
 function VersionCard({ value, title, disabled, hint }: { value: Mode; title: string; disabled?: boolean; hint?: string }) {
   return (
@@ -610,9 +608,9 @@ function VersionCard({ value, title, disabled, hint }: { value: Mode; title: str
       value={value}
       disabled={disabled}
       title={hint}
-      className="w-64 cursor-pointer border border-line bg-shell-side px-3 py-1 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
+      className="w-64 cursor-pointer border border-line bg-shell-side px-3 py-1.5 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
     >
-      <span className="text-lg font-light">{title}</span>
+      <span className="text-sm">{title}</span>
     </RTabs.Trigger>
   )
 }
