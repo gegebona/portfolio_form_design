@@ -14,8 +14,8 @@ import { MiniTable } from './ComponentDetail'
 import { Donut, Swatch } from './Overview'
 
 /** Client book table: dark 12px header labels on a light grey band, compact rows with hairline dividers, links in blue. */
-const th = 'sticky top-0 z-2 border-b border-line bg-shell-band px-2 py-2 text-left font-normal whitespace-nowrap text-fg'
-const td = 'border-b border-line px-2 py-1.5 align-middle'
+const th = 'sticky top-0 z-2 border-b border-line bg-shell-band px-1.5 py-2 text-left font-normal whitespace-nowrap text-fg'
+const td = 'border-b border-line px-1.5 py-1.5 align-middle'
 /** Small filled count chip (tasks, customized versions), as the counts in the client book. */
 const chip = 'inline-flex h-4.5 min-w-6 items-center justify-center rounded-xs px-1.5 text-xs tabular-nums'
 /** Portfolio type in the green chip family of the client book's opportunities: light = Standard, dark = Multi, outline = Customized. */
@@ -235,7 +235,7 @@ export function BookView() {
               <tr>
                 <th className={cn(th, 'w-8 px-0')}><span className="sr-only">Customized versions</span></th>{head('id', 'Code', 'pl-1')}{head('name', 'Model portfolio name')}{head('tasks', 'Tasks', 'text-center')}{head('type', 'Type')}
                 {head('area', 'Asset allocation')}{head('benchmark', 'Benchmark')}
-                {head('perf1y', 'Performance % (1Y)', 'text-right', `Performance as of ${BOOK_AS_OF}`)}
+                {head('perf1y', 'Perf. 1Y %', 'text-right', `Performance % over one year, as of ${BOOK_AS_OF}`)}
                 {head('creator', 'Creator')}{head('status', 'Current status')}{head('editedBy', 'Last modified by')}{head('modified', 'Last modified date')}
                 <th className={cn(th, 'pr-4 text-right')}>Action</th>
               </tr>
