@@ -104,7 +104,7 @@ function AppHeader({ route, onNavigate, wide }: { route: Route; onNavigate: (r: 
   ]
   return (
     <header className="shrink-0 border-b border-line-strong bg-surface">
-      <div className={cn('mx-auto flex min-h-14 items-stretch gap-12 px-6', !wide && 'max-w-340')}>
+      <div className={cn('mx-auto flex items-stretch px-6', wide ? 'min-h-12 gap-10' : 'min-h-14 gap-12 max-w-340')}>
         <div className="flex h-6.5 w-22 items-center justify-center self-center border border-dashed border-line-strong text-xs tracking-widest text-fg-muted">[LOGO]</div>
         <nav className="flex gap-8" aria-label="Applications">
           {links.map((l) => (
@@ -113,7 +113,7 @@ function AppHeader({ route, onNavigate, wide }: { route: Route; onNavigate: (r: 
               href={'#' + l.to}
               onClick={(e) => { e.preventDefault(); onNavigate(l.to) }}
               aria-current={l.active ? 'page' : undefined}
-              className={cn('flex flex-col border-b-2 border-transparent text-base text-fg hover:border-line-strong aria-[current=page]:border-tab-active', wide ? 'justify-end pb-2' : 'justify-center')}
+              className={cn('flex flex-col border-b-2 border-transparent text-fg hover:border-line-strong aria-[current=page]:border-tab-active', wide ? 'justify-end pb-1.5 text-sm' : 'justify-center text-base')}
             >
               {l.label}
               {l.note && <span className="-mt-0.5 text-xs text-fg-muted">{l.note}</span>}

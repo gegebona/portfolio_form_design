@@ -14,8 +14,8 @@ import { f2, openEntry, startCustomized, startNew, usePortfolio } from '../state
 import { MiniTable } from './ComponentDetail'
 
 /** Client book table: dark 12px header labels on a light grey band, compact rows with hairline dividers, links in blue. */
-const th = 'sticky top-0 z-2 border-b border-line bg-shell-band px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg'
-const td = 'border-b border-line px-2.5 py-1.5 align-middle'
+const th = 'sticky top-0 z-2 border-b border-line bg-shell-band px-2 py-2 text-left font-normal whitespace-nowrap text-fg'
+const td = 'border-b border-line px-2 py-1.5 align-middle'
 /** Small filled count chip (tasks, customized versions), as the counts in the client book. */
 const chip = 'inline-flex h-4.5 min-w-6 items-center justify-center rounded-xs px-1.5 text-xs tabular-nums'
 /** Portfolio type in the green chip family of the client book's opportunities: light = Standard, dark = Multi, outline = Customized. */
@@ -189,21 +189,21 @@ export function BookView() {
   return (
     <main className="flex min-h-0 w-full flex-1 flex-col">
       {searchSlot && createPortal(
-        <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or code" aria-label="Find model portfolio" className="w-72" />,
+        <SearchInput value={q} onValueChange={setQ} placeholder="Find model portfolio by name or code" aria-label="Find model portfolio" className="h-7 w-64 text-xs" />,
         searchSlot,
       )}
       {/* Toolbar band, as in the client book: the type tabs on the left, the count and the main action on the right. */}
-      <div className="flex shrink-0 flex-wrap items-end gap-x-3 gap-y-2 border-b border-line bg-shell-band px-4 pt-2">
+      <div className="flex shrink-0 flex-wrap items-end gap-x-3 gap-y-2 border-b border-line bg-shell-band px-4 pt-1">
         <Tabs value={type} onValueChange={setType}>
           <TabsList variant="sub" aria-label="Portfolio type">
             {TYPE_TABS.map((t) => (
-              <Tab key={t.value} value={t.value}>{t.label} <TabCount>{t.value === 'all' ? list.length : list.filter((e) => e.type === t.value).length}</TabCount></Tab>
+              <Tab key={t.value} value={t.value} className="pt-1.5 text-xs">{t.label} <TabCount>{t.value === 'all' ? list.length : list.filter((e) => e.type === t.value).length}</TabCount></Tab>
             ))}
           </TabsList>
         </Tabs>
-        <div className="ml-auto flex items-center gap-4 pb-2">
-          <span className="text-sm whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} portfolios</span>
-          <Button variant="primary" onClick={create}>Create new model portfolio</Button>
+        <div className="ml-auto flex items-center gap-4 pb-1.5 text-xs">
+          <span className="whitespace-nowrap" aria-live="polite">Showing {shownCount} of {list.length} portfolios</span>
+          <Button variant="primary" size="sm" onClick={create} className="text-xs">Create new model portfolio</Button>
         </div>
       </div>
 
