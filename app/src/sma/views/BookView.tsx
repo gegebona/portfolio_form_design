@@ -240,7 +240,7 @@ export function BookView() {
                   <td className={cn(td, 'text-center')}><TaskCount e={e} onReview={() => open(e)} /></td>
                   <td className={td}><span className={cn(chip, TYPE_CHIP[e.type])}>{e.type}</span></td>
                   <td className={td}><AllocCell e={e} /></td>
-                  <td className={cn(td, 'min-w-44')}>{e.benchmark}</td>
+                  <td className={cn(td, 'min-w-36')}>{e.benchmark}</td>
                   <td className={cn(td, 'text-right tabular-nums', e.perf1y === undefined ? '' : e.perf1y < 0 ? 'text-error' : 'text-link')}>
                     {e.perf1y === undefined ? <span className="text-fg-subtle" title="No performance yet">—</span> : (e.perf1y < 0 ? '−' : '') + Math.abs(e.perf1y).toFixed(2)}
                   </td>
