@@ -570,7 +570,7 @@ function AddPosition({ onClose }: { onClose: () => void }) {
           <label htmlFor="add-pos-q" className="text-fg-muted">Instrument</label>
           {/* Searchable by name or ISIN (same control as on Component selection); one instrument at a time. */}
           {pick ? (
-            <div className="flex h-8 w-90 items-center gap-2 rounded-sm border border-control px-2.5">
+            <div className="flex h-8 w-78 items-center gap-2 rounded-sm border border-control px-2.5">
               <span className="min-w-0 flex-1 truncate">{pick.name} <span className="text-fg-muted">{pick.isin}</span></span>
               <Button variant="link" className="text-xs" onClick={() => setId('')}>Change</Button>
             </div>
@@ -583,7 +583,7 @@ function AddPosition({ onClose }: { onClose: () => void }) {
               value={[]}
               onValueChange={(v) => setId(v[v.length - 1] ?? '')}
               placeholder="Search by ISIN or instrument name…"
-              className="w-90"
+              className="w-78"
             />
           )}
         </div>

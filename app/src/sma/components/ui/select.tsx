@@ -23,10 +23,13 @@ export function Select({
   id?: string
 }) {
   const fid = useFieldId()
+  // Radix does not allow an empty item value, so an "All" option with value '' travels under a stand-in key.
+  const ALL = '__all__'
+  const enc = (v: string) => (v === '' ? ALL : v)
   // Radix shows the placeholder only for an empty value, so a value that matches no item counts as empty.
   const known = items.some((it) => it.value === value)
   return (
-    <RSelect.Root value={known ? value : ''} onValueChange={onValueChange}>
+    <RSelect.Root value={known ? enc(value) : ''} onValueChange={(v) => onValueChange(v === ALL ? '' : v)}>
       <RSelect.Trigger
         id={id ?? fid}
         aria-label={ariaLabel}
@@ -46,7 +49,7 @@ export function Select({
             {items.map((it) => (
               <RSelect.Item
                 key={it.value}
-                value={it.value}
+                value={enc(it.value)}
                 className="grid h-8 cursor-pointer grid-cols-[1rem_1fr] items-center gap-2 pr-4 pl-2 text-sm outline-none select-none data-highlighted:bg-surface-muted"
               >
                 <RSelect.ItemIndicator className="col-start-1 flex text-selected">

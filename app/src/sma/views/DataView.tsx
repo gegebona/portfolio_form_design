@@ -44,7 +44,7 @@ function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Cus
 
   return (
     <div className="mt-5">
-      <Field label="Benchmark" error={showError && !sel && 'Required'} description={readOnly && <Inherited />} className="w-90 max-w-full">
+      <Field label="Benchmark" error={showError && !sel && 'Required'} description={readOnly && <Inherited />} className="w-78 max-w-full">
         {readOnly
           ? <Input disabled value={sel?.name ?? ''} />
           : <Select value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} placeholder="Select a benchmark…" />}

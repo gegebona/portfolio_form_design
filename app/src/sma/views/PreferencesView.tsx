@@ -34,10 +34,10 @@ export function PreferencesView() {
       <Section screenHeading className="border-b border-line pt-4 pb-4" title="Preferences" description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'}>
         <div className="mt-3 flex flex-wrap items-end gap-x-10 gap-y-3">
           <Field label="Minimum position size" description={lockNote}>
-            <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-44', custom && 'bg-surface-muted text-fg-muted')} />
+            <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-78 max-w-full', custom && 'bg-surface-muted text-fg-muted')} />
           </Field>
           <Field label="Maximum number of instruments" description={lockNote}>
-            <Input disabled={!!custom} value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-44" />
+            <Input disabled={!!custom} value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-78 max-w-full" />
           </Field>
         </div>
       </Section>
@@ -129,7 +129,7 @@ function CategoryRow({ cat }: { cat: ExclusionCategory }) {
         {(hidden > 0 || more) && (
           <Button variant="link" className="h-8 shrink-0 text-xs" aria-expanded={more} onClick={() => setMore(!more)}>{more ? 'Show less' : `+${hidden} more`}</Button>
         )}
-        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="ml-2 w-44 shrink-0" />
+        <MultiCombobox id={'f-' + cat.id} options={cat.options} value={sel} onValueChange={setSel} placeholder={cat.placeholder} className="ml-2 w-78 shrink-0" />
       </div>
       {sel.length > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -205,6 +205,7 @@ function InstrumentsColumn() {
         onValueChange={setInst}
         placeholder="Add by ISIN or instrument name…"
         showTrigger={false}
+        className="w-78 max-w-full"
       />
       <div className="mt-3.5 flex flex-col gap-0.5">
         {inst.map((isin) => {

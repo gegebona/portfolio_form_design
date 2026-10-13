@@ -44,19 +44,23 @@ export function ComponentsView() {
     <Section screenHeading title="Component selection" description="Please add the components of the model portfolio." className="flex min-h-0 flex-1 flex-col">
       <div className="mt-4.5 grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_23.75rem] grid-rows-[minmax(0,1fr)] gap-7">
         <div className="flex min-h-0 flex-col">
+          {/* Filters first, provider leading; every field has the app's one field width. */}
           <div className="flex flex-wrap gap-x-3 gap-y-2.5">
-            <SearchInput value={q} onValueChange={setQ} placeholder="Search components…" aria-label="Search components" className="flex-[1_1_15rem]" />
-            <Select value={area} onValueChange={setArea} aria-label="Investment area" className="flex-[0_1_13rem]"
-              items={[{ value: '', label: 'All investment areas' }, ...AREAS.map((a) => ({ value: a, label: a }))]} />
-            <Select value={provider} onValueChange={setProvider} aria-label="Provider" className="flex-[0_1_13rem]"
+            <Select value={provider} onValueChange={setProvider} aria-label="Provider" className="w-78 max-w-full"
               items={[{ value: '', label: 'All providers' }, ...PROVIDERS.map((a) => ({ value: a, label: a }))]} />
+            <Select value={area} onValueChange={setArea} aria-label="Investment area" className="w-78 max-w-full"
+              items={[{ value: '', label: 'All investment areas' }, ...AREAS.map((a) => ({ value: a, label: a }))]} />
           </div>
-          <Tabs value={kind} onValueChange={(v) => setKind(v as 'bb' | 'mp')}>
-            <TabsList variant="sub" aria-label="Component type" className="mt-3.5 border-b border-line">
-              <Tab value="bb">Building blocks <TabCount>{filtered.filter((c) => c.kind === 'bb').length}</TabCount></Tab>
-              <Tab value="mp">Model portfolios <TabCount>{filtered.filter((c) => c.kind === 'mp').length}</TabCount></Tab>
-            </TabsList>
-          </Tabs>
+          {/* The type tabs, with the free-text search on their right. */}
+          <div className="mt-3.5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line">
+            <Tabs value={kind} onValueChange={(v) => setKind(v as 'bb' | 'mp')}>
+              <TabsList variant="sub" aria-label="Component type">
+                <Tab value="bb">Building blocks <TabCount>{filtered.filter((c) => c.kind === 'bb').length}</TabCount></Tab>
+                <Tab value="mp">Model portfolios <TabCount>{filtered.filter((c) => c.kind === 'mp').length}</TabCount></Tab>
+              </TabsList>
+            </Tabs>
+            <SearchInput value={q} onValueChange={setQ} placeholder="Search components…" aria-label="Search components" className="mb-1.5 w-78 max-w-full" />
+          </div>
           {/* 4px inner padding so the card focus outline is not clipped by the scroll container. */}
           <div className="-mx-1 mt-3 -mb-1 grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(15.625rem,1fr))] content-start gap-3 overflow-y-auto p-1 pr-2.5">
             {list.map((c) => <CatalogueCard key={c.id} c={c} expanded={learn === c.id} onLearnMore={() => openLearn(c.id)} />)}

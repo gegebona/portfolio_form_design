@@ -57,7 +57,7 @@ export function ReportingView() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-wrap">
-      <Section screenHeading title="Reporting" description="Please configure the report for this model portfolio." className="w-75 shrink-0 border-r border-line">
+      <Section screenHeading title="Reporting" description="Please configure the report for this model portfolio." className="w-90 shrink-0 border-r border-line">
         <div className="mt-5 flex flex-col gap-4">
           <Field label="Report family"><Select value={family} onValueChange={(v) => setFamily(v as Family)} items={opts(FAMILIES)} /></Field>
           <Field label="Regional variant"><Select value={region} onValueChange={setRegion} items={opts(REGIONS)} /></Field>
