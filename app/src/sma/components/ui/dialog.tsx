@@ -28,7 +28,7 @@ export function Modal({
         >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-6 pt-5 pb-4">
             <div className="flex min-w-0 flex-col">
-              <RDialog.Title className="text-xl font-light text-fg-muted">{title}</RDialog.Title>
+              <RDialog.Title className="text-xl">{title}</RDialog.Title>
               {meta && <RDialog.Description className="text-xs text-fg-muted">{meta}</RDialog.Description>}
               {headerExtra && <div className="mt-2">{headerExtra}</div>}
             </div>

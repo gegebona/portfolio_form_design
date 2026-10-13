@@ -11,7 +11,7 @@ import { cn } from '../../lib/cn'
 export function Section({ title, description, actions, screenHeading, className, children }: { title?: ReactNode; description?: ReactNode; actions?: ReactNode; screenHeading?: boolean; className?: string; children?: ReactNode }) {
   const heading = (
     <div>
-      {title && <h2 className="mb-1 text-xl font-light text-fg-muted">{title}</h2>}
+      {title && <h2 className="mb-1 text-xl">{title}</h2>}
       {description && <p className="text-xs text-fg-muted">{description}</p>}
     </div>
   )
