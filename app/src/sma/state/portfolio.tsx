@@ -264,17 +264,17 @@ export function startCustomized(s: PortfolioState, parent: BookEntry) {
  * Publishing keeps the user on the portfolio's Simulation, on New. A portfolio that already had a Current (from the
  * data load) keeps it until the next load: the new figures become the Published weights, shown next to Current, and New
  * starts again from them (no pending change). A portfolio published for the first time has no data-load version yet, so
- * what was published becomes its Current.
+ * what was published becomes its Current as well as its Published weights.
  */
 export function publishSim(s: PortfolioState, id: string, hadCurrent: boolean) {
   const today = new Date().toLocaleDateString('en-GB')
   s.sim.rows.forEach((r) => {
     const v = r.removed ? 0 : r.nw
-    if (hadCurrent) r.pw = v
-    else { r.w = v; r.pw = undefined }
+    if (!hadCurrent) r.w = v
+    r.pw = v
     r.nw = v; r.removed = false; r.auto = undefined; r.target = undefined
   })
-  s.sim.published = hadCurrent ? today : undefined
+  s.sim.published = today
   if (!hadCurrent) s.sim.loadedOn = today
   s.sim.publishedAt = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   // The user stays on New, which starts again from what was just published.
