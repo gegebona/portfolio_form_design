@@ -614,10 +614,10 @@ function VersionCard({ value, title, sub, disabled, hint }: { value: Mode; title
       value={value}
       disabled={disabled}
       title={hint}
-      className="flex w-64 cursor-pointer flex-col border border-line bg-shell-side px-3 pt-1.5 pb-1 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
+      className="flex w-64 cursor-pointer flex-col border border-line bg-shell-side px-3 pt-1 pb-0.5 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
     >
-      <span className="text-base">{title}</span>
-      <span className="self-end text-xs text-fg-muted">{sub}</span>
+      <span className="text-base/5">{title}</span>
+      <span className="self-end text-xs/4 text-fg-muted">{sub}</span>
     </RTabs.Trigger>
   )
 }
