@@ -39,7 +39,7 @@ export function SimulationView() {
   const pub = state.sim.published
   // When Current was last updated: the customized version's last publication, else the book entry's last change.
   const entry = getBook().find((e) => e.id === state.book.id)
-  const lastUpdate = custom?.published || entry?.modified || BOOK_AS_OF
+  const lastUpdate = state.sim.loadedOn || entry?.modified || BOOK_AS_OF
   // Under the New card: when this portfolio was last published, or that it has not been yet.
   const lastPublished = state.sim.publishedAt ?? (custom ? (custom.version > 0 ? custom.published : undefined) : entry?.status === 'Published' ? entry.modified : undefined)
   const total = cur ? rows.reduce((s, r) => s + r.w, 0) : rows.filter((r) => !r.removed).reduce((s, r) => s + r.nw, 0)

@@ -60,7 +60,7 @@ export type PortfolioState = {
   /** published: date of the last publication since the data load. Current stays the data-load version until the next
    *  load; the published weights sit next to it, and New starts again from them. */
   /** publishedAt: date and time of the latest successful publication in this session (any kind), for the New card. */
-  sim: { rows: SimRow[]; mode: 'current' | 'new'; published?: string; publishedAt?: string }
+  sim: { rows: SimRow[]; mode: 'current' | 'new'; published?: string; publishedAt?: string; /** When Current was last updated (its data load, or its first publication). */ loadedOn?: string }
   /** Which book entry is open in the flow, and its open position task (shown at the top of Simulation). */
   /** creating: a brand-new portfolio in its creation workflow (the only time preference warnings are shown). */
   book: { id: string; task: BookTask | null; creating?: boolean }
@@ -146,6 +146,7 @@ export function startNew(s: PortfolioState) {
   s.sim.rows = POSITIONS.map((p) => ({ ...p, nw: p.w, removed: false, kept: false }))
   s.sim.published = undefined
   s.sim.publishedAt = undefined
+  s.sim.loadedOn = undefined
 }
 /**
  * A brand-new portfolio in its creation workflow. Warning icons and conflict tags show everywhere; only the creation
@@ -164,6 +165,7 @@ export function restoreSample(s: PortfolioState) {
   s.sim.rows = fresh.sim.rows
   s.sim.published = undefined
   s.sim.publishedAt = undefined
+  s.sim.loadedOn = undefined
   s.custom = null
 }
 
@@ -181,6 +183,7 @@ export function openCustomized(s: PortfolioState, e: BookEntry, parent: BookEntr
   s.data.name = e.name
   s.data.code = 'MP_' + e.id
   s.book = { id: e.id, task: null }
+  s.sim.loadedOn = e.modified
   // Apple is on the inherited excluded list, so the child does not hold it: that weight sits in cash.
   s.sim.rows = s.sim.rows.filter((r) => r.id !== 'aapl').map((r) => (r.id === 'eur' ? { ...r, w: 3.5, nw: 3.5 } : r))
   const parentPrefs = structuredClone(s.prefs)
@@ -230,6 +233,7 @@ export function openEntry(s: PortfolioState, e: BookEntry, mode: 'current' | 'ne
   s.data.code = 'MP_' + e.id
   const task = e.tasks?.[0] ?? null
   s.book = { id: e.id, task }
+  s.sim.loadedOn = e.modified
   s.sim.mode = mode
   // An open task brings the official target into New (the rest of the portfolio is not adjusted until it is
   // accepted); a rejected or deferred one keeps the current weight.
@@ -271,6 +275,7 @@ export function publishSim(s: PortfolioState, id: string, hadCurrent: boolean) {
     r.nw = v; r.removed = false; r.auto = undefined; r.target = undefined
   })
   s.sim.published = hadCurrent ? today : undefined
+  if (!hadCurrent) s.sim.loadedOn = today
   s.sim.publishedAt = new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   // The user stays on New, which starts again from what was just published.
   s.sim.mode = 'new'
