@@ -50,7 +50,7 @@ function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Cus
           : <Select value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} placeholder="Select a benchmark…" />}
       </Field>
       {sel && (
-        <div className="mt-5 rounded-sm border border-selected/25 bg-selected/5 px-7 py-5" aria-live="polite">
+        <div className="mt-6" aria-live="polite">
           <ViewTransition key={sel.id} name="bench-detail" share="swap">
           <div>
             <h3 className="text-lg">{sel.name}</h3>

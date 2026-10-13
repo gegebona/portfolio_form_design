@@ -158,10 +158,11 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
     onStep('simulation')
   }
   return (
-    <main className="flex min-h-0 w-full flex-1 flex-col px-4">
-      {/* Panel: the portfolio header (breadcrumb, name, facts), tabs and action bar stay put; only the view scrolls (or its inner lists). */}
-      <div className="mt-4 mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-sm border border-line-strong bg-surface">
-        <header className="shrink-0 px-5 pt-3.5 pb-3">
+    <main className="flex min-h-0 w-full flex-1 flex-col">
+      {/* No box around the flow (as the client book's portfolio page): the portfolio header sits on the page grey, then the tabs,
+          the view (the only part that scrolls) and the action bar run edge to edge. */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <header className="shrink-0 px-6 pt-3 pb-3">
           <nav aria-label="Breadcrumb" className="mb-1.5 flex items-center gap-1.5 text-xs">
             <a href="#sma" className="text-link hover:text-link-hover">MP book</a>
             <span aria-hidden className="text-fg-subtle">›</span>
@@ -185,7 +186,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
           </div>
         </header>
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
-          <TabsList variant="step" className="border-b border-line px-5">
+          <TabsList variant="step" className="border-y border-line bg-surface px-6">
             {steps.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
             <Tab value="reporting" disabled={blocked} title={blocked ? 'Complete the model portfolio data first' : undefined}>Reporting</Tab>
           </TabsList>
