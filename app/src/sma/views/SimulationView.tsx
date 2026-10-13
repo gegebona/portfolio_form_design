@@ -209,7 +209,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   return (
     <>
     {summary && (
-      <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-2.5 py-1.5 text-xs">
+      <div role="status" className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-2.5 py-1.5 text-xs">
         <span className="inline-flex items-center gap-1.5">
           <TriangleAlert className="size-3.5 text-error" strokeWidth={1.75} aria-hidden />
           {!creating ? `${flagged} ${flagged === 1 ? 'instrument conflicts' : 'instruments conflict'} with exclusions`
@@ -219,7 +219,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
         <Button variant="link" className="text-xs" aria-pressed={onlyWarnings} onClick={() => setOnlyWarnings(!onlyWarnings)}>{onlyWarnings ? 'Show all positions' : 'Show only warnings'}</Button>
       </div>
     )}
-    <table className="w-full table-fixed border-collapse text-xs">
+    <table className="w-full table-fixed border-collapse bg-surface text-xs">
       {/* The last column holds the row actions: wider when a position task needs its three decision buttons. */}
       <Cols w={cur ? (pub ? [10, 25, 24, 9, 9, 7, 8, 8] : [10, 28, 26, 9, 9, 7, 11])
         : pub ? (custom ? [8, 15, 15, 7, 7, 5, 7, 7, 7, 6, 16] : task ? [8, 16, 14, 7, 7, 5, 7, 7, 9, 6, 14] : [9, 16, 16, 7, 7, 5, 8, 8, 9, 6, 9])
@@ -405,7 +405,7 @@ function GroupTable({ mode, showZero, keyOf, order, hide }: { mode: Mode; showZe
   const num = (v: ReactNode, strong?: boolean) => <td className={cn(td, 'text-right tabular-nums', strong && 'font-semibold')}>{v}</td>
   const change = (d: number) => (Math.abs(d) < 0.005 ? <span className="text-fg-subtle">—</span> : (d > 0 ? '+' : '') + f2(d))
   return (
-    <table className="w-full table-fixed border-collapse text-xs">
+    <table className="w-full table-fixed border-collapse bg-surface text-xs">
       <Cols w={(() => {
         const raw = [...(showCls ? [12] : []), showBb ? 22 : 28, ...(showBb ? [showCls ? 20 : 24] : []), 9, 10, 8, 11, ...(cur ? [11, ...(pub ? [11] : [])] : [9, ...(pub ? [9] : []), 9, 8])]
         const t = raw.reduce((a, b) => a + b, 0)
