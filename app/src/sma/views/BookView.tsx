@@ -6,12 +6,12 @@ import { SearchInput } from '../components/ui/input'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
-import { Tooltip } from '../components/ui/tag'
-import { ASSET_CLASSES, BOOK_AS_OF, CLASS_COLOR, type AssetClass, type BookEntry } from '../data/data'
+import { ASSET_CLASSES, BOOK_AS_OF, type AssetClass, type BookEntry } from '../data/data'
 import { cn } from '../lib/cn'
 import { getBook } from '../state/book'
-import { f2, openEntry, startCustomized, startNew, usePortfolio } from '../state/portfolio'
+import { f2, openEntry, startCustomized, startNew, usePortfolio, type Alloc } from '../state/portfolio'
 import { MiniTable } from './ComponentDetail'
+import { Donut, Swatch } from './Overview'
 
 /** Client book table: dark 12px header labels on a light grey band, compact rows with hairline dividers, links in blue. */
 const th = 'sticky top-0 z-2 border-b border-line bg-shell-band px-2 py-2 text-left font-normal whitespace-nowrap text-fg'
@@ -41,16 +41,40 @@ const byWeight = (e: BookEntry) => classesOf(e).sort((a, b) => b[1] - a[1])
 const allocText = (e: BookEntry) => byWeight(e).map(([c, w]) => `${c} ${w}%`).join(', ')
 const openTasks = (e: BookEntry) => (e.tasks ?? []).filter((t) => t.status === 'Open').length
 
-/** Asset class cell: a mini allocation bar in the chart colours; the split shows on hover (keeps the table narrow). */
+/**
+ * Asset allocation cell: the two largest asset classes with their weights, then "+N more" when there are others.
+ * Hovering (or clicking) opens the same donut and table as the portfolio pages.
+ */
 function AllocCell({ e }: { e: BookEntry }) {
+  const top = byWeight(e)
+  const shown = top.slice(0, 2)
+  const more = top.length - shown.length
+  const alloc = { Equity: 0, Bonds: 0, Alternatives: 0, Liquidity: 0, ...e.alloc } as Alloc
   return (
-    <Tooltip content={allocText(e)}>
-      <span className="flex items-center gap-2 whitespace-nowrap">
-        <span role="img" aria-label={allocText(e)} className="flex h-2 w-20 shrink-0 gap-0.5 bg-surface-strong">
-          {classesOf(e).map(([c, w]) => <span key={c} className="h-full" style={{ width: `${w}%`, background: CLASS_COLOR[c] }} />)}
-        </span>
-      </span>
-    </Tooltip>
+    <Popover
+      className="w-auto"
+      title="Asset allocation"
+      trigger={
+        <PopoverTrigger openOnHover delay={150} aria-label={`Asset allocation of ${e.name}: ${allocText(e)}`} className="cursor-pointer text-left whitespace-nowrap">
+          {shown.map(([c, w], i) => <span key={c}>{i > 0 && <span className="text-fg-subtle"> · </span>}{c} <span className="tabular-nums">{w}%</span></span>)}
+          {more > 0 && <span className="ml-1.5 text-link hover:underline">+{more} more</span>}
+        </PopoverTrigger>
+      }
+    >
+      <div className="flex items-center gap-6 text-xs">
+        <Donut alloc={alloc} label={e.name} />
+        <table className="border-collapse">
+          <tbody>
+            {ASSET_CLASSES.map((c) => (
+              <tr key={c} className="border-t border-line first:border-t-0">
+                <td className="py-0.75 pr-6 whitespace-nowrap"><Swatch cls={c} />{c}</td>
+                <td className="py-0.75 text-right font-semibold tabular-nums">{e.alloc[c] ?? 0}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Popover>
   )
 }
 
