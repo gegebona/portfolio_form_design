@@ -52,7 +52,7 @@ export function Overview(props: OverviewProps) {
 }
 
 function OverviewBody({ rows, focus, showChange, compact, quality = false }: OverviewProps) {
-  const grid = cn('mt-3 grid shrink-0 rounded-sm border border-line bg-surface text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.1fr)_minmax(0,1.5fr)_minmax(0,0.9fr)]')
+  const grid = cn('mt-3 grid shrink-0 rounded-sm border border-line bg-surface text-xs', quality ? 'grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1.3fr)_minmax(0,1.35fr)_minmax(0,0.9fr)]')
   const { state } = usePortfolio()
   const failed = QUALITY_CHECKS.filter(([, s]) => s < PASS_SCORE)
   const excl = exclusionSummary(state.prefs)
