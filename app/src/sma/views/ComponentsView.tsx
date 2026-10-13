@@ -8,18 +8,15 @@ import { SearchInput } from '../components/ui/input'
 import { GroupLabel, Section } from '../components/ui/layout'
 import { Select } from '../components/ui/select'
 import { Checkbox } from '../components/ui/selection'
-import { Tab, TabCount, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictList } from '../components/ui/tag'
-import { AREAS, CASH_CURRENCIES, COMPONENTS, COMPONENT_INSTRUMENTS, PROVIDERS, type Component } from '../data/data'
+import { CASH_CURRENCIES, COMPONENTS, COMPONENT_INSTRUMENTS, PROVIDERS, type Component } from '../data/data'
 import { componentById, conflictGroups, conflictsIn, f2, instrumentByIsin, usePortfolio } from '../state/portfolio'
 import { ComponentDetail } from './ComponentDetail'
 
 export function ComponentsView() {
   const { state } = usePortfolio()
   const [q, setQ] = useState('')
-  const [area, setArea] = useState('')
   const [provider, setProvider] = useState('')
-  const [kind, setKind] = useState<'bb' | 'mp'>('bb')
   const [learn, setLearn] = useState<string | null>(null)
   // Learn more: the card expands into a large card and collapses back (React <ViewTransition>, shared names).
   const lastOpen = useRef<string | null>(null)
@@ -36,31 +33,22 @@ export function ComponentsView() {
 
   const ql = q.trim().toLowerCase()
   const filtered = COMPONENTS.filter((c) =>
-    (!area || c.area === area) && (!provider || c.provider === provider) &&
+    (!provider || c.provider === provider) &&
     (!ql || `${c.name} ${c.desc} ${c.area} ${c.region} ${c.provider}`.toLowerCase().includes(ql)))
-  const list = filtered.filter((c) => c.kind === kind)
+  const list = filtered.filter((c) => c.kind === 'bb')
 
   return (
     <Section screenHeading title="Component selection" description="Please add the components of the model portfolio." className="flex min-h-0 flex-1 flex-col">
       <div className="mt-4.5 grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_23.75rem] grid-rows-[minmax(0,1fr)] gap-7">
         <div className="flex min-h-0 flex-col">
-          {/* Filters first, provider leading; every field has the app's one field width. */}
-          <div className="flex flex-wrap gap-x-3 gap-y-2.5">
+          {/* One line: the provider filter on the left, the free-text search at the far right (both the app's one field
+              width). Only building blocks can be picked here, so there is no type switch. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2.5">
             <Select value={provider} onValueChange={setProvider} aria-label="Provider" className="w-78 max-w-full"
               items={[{ value: '', label: 'All providers' }, ...PROVIDERS.map((a) => ({ value: a, label: a }))]} />
-            <Select value={area} onValueChange={setArea} aria-label="Investment area" className="w-78 max-w-full"
-              items={[{ value: '', label: 'All investment areas' }, ...AREAS.map((a) => ({ value: a, label: a }))]} />
+            <SearchInput value={q} onValueChange={setQ} placeholder="Search building blocks…" aria-label="Search building blocks" className="w-78 max-w-full" />
           </div>
-          {/* The type tabs, with the free-text search on their right. */}
-          <div className="mt-3.5 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line">
-            <Tabs value={kind} onValueChange={(v) => setKind(v as 'bb' | 'mp')}>
-              <TabsList variant="sub" aria-label="Component type">
-                <Tab value="bb">Building blocks <TabCount>{filtered.filter((c) => c.kind === 'bb').length}</TabCount></Tab>
-                <Tab value="mp">Model portfolios <TabCount>{filtered.filter((c) => c.kind === 'mp').length}</TabCount></Tab>
-              </TabsList>
-            </Tabs>
-            <SearchInput value={q} onValueChange={setQ} placeholder="Search components…" aria-label="Search components" className="mb-1.5 w-78 max-w-full" />
-          </div>
+          <div className="mt-4 border-b border-line"><GroupLabel count={list.length}>Building blocks</GroupLabel></div>
           {/* 4px inner padding so the card focus outline is not clipped by the scroll container. */}
           <div className="-mx-1 mt-3 -mb-1 grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(15.625rem,1fr))] content-start gap-3 overflow-y-auto p-1 pr-2.5">
             {list.map((c) => <CatalogueCard key={c.id} c={c} expanded={learn === c.id} onLearnMore={() => openLearn(c.id)} />)}
