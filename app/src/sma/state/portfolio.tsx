@@ -72,7 +72,7 @@ const INITIAL: PortfolioState = {
   prefs: {
     minPos: '0.5', maxInst: '150',
     sel: { geography: ['em'], sector: ['energy', 'ind'], currency: ['EUR', 'JPY', 'SGD', 'SEK', 'DKK', 'NOK'], category: ['deriv'] },
-    rating: 4, unrated: true, esg: 2,
+    rating: 10, unrated: true, esg: 2, // Ba1 and below excluded
     inst: ['US0378331005', 'FR0000120271'],
   },
   comps: {

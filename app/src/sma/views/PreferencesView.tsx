@@ -153,7 +153,7 @@ function RatingRow() {
   const limited = p.rating < RATINGS.length
   return (
     <Row label="Credit rating" labelId="rating-label" count={limited ? `${RATINGS[p.rating]} and below excluded` : 'Click a grade to exclude it and below'} active={limited} k="rating">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <div className="flex flex-col items-start gap-2">
         {/* Shown from the lowest grade up (C … Aaa), like the ESG scores: what is excluded sits on the left. */}
         <ThresholdScale
           aria-labelledby="rating-label"
@@ -161,7 +161,7 @@ function RatingRow() {
           isExcluded={(j) => RATINGS.length - 1 - j >= p.rating}
           cutAt={RATINGS.length - p.rating}
           onPick={(j) => update((s) => { const r = RATINGS.length - 1 - j; s.prefs.rating = r === s.prefs.rating ? RATINGS.length : r; setOwnValue(s, 'rating') })}
-          className="flex-[0_1_24rem]"
+          className="w-full text-xs"
         />
         <label className="inline-flex cursor-pointer items-center gap-1.5">
           <Checkbox checked={p.unrated} onCheckedChange={(v) => update((s) => { s.prefs.unrated = v; setOwnValue(s, 'rating') })} />

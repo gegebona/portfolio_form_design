@@ -45,7 +45,8 @@ export const CATEGORIES: ExclusionCategory[] = [
   },
 ]
 
-export const RATINGS = ['Aaa', 'Aa', 'A', 'Baa', 'Ba', 'B', 'Caa', 'Ca–C']
+/** Moody's long-term rating scale, best first (all 21 grades). */
+export const RATINGS = ['Aaa', 'Aa1', 'Aa2', 'Aa3', 'A1', 'A2', 'A3', 'Baa1', 'Baa2', 'Baa3', 'Ba1', 'Ba2', 'Ba3', 'B1', 'B2', 'B3', 'Caa1', 'Caa2', 'Caa3', 'Ca', 'C']
 export const ESG_SCORES = ['1', '2', '3', '4', '5']
 
 export type Instrument = { isin: string; name: string }
