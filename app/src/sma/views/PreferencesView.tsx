@@ -32,7 +32,7 @@ export function PreferencesView() {
 
   return (
     <>
-      <Section screenHeading className="border-b border-line pt-4 pb-4" title="Preferences" description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'}>
+      <Section screenHeading className="border-b border-line pt-4 pb-4" title="Preferences" actions={<Button variant="link" onClick={clearAll}>Clear all</Button>} description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'}>
         <div className="mt-3 flex flex-wrap items-start gap-x-10 gap-y-3">
           <Field label="Minimum position size" description={lockNote} error={!custom && minPosError(p.minPos)}>
             <AffixInput aria-invalid={!custom && !!minPosError(p.minPos)} disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-78 max-w-full', custom && 'bg-surface-muted text-fg-muted')} />
@@ -46,7 +46,6 @@ export function PreferencesView() {
       <Section
         title="Exclusions"
         description="Select a suggestion to exclude it in one click, or search the dropdown for any other value."
-        actions={<Button variant="link" onClick={clearAll}>Clear all</Button>}
         className="pt-4"
       >
         <div className="mt-1 flex flex-wrap gap-x-7">
