@@ -50,7 +50,7 @@ export function SmaApp() {
     })
   }
   useEffect(() => {
-    const on = () => { if (location.hash.startsWith('#sma')) show(readHash()) }
+    const on = () => { if (/^#sma(\/|$)/.test(location.hash)) show(readHash()) }
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])

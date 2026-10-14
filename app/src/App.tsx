@@ -18,6 +18,7 @@ import { AllocationView } from './views/AllocationView'
 import { ReportingView } from './views/ReportingView'
 import { SimulationView } from './views/SimulationView'
 import { SmaApp } from './sma/App'
+import { SmaApp as Sma2App } from './sma2/App'
 
 const STEPS = [
   { id: 'data', label: 'Model portfolio data' },
@@ -29,11 +30,12 @@ const STEPS = [
 type StepId = (typeof STEPS)[number]['id']
 /** Reporting is a tab of the flow but not a step of the creation sequence, so Back / forward skip it. */
 type FlowStep = StepId | 'reporting'
-/** sma: the SMA book, an independent copy of the prototype with its own routes under #sma. */
-type Route = FlowStep | 'design' | 'book' | 'sma'
+/** sma, sma2: independent copies of the prototype (one per designer feedback iteration), with their own routes under #sma and #sma2. */
+type Route = FlowStep | 'design' | 'book' | 'sma' | 'sma2'
 
 function readHash(): Route {
   const h = location.hash.slice(1)
+  if (h === 'sma2' || h.startsWith('sma2/')) return 'sma2'
   if (h === 'sma' || h.startsWith('sma/')) return 'sma'
   return h === 'design' || h === 'reporting' || STEPS.some((s) => s.id === h) ? (h as Route) : 'book'
 }
@@ -57,14 +59,15 @@ export default function App() {
     return () => window.removeEventListener('hashchange', on)
   }, [])
   // The MP book (incl. feedback) runs on the firm's Platinum UI palette: switch the tokens on <html> while it is open.
+  const copy = route === 'sma' || route === 'sma2'
   useEffect(() => {
-    document.documentElement.toggleAttribute('data-theme', route === 'sma')
-    if (route === 'sma') document.documentElement.setAttribute('data-theme', 'platinum')
+    document.documentElement.toggleAttribute('data-theme', copy)
+    if (copy) document.documentElement.setAttribute('data-theme', 'platinum')
   }, [route])
   const go = (r: Route) => {
     history.replaceState(null, '', '#' + r)
     // The SMA book routes itself: tell it the hash moved back to its book.
-    if (r === 'sma') window.dispatchEvent(new HashChangeEvent('hashchange'))
+    if (r === 'sma' || r === 'sma2') window.dispatchEvent(new HashChangeEvent('hashchange'))
     show(r)
   }
 
@@ -74,10 +77,10 @@ export default function App() {
       <TooltipProvider delayDuration={300}>
         {/* The MP book (incl. feedback) follows the client book shell: darker grey bands down both sides, and one wide
             central page holding the header, the toolbar band and the content. */}
-        <div className={cn(route === 'sma' && 'h-dvh bg-shell-side')}>
-        <div className={cn('flex h-dvh flex-col overflow-hidden', route === 'sma' && 'mx-auto w-[85%] bg-shell-well')}>
-          <AppHeader route={route} onNavigate={go} wide={route === 'sma'} />
-          {route === 'sma' ? <SmaApp /> : route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
+        <div className={cn(copy && 'h-dvh bg-shell-side')}>
+        <div className={cn('flex h-dvh flex-col overflow-hidden', copy && 'mx-auto w-[85%] bg-shell-well')}>
+          <AppHeader route={route} onNavigate={go} wide={copy} />
+          {route === 'sma2' ? <Sma2App /> : route === 'sma' ? <SmaApp /> : route === 'design' ? <DesignSystemPage /> : route === 'book' ? <BookView /> : <Flow step={route} onStep={go} onBook={() => go('book')} />}
         </div>
         </div>
       </TooltipProvider>
@@ -103,8 +106,9 @@ function HashOpener({ onOpen }: { onOpen: (r: Route) => void }) {
 
 function AppHeader({ route, onNavigate, wide }: { route: Route; onNavigate: (r: Route) => void; /** Inside the central page: the header uses the page's full width. */ wide?: boolean }) {
   const links: { id: string; label: string; note?: string; active: boolean; to: Route }[] = [
-    { id: 'book', label: 'Model portfolio book', active: route !== 'design' && route !== 'sma', to: 'book' as Route },
+    { id: 'book', label: 'Model portfolio book', active: route === 'book' || STEPS.some((s) => s.id === route) || route === 'reporting', to: 'book' as Route },
     { id: 'sma', label: 'MP book', note: 'incl. feedback', active: route === 'sma', to: 'sma' as Route },
+    { id: 'sma2', label: 'MP book', note: 'feedback round 2', active: route === 'sma2', to: 'sma2' as Route },
     { id: 'design', label: 'Design system', active: route === 'design', to: 'design' as Route },
   ]
   return (
