@@ -100,7 +100,9 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   // come from the parent, and only its preferences can be edited.
   const custom = state.custom
   const steps = custom ? STEPS.filter((s) => s.id !== 'components' && s.id !== 'allocation') : STEPS
-  const step: FlowStep = blocked ? 'data' : custom
+  // A new model portfolio has nothing to report on until its simulation is published (finalized).
+  const reportingLocked = state.book.creating
+  const step: FlowStep = blocked ? 'data' : asked === 'reporting' && reportingLocked ? 'simulation' : custom
     ? (asked === 'components' || asked === 'allocation' ? 'simulation' : asked)
     : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
   useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
@@ -188,7 +190,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
           <TabsList variant="step" className="border-y border-line bg-surface px-6">
             {steps.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
-            <Tab value="reporting" disabled={blocked} title={blocked ? 'Complete the model portfolio data first' : undefined}>Reporting</Tab>
+            <Tab value="reporting" disabled={blocked || reportingLocked} title={blocked ? 'Complete the model portfolio data first' : reportingLocked ? 'Available once the simulation is published' : undefined}>Reporting</Tab>
           </TabsList>
         </Tabs>
 
