@@ -87,7 +87,7 @@ function AllocChart({ bench, markers }: { bench: Alloc; markers: Marker[] }) {
                 <Tri shape={m.shape} />
               </span>
             ))}
-            {main && <span className="absolute top-0 ml-2 text-[11px] text-fg-muted tabular-nums" style={{ left: main.alloc[c] + '%' }}>{main.alloc[c].toFixed(1)}%</span>}
+            {main && <span className="absolute bottom-0 ml-2 text-[11px]/3 text-link tabular-nums" style={{ left: main.alloc[c] + '%' }}>{main.alloc[c].toFixed(1)}%</span>}
           </div>
         </div>
       ))}
