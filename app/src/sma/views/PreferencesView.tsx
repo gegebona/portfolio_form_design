@@ -9,7 +9,7 @@ import { Checkbox } from '../components/ui/selection'
 import { ThresholdScale } from '../components/ui/threshold-scale'
 import { CATEGORIES, ESG_SCORES, EXCLUDABLE_INSTRUMENTS, RATINGS, type ExclusionCategory } from '../data/data'
 import { cn } from '../lib/cn'
-import { instrumentByIsin, optionLabel, parentCode, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
+import { instrumentByIsin, maxInstError, minPosError, optionLabel, parentCode, PREF_KEYS, prefText, resetToInherit, setOwnValue, usePortfolio, type PrefKey } from '../state/portfolio'
 
 
 export function PreferencesView() {
@@ -19,6 +19,7 @@ export function PreferencesView() {
   const clearAll = () => update((s) => {
     CATEGORIES.forEach((c) => { s.prefs.sel[c.id] = [] })
     s.prefs.rating = RATINGS.length; s.prefs.unrated = false; s.prefs.esg = 0; s.prefs.inst = []
+    if (!s.custom) { s.prefs.minPos = ''; s.prefs.maxInst = '' }
     PREF_KEYS.forEach((k) => setOwnValue(s, k))
   })
   // Customized: the two limits always come from the parent and cannot be changed here.
@@ -32,12 +33,12 @@ export function PreferencesView() {
   return (
     <>
       <Section screenHeading className="border-b border-line pt-4 pb-4" title="Preferences" description={custom ? `Every preference is inherited from ${parentCode(custom)} unless you give it your own value. Changes to ${parentCode(custom)} reach inherited preferences automatically and skip your own values.` : 'Please configure the preferences specific to the model portfolio in the fields below.'}>
-        <div className="mt-3 flex flex-wrap items-end gap-x-10 gap-y-3">
-          <Field label="Minimum position size" description={lockNote}>
-            <AffixInput disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-78 max-w-full', custom && 'bg-surface-muted text-fg-muted')} />
+        <div className="mt-3 flex flex-wrap items-start gap-x-10 gap-y-3">
+          <Field label="Minimum position size" description={lockNote} error={!custom && minPosError(p.minPos)}>
+            <AffixInput aria-invalid={!custom && !!minPosError(p.minPos)} disabled={!!custom} value={p.minPos} onValueChange={(v) => update((s) => { s.prefs.minPos = v })} inputMode="decimal" suffix="%" className={cn('w-78 max-w-full', custom && 'bg-surface-muted text-fg-muted')} />
           </Field>
-          <Field label="Maximum number of instruments" description={lockNote}>
-            <Input disabled={!!custom} value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-78 max-w-full" />
+          <Field label="Maximum number of instruments" description={lockNote} error={!custom && maxInstError(p.maxInst)}>
+            <Input aria-invalid={!custom && !!maxInstError(p.maxInst)} disabled={!!custom} value={p.maxInst} onValueChange={(v) => update((s) => { s.prefs.maxInst = v })} inputMode="numeric" className="w-78 max-w-full" />
           </Field>
         </div>
       </Section>

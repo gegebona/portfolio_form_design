@@ -6,7 +6,7 @@ import { Tab, Tabs, TabsList } from './components/ui/tabs'
 import { cn } from './lib/cn'
 import { BOOK_USER, type BookEntry } from './data/data'
 import { getBook, nextBookId, setBook } from './state/book'
-import { benchmarkById, missingData, near100, openEntry, portfolioAlloc, PortfolioProvider, usePortfolio, publishSim } from './state/portfolio'
+import { benchmarkById, missingData, prefsInvalid, near100, openEntry, portfolioAlloc, PortfolioProvider, usePortfolio, publishSim } from './state/portfolio'
 import { BookView } from './views/BookView'
 import { ParentLink } from './views/ParentLink'
 import { DataView } from './views/DataView'
@@ -102,7 +102,10 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   const steps = custom ? STEPS.filter((s) => s.id !== 'components' && s.id !== 'allocation') : STEPS
   // A new model portfolio has nothing to report on until its simulation is published (finalized).
   const reportingLocked = state.book.creating
-  const step: FlowStep = blocked ? 'data' : asked === 'reporting' && reportingLocked ? 'simulation' : custom
+  // Invalid limits on Preferences keep the user there until they are corrected (empty limits are fine: they are optional).
+  const prefsBad = prefsInvalid(state)
+  const afterPrefs = (id: string) => prefsBad && id !== 'data' && id !== 'preferences'
+  const step: FlowStep = blocked ? 'data' : afterPrefs(asked) ? 'preferences' : asked === 'reporting' && reportingLocked ? 'simulation' : custom
     ? (asked === 'components' || asked === 'allocation' ? 'simulation' : asked)
     : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
   useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
@@ -189,8 +192,8 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         </header>
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
           <TabsList variant="step" className="border-y border-line bg-surface px-6">
-            {steps.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
-            <Tab value="reporting" disabled={blocked || reportingLocked} title={blocked ? 'Complete the model portfolio data first' : reportingLocked ? 'Available once the simulation is published' : undefined}>Reporting</Tab>
+            {steps.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || afterPrefs(s.id) || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : afterPrefs(s.id) ? 'Correct the preferences first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
+            <Tab value="reporting" disabled={blocked || prefsBad || reportingLocked} title={blocked ? 'Complete the model portfolio data first' : prefsBad ? 'Correct the preferences first' : reportingLocked ? 'Available once the simulation is published' : undefined}>Reporting</Tab>
           </TabsList>
         </Tabs>
 
@@ -207,7 +210,7 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
         {/* Reporting has its own action (Generate) and is not part of the Back / forward sequence. */}
         {step !== 'reporting' && <ActionBar
           back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
-          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
+          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || afterPrefs(next.id) || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
           onSave={viewingCurrent || (custom && custom.version > 0) ? undefined : () => save()}
           saveDisabled={blocked}
           note={custom && step === 'simulation' ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : step === 'simulation' ? publishBlock : undefined}

@@ -131,6 +131,11 @@ export function missingData(s: PortfolioState): string[] {
   return [!d.code.trim() && 'code', codeTaken(s) && 'code', !d.name.trim() && 'name', !BENCHMARKS.some((b) => b.id === d.benchmark) && 'benchmark'].filter((v): v is string => !!v)
 }
 
+/** Limits on Preferences are optional; when filled in: minimum position 0–100 with at most two decimals, maximum instruments a whole number above 0. */
+export const minPosError = (v: string) => (v.trim() && !(/^\d+(\.\d{1,2})?$/.test(v.trim()) && +v <= 100) ? 'Enter a percentage from 0 to 100, with at most two decimals' : '')
+export const maxInstError = (v: string) => (v.trim() && !(/^\d+$/.test(v.trim()) && +v > 0) ? 'Enter a whole number greater than 0' : '')
+export const prefsInvalid = (s: PortfolioState) => !s.custom && !!(minPosError(s.prefs.minPos) || maxInstError(s.prefs.maxInst))
+
 /** The model portfolio code must be unique in the book (case-insensitive); the portfolio being edited keeps its own code. */
 export function codeTaken(s: PortfolioState): boolean {
   const c = s.data.code.trim().toUpperCase()
