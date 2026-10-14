@@ -128,7 +128,13 @@ export function usePortfolio() {
  */
 export function missingData(s: PortfolioState): string[] {
   const d = s.data
-  return [!d.code.trim() && 'code', !d.name.trim() && 'name', !BENCHMARKS.some((b) => b.id === d.benchmark) && 'benchmark'].filter((v): v is string => !!v)
+  return [!d.code.trim() && 'code', codeTaken(s) && 'code', !d.name.trim() && 'name', !BENCHMARKS.some((b) => b.id === d.benchmark) && 'benchmark'].filter((v): v is string => !!v)
+}
+
+/** The model portfolio code must be unique in the book (case-insensitive); the portfolio being edited keeps its own code. */
+export function codeTaken(s: PortfolioState): boolean {
+  const c = s.data.code.trim().toUpperCase()
+  return !!c && getBook().some((e) => e.id !== s.book.id && ('MP_' + e.id).toUpperCase() === c)
 }
 
 /**

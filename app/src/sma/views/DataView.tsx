@@ -4,7 +4,7 @@ import { Field, Input } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
 import { Select } from '../components/ui/select'
 import { BENCHMARKS, PORTFOLIO_CURRENCIES } from '../data/data'
-import { parentCode, usePortfolio } from '../state/portfolio'
+import { codeTaken, parentCode, usePortfolio } from '../state/portfolio'
 import { ParentLink } from './ParentLink'
 
 export function DataView() {
@@ -17,8 +17,8 @@ export function DataView() {
     <div className="flex flex-wrap">
       <Section screenHeading title="Model portfolio data" description="Please enter the data specific to the model portfolio." className="w-90 shrink-0 border-r border-line">
         <div className="mt-5 flex flex-col gap-4">
-          <Field label="Model portfolio code" error={touched.code && !d.code.trim() && 'Required'}>
-            <Input aria-invalid={touched.code && !d.code.trim()} onBlur={() => setTouched((t) => ({ ...t, code: true }))} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
+          <Field label="Model portfolio code" error={codeTaken(state) ? 'This code is already used by another model portfolio' : touched.code && !d.code.trim() && 'Required'}>
+            <Input aria-invalid={codeTaken(state) || (touched.code && !d.code.trim())} onBlur={() => setTouched((t) => ({ ...t, code: true }))} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
           </Field>
           <Field label="Model portfolio name" error={touched.name && !d.name.trim() && 'Required'}>
             <Input aria-invalid={touched.name && !d.name.trim()} onBlur={() => setTouched((t) => ({ ...t, name: true }))} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
@@ -102,8 +102,8 @@ function CustomDataView() {
         className="w-90 shrink-0 border-r border-line"
       >
         <div className="mt-5 flex flex-col gap-4">
-          <Field label="Model portfolio code" error={touched.code && !d.code.trim() && 'Required'}>
-            <Input aria-invalid={touched.code && !d.code.trim()} onBlur={() => setTouched((t) => ({ ...t, code: true }))} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
+          <Field label="Model portfolio code" error={codeTaken(state) ? 'This code is already used by another model portfolio' : touched.code && !d.code.trim() && 'Required'}>
+            <Input aria-invalid={codeTaken(state) || (touched.code && !d.code.trim())} onBlur={() => setTouched((t) => ({ ...t, code: true }))} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
           </Field>
           <Field label="Model portfolio name" error={touched.name && !d.name.trim() && 'Required'}>
             <Input aria-invalid={touched.name && !d.name.trim()} onBlur={() => setTouched((t) => ({ ...t, name: true }))} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
