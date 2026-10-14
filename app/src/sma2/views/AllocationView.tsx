@@ -7,15 +7,13 @@ import { ConflictList } from '../components/ui/tag'
 import { WeightField, WeightSlider } from '../components/ui/weight'
 import { cn } from '../lib/cn'
 import {
-  allocItems, benchmarkAlloc, conflictGroups, conflictsIn, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
+  allocItems, conflictGroups, conflictsIn, f2, near100, portfolioAlloc, removeItem, setWeight, usePortfolio, weightOf, type AllocItem,
 } from '../state/portfolio'
 import { ComponentDetail } from './ComponentDetail'
-import { Overview } from './Overview'
+import { ChartBand } from './ChartBand'
 
 export function AllocationView() {
   const { state, update } = usePortfolio()
-  // Compact by default: the strip is context, the tables below are the work. Full view is one click away.
-  const [compact, setCompact] = useState(true)
   const [selKey, setSelKey] = useState<string | null>(null)
   const list = allocItems(state)
   const sel = list.find((it) => it.key === selKey) ?? list[0]
@@ -40,7 +38,7 @@ export function AllocationView() {
       className="flex min-h-0 flex-1 flex-col"
     >
       <div className="mt-3.5">
-        <Overview rows={[{ label: 'Portfolio', alloc: portfolioAlloc(state) }, { label: 'Benchmark', alloc: benchmarkAlloc(state) }]} focus={0} compact={compact} quality={false} onToggleCompact={() => setCompact(!compact)} />
+        <ChartBand markers={[{ label: 'Portfolio', alloc: portfolioAlloc(state), shape: 'up' }]} />
       </div>
       <div className="mt-1 grid min-h-0 flex-1 grid-cols-[26.25rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)]">
         <div className="flex min-h-0 flex-col">

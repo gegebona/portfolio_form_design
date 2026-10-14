@@ -158,6 +158,7 @@
   --color-chart-3: var(--color-ubs-chart-12);   /* Alternatives */
   --color-chart-4: var(--color-ubs-chart-07);   /* Liquidity */
   --color-chart-neutral: var(--color-ubs-graph-chart-02);
+  --color-chart-2-light: #d0dee7;   /* light band behind a benchmark value (Platinum custom chart 2 light) */
 }
 
 /*

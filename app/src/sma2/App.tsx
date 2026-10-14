@@ -3,10 +3,12 @@ import { addTransitionType, startTransition, useEffect, useLayoutEffect, useRef,
 import { Button } from './components/ui/button'
 import { TooltipProvider } from './components/ui/tag'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
-import { cn } from './lib/cn'
-import { BOOK_USER, type BookEntry } from './data/data'
+import { Section } from './components/ui/layout'
+import { Tabs as RTabs } from 'radix-ui'
+import { Info } from 'lucide-react'
+import { BOOK_AS_OF, BOOK_USER, type BookEntry } from './data/data'
 import { getBook, nextBookId, setBook } from './state/book'
-import { benchmarkById, missingData, prefsInvalid, near100, openEntry, portfolioAlloc, PortfolioProvider, usePortfolio, publishSim } from './state/portfolio'
+import { benchmarkById, missingData, prefsInvalid, near100, openEntry, parentCode, portfolioAlloc, PortfolioProvider, usePortfolio, publishSim } from './state/portfolio'
 import { BookView } from './views/BookView'
 import { ParentLink } from './views/ParentLink'
 import { DataView } from './views/DataView'
@@ -15,6 +17,7 @@ import { ComponentsView } from './views/ComponentsView'
 import { AllocationView } from './views/AllocationView'
 import { ReportingView } from './views/ReportingView'
 import { SimulationView } from './views/SimulationView'
+import { ExposureView } from './views/ExposureView'
 
 const STEPS = [
   { id: 'data', label: 'Model portfolio data' },
@@ -24,14 +27,30 @@ const STEPS = [
   { id: 'simulation', label: 'Simulation' },
 ] as const
 type StepId = (typeof STEPS)[number]['id']
-/** Reporting is a tab of the flow but not a step of the creation sequence, so Back / forward skip it. */
-type FlowStep = StepId | 'reporting'
+/** Reporting is a tab of the flow but not a step of the creation sequence, so Back / forward skip it. Exposure is a page
+ *  tab of an existing portfolio (during creation it is a view inside Simulation). */
+type FlowStep = StepId | 'reporting' | 'exposure'
+/**
+ * An existing portfolio opens on the client book's portfolio page structure: its page tabs start with what it holds
+ * (Portfolio = the positions, Exposure), then what defines it. Simulation is called Portfolio here.
+ */
+const PAGE_TABS: { id: FlowStep; label: string }[] = [
+  { id: 'simulation', label: 'Portfolio' },
+  { id: 'exposure', label: 'Exposure' },
+  { id: 'allocation', label: 'Component allocation' },
+  { id: 'components', label: 'Component selection' },
+  { id: 'preferences', label: 'Preferences' },
+  { id: 'data', label: 'Model portfolio data' },
+  { id: 'reporting', label: 'Reporting' },
+]
+/** Tabs that edit the working version: opening one switches the page to New (Current is read-only). */
+const EDITS = new Set<FlowStep>(['data', 'preferences', 'components', 'allocation'])
 type Route = FlowStep | 'book'
 
 /** The SMA book lives under #sma2: #sma2 is its book, #sma2/<step> a step of its flow. */
 function readHash(): Route {
   const h = location.hash.replace(/^#sma2\/?/, '')
-  return h === 'reporting' || STEPS.some((s) => s.id === h) ? (h as Route) : 'book'
+  return h === 'reporting' || h === 'exposure' || STEPS.some((s) => s.id === h) ? (h as Route) : 'book'
 }
 const hashOf = (r: Route) => (r === 'book' ? '#sma2' : '#sma2/' + r)
 
@@ -82,20 +101,26 @@ function HashOpener({ onOpen }: { onOpen: (r: Route) => void }) {
   return null
 }
 
-function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: FlowStep) => void; onBook: () => void }) {
+function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (r: FlowStep) => void; onBook: () => void }) {
   const { state, update } = usePortfolio()
+  // A portfolio in its creation workflow keeps the step sequence; an existing one gets the page tabs.
+  const creatingFlow = !!state.book.creating
+  const asked: FlowStep = askedIn === 'exposure' && creatingFlow ? 'simulation' : askedIn
+  const mode = state.sim.mode
+  const onStep = (r: FlowStep) => { if (EDITS.has(r) && mode === 'current') update((s) => { s.sim.mode = 'new' }); go(r) }
+  const setMode = (m: 'current' | 'new') => { update((s) => { s.sim.mode = m }); if (m === 'current' && EDITS.has(asked)) go('simulation') }
   // Mandatory data of the first step gates everything: later steps stay locked and the draft cannot be saved.
   const missing = missingData(state)
   const blocked = missing.length > 0
   // Simulation's Current version is the published portfolio: read-only, so it can be neither saved as a draft nor published.
-  const viewingCurrent = asked === 'simulation' && state.sim.mode === 'current'
+  const viewingCurrent = (asked === 'simulation' || asked === 'exposure') && mode === 'current'
   // Simulation needs a complete allocation: exactly 100%, never adjusted silently.
   const alloc = portfolioAlloc(state)
   const allocOk = near100(alloc.Equity + alloc.Bonds + alloc.Alternatives + alloc.Liquidity)
   // Preferences are optional, so the user may go straight from the data form to Component selection. Allocation and
   // Simulation need something to allocate: at least one building block, model portfolio or instrument (cash alone is not enough).
   const hasComponents = state.comps.added.length + state.comps.inst.length > 0
-  const needsComponents = (id: string) => (id === 'allocation' || id === 'simulation') && !hasComponents
+  const needsComponents = (id: string) => (id === 'allocation' || id === 'simulation' || id === 'exposure') && !hasComponents
   // A customized portfolio has no Component selection or Component allocation: its components, instruments and weights
   // come from the parent, and only its preferences can be edited.
   const custom = state.custom
@@ -107,8 +132,8 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
   const afterPrefs = (id: string) => prefsBad && id !== 'data' && id !== 'preferences'
   const step: FlowStep = blocked ? 'data' : afterPrefs(asked) ? 'preferences' : asked === 'reporting' && reportingLocked ? 'simulation' : custom
     ? (asked === 'components' || asked === 'allocation' ? 'simulation' : asked)
-    : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
-  useEffect(() => { if (asked !== step) onStep(step) }, [asked, step])
+    : needsComponents(asked) ? 'components' : (asked === 'simulation' || asked === 'exposure') && !allocOk ? 'allocation' : asked
+  useEffect(() => { if (askedIn !== step) go(step) }, [askedIn, step])
   const i = steps.findIndex((s) => s.id === step)
   const prev = steps[i - 1]
   const next = steps[i + 1]
@@ -160,40 +185,59 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
     } else setBook([...l, { id, type: 'Standard', creator: BOOK_USER, status: publish ? 'Published' : 'Draft', ...fields }])
     if (!publish) return onBook()
     update((s) => publishSim(s, id, hadCurrent))
-    onStep('simulation')
+    go('simulation')
   }
+  // Version folder tabs, as Current / Solve all in the client book. A portfolio being created has only New.
+  const entry = getBook().find((e) => e.id === state.book.id)
+  const lastUpdate = state.sim.loadedOn || entry?.modified || BOOK_AS_OF
+  const lastPublished = state.sim.publishedAt ?? (custom ? (custom.version > 0 ? custom.published : undefined) : entry?.status === 'Published' ? entry.modified : undefined)
+  const pub = state.sim.published
+  const pageTabs = custom ? PAGE_TABS.filter((t) => t.id !== 'components' && t.id !== 'allocation') : PAGE_TABS
+  const name = state.data.name || (custom ? 'New customized version' : 'New model portfolio')
+  const tabOff = (id: FlowStep) => (id === 'reporting' ? blocked || prefsBad || reportingLocked : (blocked && id !== 'data') || afterPrefs(id) || needsComponents(id) || ((id === 'simulation' || id === 'exposure') && !allocOk))
+  const tabWhy = (id: FlowStep) => (blocked && id !== 'data' ? 'Complete the model portfolio data first' : afterPrefs(id) ? 'Correct the preferences first' : id === 'reporting' && reportingLocked ? 'Available once the simulation is published' : needsComponents(id) ? 'Select at least one component first' : (id === 'simulation' || id === 'exposure') && !allocOk ? 'The allocation must total exactly 100%' : undefined)
   return (
     <main className="flex min-h-0 w-full flex-1 flex-col">
       {/* No box around the flow (as the client book's portfolio page): the portfolio header sits on the page grey, then the tabs,
           the view (the only part that scrolls) and the action bar run edge to edge. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <header className="shrink-0 px-6 pt-3 pb-3">
-          <nav aria-label="Breadcrumb" className="mb-1.5 flex items-center gap-1.5 text-xs">
+        {/* As the client book's portfolio page: no page title, the breadcrumb carries the portfolio and its key facts. */}
+        <header className="shrink-0 px-6 pt-3.5 pb-3">
+          <h1 className="sr-only">{name}</h1>
+          <nav aria-label="Breadcrumb" className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
             <a href="#sma2" className="text-link hover:text-link-hover">MP book</a>
-            <span aria-hidden className="text-fg-subtle">›</span>
-            <span>{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</span>
-          </nav>
-          {/* The portfolio is the subject of every step: its name leads, its facts follow, and in Simulation a tag says which version is on screen. */}
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h1 className="text-2xl">{state.data.name || (custom ? 'New customized version' : 'New model portfolio')}</h1>
-            <span className="text-xs text-fg-muted">{[state.data.code, state.data.ccy].filter(Boolean).join(' · ')}</span>
+            <span aria-hidden className="text-fg-subtle">‹</span>
+            <span>{name}</span>
+            <span className="ml-2 text-fg-muted">{[state.data.code, state.data.ccy, benchmarkById(state.data.benchmark)?.name].filter(Boolean).join(' · ')}</span>
             {custom && (
-              <span className="self-center text-xs text-fg-muted">
+              <span className="ml-2 text-xs text-fg-muted">
                 <span className="mr-1.5 rounded-xs border border-control px-1.5 text-xs/4.5 text-fg">Customized</span>
                 of <ParentLink />
               </span>
             )}
-            {step === 'simulation' && (
-              <span className={cn('self-center rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', viewingCurrent ? 'border border-control text-fg-muted' : 'bg-surface-strong')}>
-                {viewingCurrent ? (state.sim.published ? 'Current · last data load, read-only' : custom ? `Current version ${custom.version} · published, read-only` : 'Current version · published, read-only') : custom ? 'New version · pending, not published' : 'New version · working copy'}
-              </span>
-            )}
-          </div>
+          </nav>
         </header>
+        {/* Version folder tabs on the panel's top edge; the open one joins the panel below. */}
+        <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 px-6">
+          <RTabs.Root value={creatingFlow ? 'new' : mode} onValueChange={(v) => setMode(v as 'current' | 'new')}>
+            <RTabs.List aria-label="Portfolio version" className="-mb-px flex gap-1.5">
+              {!creatingFlow && <VersionCard value="current" title="Current" sub={custom?.version === 0 ? 'Not published yet' : `Last updated: ${lastUpdate}`} disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined} />}
+              <VersionCard value="new" title="New" sub={creatingFlow ? 'Not published yet' : lastPublished ? `Last published: ${lastPublished}` : 'No publication yet'} disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined} />
+            </RTabs.List>
+          </RTabs.Root>
+          <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
+            <Info className="size-3.5" strokeWidth={1.5} />
+            {creatingFlow ? 'New model portfolio — nothing is published until you publish it.'
+              : mode === 'current' ? (pub ? `Read-only — Current is the last data load; the version published on ${pub} applies from the next load.` : `Read-only — last updated on ${lastUpdate}.`)
+              : pub ? `Working version — changes are compared with the version published on ${pub}.` : custom ? 'Pending, not published — Current stays active until you publish.' : 'Working version — changes stay here until you publish.'}
+          </div>
+        </div>
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
-          <TabsList variant="step" className="border-y border-line bg-surface px-6">
-            {steps.map((s) => <Tab key={s.id} value={s.id} disabled={(blocked && s.id !== 'data') || afterPrefs(s.id) || needsComponents(s.id) || (s.id === 'simulation' && !allocOk)} title={blocked && s.id !== 'data' ? 'Complete the model portfolio data first' : afterPrefs(s.id) ? 'Correct the preferences first' : needsComponents(s.id) ? 'Select at least one component first' : s.id === 'simulation' && !allocOk ? 'The allocation must total exactly 100%' : undefined}>{s.label}</Tab>)}
-            <Tab value="reporting" disabled={blocked || prefsBad || reportingLocked} title={blocked ? 'Complete the model portfolio data first' : prefsBad ? 'Correct the preferences first' : reportingLocked ? 'Available once the simulation is published' : undefined}>Reporting</Tab>
+          <TabsList variant="step" className="border border-line bg-surface px-3">
+            {creatingFlow
+              ? <>{steps.map((s) => <Tab key={s.id} value={s.id} disabled={tabOff(s.id)} title={tabWhy(s.id)}>{s.label}</Tab>)}
+                  <Tab value="reporting" disabled={tabOff('reporting')} title={tabWhy('reporting')}>Reporting</Tab></>
+              : pageTabs.map((t) => <Tab key={t.id} value={t.id} disabled={tabOff(t.id)} title={tabWhy(t.id)}>{t.label}</Tab>)}
           </TabsList>
         </Tabs>
 
@@ -202,18 +246,18 @@ function Flow({ step: asked, onStep, onBook }: { step: FlowStep; onStep: (r: Flo
           {/* Animates only when a step change tags the transition 'forward' / 'back'; other updates inside stay instant. */}
           <ViewTransition update={{ forward: 'step-forward', back: 'step-back', default: 'none' }} default="none">
             <div className="flex min-h-0 flex-1 flex-col">
-              {step === 'data' ? <DataView /> : step === 'preferences' ? <PreferencesView /> : step === 'components' ? <ComponentsView /> : step === 'allocation' ? <AllocationView /> : step === 'reporting' ? <ReportingView /> : <SimulationView />}
+              {step === 'data' ? <DataView /> : step === 'preferences' ? <PreferencesView /> : step === 'components' ? <ComponentsView /> : step === 'allocation' ? <AllocationView /> : step === 'reporting' ? <ReportingView /> : step === 'exposure' ? <Section className="pt-4 pb-4"><ExposureView mode={mode} /></Section> : <SimulationView />}
             </div>
           </ViewTransition>
         </div>
 
         {/* Reporting has its own action (Generate) and is not part of the Back / forward sequence. */}
         {step !== 'reporting' && <ActionBar
-          back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
-          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || afterPrefs(next.id) || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
+          back={creatingFlow ? prev && { label: prev.label, onClick: () => onStep(prev.id) } : undefined}
+          next={creatingFlow && next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || afterPrefs(next.id) || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
           onSave={viewingCurrent || (custom && custom.version > 0) ? undefined : () => save()}
           saveDisabled={blocked}
-          note={custom && step === 'simulation' ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : step === 'simulation' ? publishBlock : undefined}
+          note={custom ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : step === 'simulation' || !creatingFlow ? publishBlock : undefined}
         />}
       </div>
     </main>
@@ -245,3 +289,17 @@ function ActionBar({ back, next, onSave, saveDisabled, note }: { saveDisabled?: 
   )
 }
 
+
+function VersionCard({ value, title, sub, disabled, hint }: { value: 'current' | 'new'; title: string; sub: string; disabled?: boolean; hint?: string }) {
+  return (
+    <RTabs.Trigger
+      value={value}
+      disabled={disabled}
+      title={hint}
+      className="flex w-64 cursor-pointer flex-col justify-center border border-line bg-surface-subtle px-3 py-2 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-surface data-[state=active]:bg-surface"
+    >
+      <span className="text-base/5">{title}</span>
+      <span className="self-end text-xs/4 text-fg-muted">{sub}</span>
+    </RTabs.Trigger>
+  )
+}

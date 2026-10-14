@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Info, Lock, MoreVertical, TriangleAlert } from 'lucide-react'
+import { ChevronDown, ChevronRight, Lock, MoreVertical, TriangleAlert } from 'lucide-react'
 import { addTransitionType, Fragment, startTransition, useState, ViewTransition, type ReactNode } from 'react'
 import { Button } from '../components/ui/button'
 import { Section } from '../components/ui/layout'
@@ -6,29 +6,31 @@ import { MultiCombobox } from '../components/ui/combobox'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
 import { Radio, RadioGroup, Switch } from '../components/ui/selection'
-import { Tabs as RTabs } from 'radix-ui'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
-import { ADDABLE_POSITIONS, ASSET_CLASSES, BOOK_AS_OF, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
+import { ADDABLE_POSITIONS, BOOK_USER, CLASS_COLOR, PARENT_UPDATE, type AssetClass } from '../data/data'
 import { cn } from '../lib/cn'
-import { getBook, setBookTaskStatus } from '../state/book'
+import { setBookTaskStatus } from '../state/book'
 import { addOwnPosition, f2, isCreating, near100, parentCode, PREF_LABEL, removeOwnPosition, setOwnWeight, reductionShare, round2, simAlloc, usePortfolio, type SimRow } from '../state/portfolio'
 import { ExposureView } from './ExposureView'
-import { Overview, Swatch } from './Overview'
+import { Swatch } from './Overview'
+import { ChartBand, type Marker } from './ChartBand'
 
 type Mode = 'current' | 'new'
-type View = 'instrument' | 'class' | 'block' | 'exposure'
-const VIEWS: [View, string][] = [['instrument', 'Instrument view'], ['class', 'Asset class view'], ['block', 'Building block view'], ['exposure', 'Exposure view']]
+type View = 'instrument' | 'block' | 'exposure'
+/** The positions grouped by asset class (editable) or by building block. Exposure is its own page tab for an existing
+ *  portfolio; during creation it stays a view of Simulation. */
+const VIEWS: [View, string][] = [['instrument', 'By asset class'], ['block', 'By building block'], ['exposure', 'Exposure']]
 
-export function SimulationView() {
+export function SimulationView({ exposureOnly }: { /** The Exposure page tab of an existing portfolio: its charts only. */ exposureOnly?: boolean } = {}) {
   const { state, update } = usePortfolio()
+  const creating = isCreating(state)
   // Kept in the flow state (not local) so the action bar knows which version is on screen: only New can be saved as a draft.
   const mode = state.sim.mode
   const setMode = (m: Mode) => update((s) => { s.sim.mode = m })
-  const [view, setView] = useState<View>('instrument')
-  // Open by default on Simulation: the strip explains the figures below. It folds away with one click.
-  const [compact, setCompact] = useState(false)
+  const [picked, setView] = useState<View>('instrument')
+  const view: View = exposureOnly ? 'exposure' : picked
   const [showZero, setShowZero] = useState(false)
   const [adding, setAdding] = useState(false)
   const rows = state.sim.rows
@@ -37,11 +39,6 @@ export function SimulationView() {
   const cur = mode === 'current'
   const custom = state.custom
   const pub = state.sim.published
-  // When Current was last updated: the customized version's last publication, else the book entry's last change.
-  const entry = getBook().find((e) => e.id === state.book.id)
-  const lastUpdate = state.sim.loadedOn || entry?.modified || BOOK_AS_OF
-  // Under the New card: when this portfolio was last published, or that it has not been yet.
-  const lastPublished = state.sim.publishedAt ?? (custom ? (custom.version > 0 ? custom.published : undefined) : entry?.status === 'Published' ? entry.modified : undefined)
   const total = cur ? rows.reduce((s, r) => s + r.w, 0) : rows.filter((r) => !r.removed).reduce((s, r) => s + r.nw, 0)
 
   const redistribute = () => update((s) => {
@@ -55,41 +52,22 @@ export function SimulationView() {
 
   return (
     <Section className="flex min-h-0 flex-1 flex-col pt-3 pb-2.5">
-      {/* Version cards, as Current / Solve all / Custom in the client book: folder tabs on the content's top line. The open
-          one takes the content's colour and joins it; the other sits back in grey. The info line stays on the right. */}
-      <h2 className="sr-only">Simulation</h2>
-      <div className="flex flex-wrap items-end gap-x-6 gap-y-2 border-b border-line">
-        <RTabs.Root value={mode} onValueChange={(v) => switchTable(() => setMode(v as Mode))}>
-          <RTabs.List aria-label="Portfolio version" className="-mb-px flex gap-1.5">
-            <VersionCard value="current" title="Current" sub={custom?.version === 0 ? 'Not published yet' : `Last updated: ${lastUpdate}`} disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined} />
-            <VersionCard value="new" title="New" sub={lastPublished ? `Last published: ${lastPublished}` : 'No publication yet'} disabled={!!custom && !custom.hasNew} hint={custom && !custom.hasNew ? `No new version: the update from ${parentCode(custom)} could not be applied` : undefined} />
-          </RTabs.List>
-        </RTabs.Root>
-        {!cur && (
-          <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
-            <Info className="size-3.5" strokeWidth={1.5} />
-            {pub ? `Working version — changes are compared with the version published on ${pub}.` : custom ? 'Pending, not published — Current stays active until you publish.' : 'Working version — changes stay here until you publish.'}
-          </div>
-        )}
-        {cur && (
-          <div className="ml-auto flex items-center gap-1.5 pb-2.5 text-xs text-fg-muted">
-            <Info className="size-3.5" strokeWidth={1.5} />
-            {pub ? `Read-only — Current is the last data load; the version published on ${pub} applies from the next load.` : `Read-only — last updated on ${lastUpdate}.`}
-          </div>
-        )}
-      </div>
-      {/* The Exposure view carries its own asset allocation, so the summary strip would only repeat it there. */}
-      {/* After a publication the card compares the last published weights with New; before, Current with New. */}
-      {view !== 'exposure' && <Overview rows={[pub && !cur ? { label: 'Last published', alloc: simAlloc(state, 'published') } : { label: 'Current', alloc: simAlloc(state, 'current') }, { label: 'New', alloc: simAlloc(state, 'new') }]} focus={cur ? 0 : 1} showChange compact={compact} onToggleCompact={() => setCompact(!compact)} />}
+      <h2 className="sr-only">{exposureOnly ? 'Exposure' : 'Portfolio'}</h2>
+      {/* The band of three panels, as on the client book's portfolio page. After a publication New is compared with the
+          last published weights; before, with Current. */}
+      {!exposureOnly && <ChartBand markers={cur ? [{ label: 'Current', alloc: simAlloc(state, 'current'), shape: 'down' }] : [pub ? { label: 'Last published', alloc: simAlloc(state, 'published'), shape: 'down' } : creating ? null : { label: 'Current', alloc: simAlloc(state, 'current'), shape: 'down' }, { label: 'New', alloc: simAlloc(state, 'new'), shape: 'up' }].filter((m): m is Marker => !!m)} />}
       {custom?.auto && <AutoUpdate />}
 
-      <div className="mt-2 flex min-h-0 flex-1 flex-col">
-        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line">
-          <Tabs value={view} onValueChange={(v) => switchTable(() => setView(v as View))}>
-            <TabsList variant="sub" aria-label="Positions view">
-              {VIEWS.map(([v, l]) => <Tab key={v} value={v}>{l}</Tab>)}
-            </TabsList>
-          </Tabs>
+      <div className={cn('flex min-h-0 flex-1 flex-col', !exposureOnly && 'mt-4')}>
+        {!exposureOnly && <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-line">
+          <div className="flex items-end gap-6">
+            <h3 className="pb-1.5 text-lg/6">Positions</h3>
+            <Tabs value={view} onValueChange={(v) => switchTable(() => setView(v as View))}>
+              <TabsList variant="sub" aria-label="Group positions">
+                {VIEWS.filter(([v]) => v !== 'exposure' || creating).map(([v, l]) => <Tab key={v} value={v}>{l}</Tab>)}
+              </TabsList>
+            </Tabs>
+          </div>
           <div className="flex items-center gap-4.5 pb-1.5">
             {!cur && !custom && <Button size="sm" onClick={() => { location.hash = 'sma2/components' }}>+ Add component</Button>}
             {!cur && custom && <Button size="sm" aria-expanded={adding} onClick={() => setAdding(true)}>+ Add position</Button>}
@@ -100,28 +78,34 @@ export function SimulationView() {
               </label>
             )}
           </div>
-        </div>
+        </div>}
         {adding && !cur && custom && <AddPosition onClose={() => setAdding(false)} />}
         {/* The scrolling container is the boundary (its picture stays clipped): the old table fades out, the new one fades in. */}
         <ViewTransition update={{ positions: 'table-swap', default: 'none' }} default="none">
         <div className="min-h-0 flex-1 overflow-auto">
           {view === 'instrument' ? <InstrumentTable mode={mode} showZero={showZero} />
             : view === 'exposure' ? <ExposureView mode={mode} />
-            : <GroupTable key={view} mode={mode} showZero={showZero} order={view === 'class' ? ASSET_CLASSES : undefined} hide={view === 'class' ? 'cls' : view === 'block' ? 'bb' : undefined}
-                keyOf={view === 'class' ? (r) => r.cls : (r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments')} />}
+            : <GroupTable key={view} mode={mode} showZero={showZero} hide="bb"
+                keyOf={(r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments')} />}
         </div>
         </ViewTransition>
-        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-line-strong px-2.5 pt-1.5 text-xs">
-          <span className="text-fg-muted">{cur ? 'Total weight' : 'Total new weight'}</span>
-          <strong className={cn('text-sm font-semibold tabular-nums', !near100(total) && 'text-error')}>{f2(total)}%</strong>
+        {/* Total row, as "Total gross" in the client book: the label on the left, the figure under the weights. */}
+        {view !== 'exposure' && <div className="flex shrink-0 items-center gap-3 border border-t-line-strong border-line bg-surface-subtle px-2.5 py-1.5 text-sm">
+          <span>{cur ? 'Total weight' : 'Total new weight'}</span>
+          <strong className={cn('ml-auto font-semibold tabular-nums', !near100(total) && 'text-error')}>{f2(total)}%</strong>
           {!cur && !custom && <Button size="xs" disabled={near100(total)} onClick={redistribute}>Redistribute to 100%</Button>}
-        </div>
+        </div>}
       </div>
     </Section>
   )
 }
 
-const th = 'sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg-muted'
+// Header cells as in the client book: short rules between the columns.
+const th = "sticky top-0 z-2 border-b border-line bg-surface-subtle px-2.5 py-2 text-left font-normal whitespace-nowrap text-fg before:absolute before:top-1/4 before:left-0 before:h-1/2 before:w-px before:bg-line-strong first:before:hidden"
+
+/** Positions are grouped by asset class, in the client book's order. */
+const GROUPS: AssetClass[] = ['Liquidity', 'Bonds', 'Equity', 'Alternatives']
+const GROUP_LABEL: Record<AssetClass, string> = { Liquidity: 'Liquidity', Bonds: 'Fixed income', Equity: 'Equity', Alternatives: 'Alternatives' }
 
 const td = 'border-b border-line px-2.5 py-1.5 align-middle'
 
@@ -166,6 +150,9 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
   // The position being removed, or whose position task is being accepted, and the redistribution method picked for it.
   const [removing, setRemoving] = useState<{ id: string; method: Method; kind?: 'remove' | 'accept' } | null>(null)
   const [onlyWarnings, setOnlyWarnings] = useState(false)
+  // Asset class groups the user folded away.
+  const [closed, setClosed] = useState<Set<AssetClass>>(new Set())
+  const fold = (g: AssetClass) => setClosed((c) => { const n = new Set(c); if (n.has(g)) n.delete(g); else n.add(g); return n })
   const { state, update } = usePortfolio()
   const cur = mode === 'current'
   // A version published since the data load gets its own column; New is then compared with it.
@@ -239,7 +226,31 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
         </tr>
       </thead>
       <tbody>
-        {shown.map((r) => {
+        {GROUPS.flatMap((g) => {
+          const list = shown.filter((r) => r.cls === g)
+          if (!list.length) return []
+          const open = !closed.has(g)
+          const sum = (f: (r: SimRow) => number) => list.reduce((t, r) => t + f(r), 0)
+          const gNew = sum((r) => (r.removed ? 0 : r.nw))
+          const gBase = sum(base)
+          const gChange = gNew - gBase
+          const head = (
+            <tr key={'g-' + g} className="*:border-b *:border-line *:bg-surface-subtle">
+              <td colSpan={6} className="px-2.5 py-1.5">
+                <button type="button" aria-expanded={open} onClick={() => fold(g)} className="inline-flex cursor-pointer items-center gap-1.5 text-fg">
+                  {open ? <ChevronDown className="size-3.5" strokeWidth={1.75} /> : <ChevronRight className="size-3.5" strokeWidth={1.75} />}
+                  {GROUP_LABEL[g]}
+                  <span className="text-fg-muted">· {list.length} {list.length === 1 ? 'position' : 'positions'}</span>
+                </button>
+              </td>
+              <td className="px-2.5 text-right tabular-nums">{f2(sum((r) => r.w))}</td>
+              {pub && <td className="px-2.5 text-right tabular-nums">{f2(sum((r) => r.pw ?? 0))}</td>}
+              {!cur && <td className="px-3.5 text-right tabular-nums">{f2(gNew)}</td>}
+              {!cur && <td className="px-2.5 text-right tabular-nums">{Math.abs(gChange) < 0.005 ? <span className="text-fg-subtle">—</span> : (gChange > 0 ? '+' : '') + f2(gChange)}</td>}
+              {!cur && <td />}
+            </tr>
+          )
+          return [head, ...(!open ? [] : list.map((r) => {
           const c = !cur && conflict(r)
           const flag = flagOnly(r)
           const edited = Math.abs(r.nw - base(r)) >= 0.005
@@ -251,8 +262,14 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method, amountFor) : null
           return (
             <Fragment key={r.id}>
-            <tr className={cn('group', t ? (t.status === 'Open' ? '*:bg-surface-subtle [&>td:first-child]:shadow-[inset_3px_0_0_var(--color-task)]' : '') : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
-              <td className={td}>{r.cls}</td>
+            <tr className={cn('group', t ? (t.status === 'Open' ? '*:bg-surface-subtle [&>td:first-child]:shadow-[inset_3px_0_0_var(--color-task)]' : '') : 'hover:*:bg-surface-subtle')}>
+              <td className={td}>
+                <span className="flex items-center justify-between gap-1.5">
+                  {r.cls}
+                  {/* As BUY / SELL in the client book: which way New moves the position. */}
+                  {!cur && edited && <span className={cn('rounded-xs px-1 text-[10px]/4 font-semibold tracking-wide text-on-accent uppercase', r.nw > base(r) ? 'bg-accent' : 'bg-error')}>{r.nw > base(r) ? 'Increase' : 'Decrease'}</span>}
+                </span>
+              </td>
               <td className={td}>
                 {r.name}
                 {!cur && r.kept && excluded(r) && (
@@ -377,6 +394,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
             )}
             </Fragment>
           )
+        }))]
         })}
         {!shown.length && <tr><td colSpan={11} className={cn(td, 'text-fg-subtle')}>No positions.</td></tr>}
       </tbody>
@@ -608,16 +626,3 @@ function AddPosition({ onClose }: { onClose: () => void }) {
  * One version card (Radix Tabs trigger styled as a folder tab): the version name (16px) and one short line under it on the
  * right, as the client book's version cards. Grey while not shown; when open it takes the content's colour and covers the line below it.
  */
-function VersionCard({ value, title, sub, disabled, hint }: { value: Mode; title: string; sub: string; disabled?: boolean; hint?: string }) {
-  return (
-    <RTabs.Trigger
-      value={value}
-      disabled={disabled}
-      title={hint}
-      className="flex w-64 cursor-pointer flex-col justify-center border border-line bg-shell-side px-3 py-2 text-left outline-none hover:bg-surface-strong focus-visible:outline-2 focus-visible:outline-focus data-disabled:cursor-default data-disabled:opacity-60 data-[state=active]:cursor-default data-[state=active]:border-b-shell-panel data-[state=active]:bg-shell-panel"
-    >
-      <span className="text-base/5">{title}</span>
-      <span className="self-end text-xs/4 text-fg-muted">{sub}</span>
-    </RTabs.Trigger>
-  )
-}
