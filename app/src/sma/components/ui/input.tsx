@@ -8,7 +8,7 @@ import { cn } from '../../lib/cn'
  * Corners: rounded-sm on controls, buttons, cards and panels; rounded-xs on tags and checkboxes (both set in theme.css).
  */
 export const controlBox =
-  'flex h-8 items-center rounded-sm border border-control bg-surface text-sm text-fg has-[input:focus]:border-control-active has-[input:focus]:bg-field-focus data-[state=open]:border-control-active data-[state=open]:bg-field-focus'
+  'flex h-8 items-center rounded-sm border border-control bg-surface text-sm text-fg has-[input:focus]:border-control-active has-[input:focus]:bg-field-focus data-[state=open]:border-control-active data-[state=open]:bg-field-focus has-[input[aria-invalid=true]]:border-conflict has-[input[aria-invalid=true]]:bg-field-required'
 
 /** Id of the control inside a Field, so its label points at it (inputs and selects pick it up). */
 const FieldId = createContext<string | undefined>(undefined)
