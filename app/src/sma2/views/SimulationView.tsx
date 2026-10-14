@@ -5,7 +5,7 @@ import { Section } from '../components/ui/layout'
 import { MultiCombobox } from '../components/ui/combobox'
 import { Menu, MenuTrigger } from '../components/ui/menu'
 import { Popover, PopoverTrigger } from '../components/ui/popover'
-import { Radio, RadioGroup, Switch } from '../components/ui/selection'
+import { Checkbox, Radio, RadioGroup } from '../components/ui/selection'
 import { Tab, Tabs, TabsList } from '../components/ui/tabs'
 import { ConflictNote } from '../components/ui/tag'
 import { WeightField } from '../components/ui/weight'
@@ -72,7 +72,7 @@ export function SimulationView({ exposureOnly }: { /** The Exposure page tab of 
             {!cur && custom && <Button size="sm" aria-expanded={adding} onClick={() => setAdding(true)}>+ Add position</Button>}
             {view !== 'exposure' && (
               <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
-                <Switch checked={showZero} onCheckedChange={setShowZero} />
+                <Checkbox checked={showZero} onCheckedChange={setShowZero} />
                 Show zero-weighted positions
               </label>
             )}
@@ -261,7 +261,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method, amountFor) : null
           return (
             <Fragment key={r.id}>
-            <tr className={cn('group', t ? (t.status === 'Open' ? '*:bg-surface-subtle [&>td:first-child]:shadow-[inset_3px_0_0_var(--color-task)]' : '') : 'hover:*:bg-surface-subtle')}>
+            <tr className={cn('group', t ? (t.status === 'Open' ? '*:bg-surface-subtle [&>td:first-child]:shadow-[inset_3px_0_0_var(--color-task)]' : '') : 'hover:*:bg-field-focus')}>
               <td className={td}>
                 <span className="flex items-center justify-between gap-1.5">
                   {r.cls}

@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { BENCH_EXPOSURE, BOND_BENCHMARK, BOND_PROFILE, CLASS_COLOR, EXPOSURE, MATURITY_BUCKETS, RATING_BUCKETS } from '../data/data'
 import { Button } from '../components/ui/button'
+import { DateField } from '../components/ui/date-field'
 import { Tooltip } from '../components/ui/tag'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { AllocationBlock } from './Overview'
@@ -375,7 +376,6 @@ function Performance({ mode }: { mode: Mode }) {
   const labels = Array.from({ length: 6 }, (_, k) => Math.round((k / 5) * n))
   const end = (c: number[]) => c[c.length - 1] ?? 0
   const sign = (v: number) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2) + '%'
-  const dateInput = 'h-7 rounded-sm border border-control bg-surface px-2 text-xs text-fg outline-none focus:border-control-active'
   return (
     <section className="mt-10 border-t border-line pt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -395,10 +395,10 @@ function Performance({ mode }: { mode: Mode }) {
             })}
           </span>
           <label className="ml-2 inline-flex items-center gap-1.5 text-fg-muted">From
-            <input type="date" className={dateInput} value={from} min={FIRST} max={to} onChange={(e) => e.target.value && setFrom(e.target.value)} />
+            <DateField aria-label="From date" value={from} min={FIRST} max={to} onChange={setFrom} />
           </label>
           <label className="inline-flex items-center gap-1.5 text-fg-muted">to
-            <input type="date" className={dateInput} value={to} min={from} max={LAST} onChange={(e) => e.target.value && setTo(e.target.value)} />
+            <DateField aria-label="To date" value={to} min={from} max={LAST} onChange={setTo} />
           </label>
         </div>
       </div>

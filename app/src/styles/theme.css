@@ -230,14 +230,14 @@ html[data-theme~="platinum"] {
 /*
  * Platinum UI, strict: the MP book of feedback round 2 uses only the colours of the Platinum UI palette, each in its
  * listed role. White content, Stone 50 side areas, Neutral 100 headers and banners, Neutral 200 row separators,
- * Neutral 300 outer borders; Custom A for links, focus, tabs and chosen controls; #EDF2F4 focus fill; #b91c1c on
+ * Neutral 300 outer borders; Custom A for links, focus and tabs; slate for primary buttons and chosen controls (as
+ * the component sheet); #EDF2F4 focus fill; #b91c1c on
  * #f4eded for required and excluded elements; Metric red / green; Yellow 500 for warnings and tasks; chart companions.
  */
 html[data-theme~="strict"] {
   --color-fg-inverse: #ffffff;
   --color-fg-secondary: #171717;
   --color-link-hover: #007ba8;
-  --color-tertiary: #525252;
 
   --color-page: #fafaf9;
   --color-shell-side: #fafaf9;
@@ -245,9 +245,6 @@ html[data-theme~="strict"] {
   --color-shell-well: #ffffff;
   --color-shell-panel: #ffffff;
 
-  --color-accent: #007ba8;
-  --color-accent-hover: #0a0a0a;
-  --color-selected: #007ba8;
   --color-conflict: #c81219;
 
   --color-excluded: #f4eded;

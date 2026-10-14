@@ -42,7 +42,7 @@ export function Tab({ className, ...props }: ComponentProps<typeof RTabs.Trigger
     <RTabs.Trigger
       className={cn(
         'inline-flex cursor-pointer items-center gap-1.5 border-b-2 border-transparent pb-1.5 whitespace-nowrap outline-none focus-visible:outline-2 focus-visible:outline-focus',
-        'px-3 hover:bg-surface-subtle hover:text-fg active:bg-link active:text-fg-inverse data-[state=active]:cursor-default data-[state=active]:text-fg data-[state=active]:hover:bg-transparent',
+        'px-3 hover:bg-field-focus hover:text-fg active:bg-link active:text-fg-inverse data-[state=active]:cursor-default data-[state=active]:text-fg data-[state=active]:hover:bg-transparent',
         'data-disabled:cursor-default data-disabled:text-fg-disabled data-disabled:hover:bg-transparent',
         tabVariant[variant],
         className,

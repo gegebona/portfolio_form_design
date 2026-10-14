@@ -206,7 +206,7 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
           <h1 className="sr-only">{name}</h1>
           <nav aria-label="Breadcrumb" className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
             <a href="#sma2" className="text-link hover:text-link-hover">MP book</a>
-            <span aria-hidden className="text-fg-subtle">‹</span>
+            <span aria-hidden className="text-fg-muted">›</span>
             <span>{name}</span>
             <span className="ml-2 text-fg-muted">{[state.data.code, state.data.ccy, benchmarkById(state.data.benchmark)?.name].filter(Boolean).join(' · ')}</span>
             {custom && (

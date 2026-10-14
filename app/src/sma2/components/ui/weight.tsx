@@ -111,7 +111,7 @@ export function WeightSlider({
       </Slider.Track>
       <Slider.Thumb
         aria-label={ariaLabel}
-        className="block size-2.75 rounded-full border-2 border-surface bg-(--fill) ring-1 ring-(--fill) transition-transform outline-none hover:scale-115 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="flex h-4 w-2.5 items-center justify-center gap-px rounded-xs border border-line-strong bg-surface outline-none before:h-2 before:w-px before:bg-line-strong after:h-2 after:w-px after:bg-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       />
     </Slider.Root>
   )

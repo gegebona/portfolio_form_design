@@ -40,17 +40,17 @@ export function Select({
       >
         <span className="truncate"><RSelect.Value placeholder={placeholder} /></span>
         <RSelect.Icon className="flex text-fg-secondary">
-          <ChevronDown className="size-3.5" strokeWidth={1.75} />
+          <ChevronDown className="size-3.5 group-data-[state=open]:rotate-180" strokeWidth={1.75} />
         </RSelect.Icon>
       </RSelect.Trigger>
       <RSelect.Portal>
-        <RSelect.Content className={cn(popupSurface, 'z-50 min-w-(--radix-select-trigger-width) py-0.5')}>
+        <RSelect.Content position="popper" sideOffset={4} className={cn(popupSurface, 'z-50 w-(--radix-select-trigger-width) min-w-(--radix-select-trigger-width)')}>
           <RSelect.Viewport className="max-h-(--radix-select-content-available-height)">
             {items.map((it) => (
               <RSelect.Item
                 key={it.value}
                 value={enc(it.value)}
-                className="flex h-8 cursor-pointer items-center justify-between gap-4 px-3 text-sm outline-none select-none data-highlighted:bg-surface-subtle data-[state=checked]:bg-field-focus"
+                className="flex h-9 cursor-pointer items-center justify-between gap-4 px-3 text-sm outline-none select-none data-highlighted:bg-field-focus data-[state=checked]:bg-field-focus"
               >
                 <RSelect.ItemText>{it.label}</RSelect.ItemText>
                 <RSelect.ItemIndicator className="flex text-fg-muted">
