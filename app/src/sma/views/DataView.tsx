@@ -1,4 +1,4 @@
-import { Info, Lock } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { useState, ViewTransition } from 'react'
 import { Field, Input } from '../components/ui/input'
 import { Section } from '../components/ui/layout'
@@ -38,7 +38,6 @@ export function DataView() {
 /** Benchmark dropdown. Nothing about its composition shows until one is selected; then its name and constituent indices appear, read-only. */
 function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Customized: the parent's benchmark, shown but not changeable. */ readOnly?: boolean }) {
   const { state, animate } = usePortfolio()
-  const pccy = state.data.ccy
   const sel = BENCHMARKS.find((b) => b.id === state.data.benchmark)
   const items = BENCHMARKS.map((b) => ({ value: b.id, label: b.name }))
 
@@ -55,12 +54,6 @@ function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Cus
           <div>
             <h3 className="text-lg">{sel.name}</h3>
             <div className="mt-0.5 text-xs text-fg-muted">{sel.parts.length} {sel.parts.length === 1 ? 'index' : 'indices'}</div>
-            {sel.ccy !== pccy && (
-              <div className="mt-3 flex max-w-155 items-start gap-2 border border-line bg-surface px-3 py-2 text-xs text-fg-secondary">
-                <Info className="mt-px size-3.5 shrink-0" strokeWidth={1.5} />
-                <span>This benchmark is in {sel.ccy}, while the model portfolio currency is {pccy}.</span>
-              </div>
-            )}
             {/* Same table pattern as the client book's small lists: grey header band with column dividers, white rows,
                 numbers right-aligned, one framed box. */}
             <table className="mt-4 w-full max-w-155 border-collapse border border-line-strong bg-surface" aria-label="Benchmark composition">
