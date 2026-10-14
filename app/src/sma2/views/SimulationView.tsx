@@ -28,7 +28,6 @@ export function SimulationView({ exposureOnly }: { /** The Exposure page tab of 
   const creating = isCreating(state)
   // Kept in the flow state (not local) so the action bar knows which version is on screen: only New can be saved as a draft.
   const mode = state.sim.mode
-  const setMode = (m: Mode) => update((s) => { s.sim.mode = m })
   const [picked, setView] = useState<View>('instrument')
   const view: View = exposureOnly ? 'exposure' : picked
   const [showZero, setShowZero] = useState(false)
