@@ -62,7 +62,7 @@ export default function App() {
   const copy = route === 'sma' || route === 'sma2'
   useEffect(() => {
     document.documentElement.toggleAttribute('data-theme', copy)
-    if (copy) document.documentElement.setAttribute('data-theme', 'platinum')
+    if (copy) document.documentElement.setAttribute('data-theme', route === 'sma2' ? 'platinum strict' : 'platinum')
   }, [route])
   const go = (r: Route) => {
     history.replaceState(null, '', '#' + r)

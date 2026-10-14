@@ -240,7 +240,7 @@ function Source({ k }: { k: PrefKey }) {
   const pc = parentCode(c)
   return (
     <div className="-mt-0.5 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-      <span className={cn('rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', own ? 'bg-selected/10 text-fg' : 'border border-line-strong text-fg-muted')}>{own ? 'Own value' : 'Inherited'}</span>
+      <span className={cn('rounded-xs px-1.5 text-xs/4.5 whitespace-nowrap', own ? 'bg-field-focus text-fg' : 'border border-line-strong text-fg-muted')}>{own ? 'Own value' : 'Inherited'}</span>
       <span className="text-fg-muted">
         {own ? `Changes to ${pc} are skipped` : `Follows ${pc}`}
         {own && differs && <> · {pc}: <span className="text-fg">{parent}</span></>}

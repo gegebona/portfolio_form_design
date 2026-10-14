@@ -251,7 +251,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
           const plan = removing?.id === r.id ? redistribution(state.sim.rows, r.id, removing.method, amountFor) : null
           return (
             <Fragment key={r.id}>
-            <tr className={cn('group', t ? (t.status === 'Open' ? '*:bg-task/25' : '*:bg-task/10') : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
+            <tr className={cn('group', t ? (t.status === 'Open' ? '*:bg-surface-subtle [&>td:first-child]:shadow-[inset_3px_0_0_var(--color-task)]' : '') : r.cls === 'Liquidity' ? '*:border-b-line-strong *:bg-surface-subtle' : 'hover:*:bg-surface-subtle')}>
               <td className={td}>{r.cls}</td>
               <td className={td}>
                 {r.name}
@@ -490,7 +490,7 @@ function UpdateNote({ r }: { r: SimRow }) {
       <Button variant="link" className="text-xs" onClick={() => update((s) => removeOwnPosition(s, r.id))}>Remove</Button>
     </span>
   )
-  if (r.auto === 'added') return <span><span className="rounded-xs bg-selected/10 px-1.5 text-xs/4.5">Added</span> <span className="text-fg-muted">target of {state.custom && parentCode(state.custom)} {f2(r.target ?? 0)}%</span></span>
+  if (r.auto === 'added') return <span><span className="rounded-xs bg-field-focus px-1.5 text-xs/4.5">Added</span> <span className="text-fg-muted">target of {state.custom && parentCode(state.custom)} {f2(r.target ?? 0)}%</span></span>
   if (r.auto === 'reduced') return <span className="text-fg-muted">{r.cls === 'Liquidity' ? 'Reduced proportionally · cash' : 'Reduced proportionally'}</span>
   if (r.auto === 'protected') return <span className="inline-flex items-center gap-1 text-fg-muted"><Lock className="size-3" strokeWidth={1.75} aria-hidden />Protected · {PARENT_UPDATE.protectedWhy.toLowerCase()}</span>
   return <span className="text-fg-subtle">—</span>

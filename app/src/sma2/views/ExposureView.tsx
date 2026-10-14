@@ -76,7 +76,7 @@ export function ExposureView({ mode }: { mode: Mode }) {
           <div className="flex items-center gap-1.5" role="group" aria-label="Compare with">
             <span className="mr-1 text-fg-muted">Compare with</span>
             {(['benchmark', 'current'] as const).map((a) => (
-              <Button key={a} size="xs" aria-pressed={pick === a} className={cn(pick === a && 'border-selected bg-selected/10')} onClick={() => setPick(a)}>
+              <Button key={a} size="xs" aria-pressed={pick === a} className={cn(pick === a && 'border-selected bg-field-focus')} onClick={() => setPick(a)}>
                 {a === 'benchmark' ? 'Benchmark' : 'Current'}
               </Button>
             ))}
@@ -391,7 +391,7 @@ function Performance({ mode }: { mode: Mode }) {
           <span className="inline-flex gap-1">
             {PRESETS.map(([label, start]) => {
               const on = from === start() && to === LAST
-              return <Button key={label} size="xs" aria-pressed={on} className={cn(on && 'border-selected bg-selected/10')} onClick={() => { setFrom(start()); setTo(LAST) }}>{label}</Button>
+              return <Button key={label} size="xs" aria-pressed={on} className={cn(on && 'border-selected bg-field-focus')} onClick={() => { setFrom(start()); setTo(LAST) }}>{label}</Button>
             })}
           </span>
           <label className="ml-2 inline-flex items-center gap-1.5 text-fg-muted">From

@@ -168,7 +168,7 @@
  * on-state of tabs; slate (chart 2 dark) for primary buttons and chosen controls, black on hover. Metric red / green for
  * negative / positive values, Yellow 500 for warnings. Charts use the custom chart companions.
  */
-html[data-theme="platinum"] {
+html[data-theme~="platinum"] {
   --color-fg: #171717;
   --color-fg-secondary: #0a0a0a;
   --color-fg-muted: #525252;
@@ -224,4 +224,32 @@ html[data-theme="platinum"] {
   --color-chart-3: #915f36;
   --color-chart-4: #537f53;
   --color-chart-neutral: #bfbfbf;
+}
+
+/*
+ * Platinum UI, strict: the MP book of feedback round 2 uses only the colours of the Platinum UI palette, each in its
+ * listed role. White content, Stone 50 side areas, Neutral 100 headers and banners, Neutral 200 row separators,
+ * Neutral 300 outer borders; Custom A for links, focus, tabs and chosen controls; #EDF2F4 focus fill; #b91c1c on
+ * #f4eded for required and excluded elements; Metric red / green; Yellow 500 for warnings and tasks; chart companions.
+ */
+html[data-theme~="strict"] {
+  --color-fg-inverse: #ffffff;
+  --color-fg-secondary: #171717;
+  --color-link-hover: #007ba8;
+  --color-tertiary: #525252;
+
+  --color-page: #fafaf9;
+  --color-shell-side: #fafaf9;
+  --color-shell-band: #f5f5f5;
+  --color-shell-well: #ffffff;
+  --color-shell-panel: #ffffff;
+
+  --color-accent: #007ba8;
+  --color-accent-hover: #0a0a0a;
+  --color-selected: #007ba8;
+  --color-conflict: #c81219;
+
+  --color-excluded: #f4eded;
+  --color-excluded-border: #b91c1c;
+  --color-excluded-subtle: #f4eded;
 }
