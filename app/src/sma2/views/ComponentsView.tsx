@@ -50,7 +50,7 @@ export function ComponentsView() {
           </div>
           <div className="mt-4 border-b border-line"><GroupLabel count={list.length}>Building blocks</GroupLabel></div>
           {/* 4px inner padding so the card focus outline is not clipped by the scroll container. */}
-          <div className="-mx-1 mt-3 -mb-1 grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(15.625rem,1fr))] content-start gap-3 overflow-y-auto p-1 pr-2.5">
+          <div className="-mx-1 mt-3 -mb-1 grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] content-start gap-3 overflow-y-auto p-1 pr-2.5">
             {list.map((c) => <CatalogueCard key={c.id} c={c} expanded={learn === c.id} onLearnMore={() => openLearn(c.id)} />)}
             {!list.length && <div className="col-span-full px-1 py-2 text-fg-subtle">No components match these filters.</div>}
           </div>
@@ -87,16 +87,19 @@ function CatalogueCard({ c, expanded, onLearnMore }: { c: Component; expanded: b
   // While expanded, the card's slot stays (keeps the grid still) but is empty and has no names: the expanded card holds them.
   const n = expanded ? undefined : cardNames(c.id)
   const card = (
-    <div id={'card-' + c.id} className={'relative flex h-34 min-w-0 rounded-sm border bg-surface hover:bg-surface-subtle has-[[role=checkbox]:focus-visible]:outline-2 has-[[role=checkbox]:focus-visible]:outline-offset-1 has-[[role=checkbox]:focus-visible]:outline-focus ' + (on ? 'border-selected' : 'border-line-strong')}>
-      <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 px-4 pt-3.5 pb-10">
-        <Checkbox checked={on} onCheckedChange={(v) => toggle(c.id, v)} className="mt-0.5 focus-visible:outline-none" />
-        <span className="flex min-w-0 flex-col">
-          <Shared name={n?.title} className="line-clamp-1 font-semibold">{c.name}</Shared>
-          <Shared name={n?.meta} className="mt-px line-clamp-1 text-xs text-fg-muted">{c.area} · {c.region} · {c.provider}</Shared>
-          <span className="mt-2 line-clamp-2 text-xs text-fg-secondary">{c.desc}</span>
+    // The Platinum UI card: white, framed, a large light title, then plain detail lines ("Label: value"), the status
+    // with its value in blue. The checkbox picks the component; Learn more and a conflict tag sit in the footer.
+    <div id={'card-' + c.id} className={'relative flex h-40 min-w-0 rounded-sm border bg-surface hover:bg-field-focus has-[[role=checkbox]:focus-visible]:outline-2 has-[[role=checkbox]:focus-visible]:outline-offset-1 has-[[role=checkbox]:focus-visible]:outline-focus ' + (on ? 'border-selected' : 'border-line-strong')}>
+      <label className="flex min-w-0 flex-1 cursor-pointer flex-col px-5 pt-3 pb-9">
+        <span className="flex items-start gap-3">
+          <Shared name={n?.title} className="min-w-0 flex-1 truncate text-2xl/8 font-light text-fg-muted" >{c.name}</Shared>
+          <Checkbox checked={on} onCheckedChange={(v) => toggle(c.id, v)} className="mt-2 focus-visible:outline-none" aria-label={`Add ${c.name}`} />
         </span>
+        <Shared name={n?.meta} className="mt-1.5 truncate text-sm text-fg">{c.area} · {c.region}</Shared>
+        <span className="truncate text-sm text-fg">Provider: {c.provider}</span>
+        <span className="truncate text-sm text-fg">Status: <span className="text-link">{on ? 'Added' : 'Not added'}</span>{on ? ' to this portfolio' : ''}</span>
       </label>
-      <Button variant="link" className="absolute bottom-2 left-9.5" onClick={onLearnMore} aria-haspopup="dialog">Learn more</Button>
+      <Button variant="link" className="absolute bottom-2.5 left-4.5" onClick={onLearnMore} aria-haspopup="dialog">Learn more</Button>
       {/* The conflict tag sits in the footer, beside Learn more, so every card keeps the same height. */}
       {cf.length > 0 && <ConflictList items={cf} groups={conflictGroups(c, state.prefs)} max={1} compact className="absolute right-3 bottom-2 max-w-48 whitespace-nowrap" />}
     </div>
