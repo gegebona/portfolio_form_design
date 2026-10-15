@@ -48,7 +48,7 @@ function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Cus
       <Field label="Benchmark" invalid={showError && !sel} description={readOnly && <Inherited />} className="w-62.5 max-w-full">
         {readOnly
           ? <Input className="h-7" disabled value={sel?.name ?? ''} />
-          : <Select className="h-7" value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} />}
+          : <Select className="h-7" invalid={showError && !sel} value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} />}
       </Field>
       {sel && (
         <div className="mt-6" aria-live="polite">

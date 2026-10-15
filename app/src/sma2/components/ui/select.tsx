@@ -11,8 +11,10 @@ type Item = { value: string; label: string }
  * like a native select, and is keyboard- and screen-reader-complete.
  */
 export function Select({
-  value, onValueChange, items, className, placeholder, 'aria-label': ariaLabel, id,
+  value, onValueChange, items, className, placeholder, invalid, 'aria-label': ariaLabel, id,
 }: {
+  /** Required and empty: red border and fill, as a required text field. */
+  invalid?: boolean
   /** Shown in a quieter ink while the value matches no item (nothing chosen yet). */
   placeholder?: string
   value: string
@@ -33,8 +35,9 @@ export function Select({
       <RSelect.Trigger
         id={id ?? fid}
         aria-label={ariaLabel}
+        aria-invalid={invalid || undefined}
         className={cn(
-          'group flex h-8 min-w-0 cursor-pointer items-center justify-between gap-2 rounded-sm border border-control bg-surface pr-2 pl-2.5 text-left text-sm text-fg outline-none focus-visible:border-control-active data-[state=open]:border-control-active data-[state=open]:bg-field-focus data-placeholder:text-fg-subtle',
+          'group flex h-8 min-w-0 cursor-pointer items-center justify-between gap-2 rounded-sm border border-control bg-surface pr-2 pl-2.5 text-left text-sm text-fg outline-none focus-visible:border-control-active data-[state=open]:border-control-active data-[state=open]:bg-field-focus data-placeholder:text-fg-subtle aria-invalid:border-conflict aria-invalid:bg-field-required',
           className,
         )}
       >
