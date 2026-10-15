@@ -186,7 +186,7 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
           the view (the only part that scrolls) and the action bar run edge to edge. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* As the client book's portfolio page: no page title, the breadcrumb carries the portfolio and its key facts. */}
-        <header className="shrink-0 px-7 pt-3.5 pb-3">
+        {!creatingFlow && <header className="shrink-0 px-7 pt-3.5 pb-3">
           <h1 className="sr-only">{name}</h1>
           <nav aria-label="Breadcrumb" className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
             <a href="#sma2" className="text-link hover:text-link-hover">Model portfolio book</a>
@@ -202,7 +202,7 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
               </span>
             )}
           </nav>
-        </header>
+        </header>}
         {/* Version folder tabs on the panel's top edge; the open one joins the panel below. A portfolio being created has
             no versions yet, so the panel starts right under the breadcrumb. */}
         {!creatingFlow && <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 px-4">
@@ -220,14 +220,19 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
           </div>
         </div>}
         {/* The panel: one framed box holding the tabs, the working area (Stone 50) and the action bar. */}
-        <div className="mx-4 flex min-h-0 flex-1 flex-col border border-line-strong">
+        {/* Creation (as the form design): no breadcrumb and no frame; the way back to the book leads the tab row, and
+            the working area and its tabs share the page's Stone 50. */}
+        <div className={creatingFlow ? 'flex min-h-0 flex-1 flex-col bg-shell-panel' : 'mx-4 flex min-h-0 flex-1 flex-col border border-line-strong'}>
+        <div className={creatingFlow ? 'flex shrink-0 items-end gap-8 px-6 pt-1' : 'contents'}>
+        {creatingFlow && <a href="#sma2" className="pb-2 text-base whitespace-nowrap text-link hover:text-link-hover">&lt; Model portfolio book</a>}
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
-          <TabsList variant="step" className="border-b border-line bg-surface px-1">
+          <TabsList variant="step" className={creatingFlow ? '[&>button]:px-4 [&>button]:text-base' : 'border-b border-line bg-surface px-1'}>
             {/* The same tabs, in the same order, for a new and an existing portfolio (as on the other screens). */}
             {steps.map((s) => <Tab key={s.id} value={s.id} disabled={tabOff(s.id)} title={tabWhy(s.id)}>{s.label}</Tab>)}
             <Tab value="reporting" disabled={tabOff('reporting')} title={tabWhy('reporting')}>Reporting</Tab>
           </TabsList>
         </Tabs>
+        </div>
 
         {/* The working area is a light grey surface, so white fields, cards and tables stand out from it. */}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-shell-panel">
