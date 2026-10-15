@@ -12,7 +12,7 @@ export function Section({ title, description, actions, screenHeading, className,
   const heading = (
     <div>
       {title && <h2 className="mb-1 text-xl">{title}</h2>}
-      {description && <p className="text-xs text-fg-muted">{description}</p>}
+      {description && <p className="text-sm text-fg">{description}</p>}
     </div>
   )
   return (

@@ -54,13 +54,13 @@ export function AffixInput({ className, suffix, inputClassName, onValueChange, i
 }
 
 /** Field: label above the control (Radix Label, linked to the control by id), optional description and error. */
-export function Field({ label, description, error, className, children }: { label: ReactNode; description?: ReactNode; /** Shown in the error colour under the control (e.g. "Required"). */ error?: ReactNode; className?: string; children: ReactNode }) {
+export function Field({ label, description, error, invalid, className, children }: { label: ReactNode; description?: ReactNode; /** Shown in the error colour under the control (e.g. "Required"). */ error?: ReactNode; /** Required and empty: the label turns red with the field, without a message (as the form design). */ invalid?: boolean; className?: string; children: ReactNode }) {
   const id = useId()
   return (
     <FieldId.Provider value={id}>
       <div className={cn('group/field flex flex-col gap-1', className)}>
         {/* Platinum: the label turns blue while its field has focus, red when the field is required and empty. */}
-        <Label.Root htmlFor={id} className={cn('text-sm text-fg-muted group-focus-within/field:text-link', error && 'text-conflict group-focus-within/field:text-conflict')}>{label}</Label.Root>
+        <Label.Root htmlFor={id} className={cn('text-xs text-fg-muted group-focus-within/field:text-link', (error || invalid) && 'text-conflict group-focus-within/field:text-conflict')}>{label}</Label.Root>
         {children}
         {description && <p className="text-xs text-fg-muted">{description}</p>}
         {error && <p className="text-xs text-error">{error}</p>}

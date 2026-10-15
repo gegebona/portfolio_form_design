@@ -14,21 +14,23 @@ export function DataView() {
   const d = state.data
   if (state.custom) return <CustomDataView />
   return (
-    <div className="flex flex-wrap">
-      <Section screenHeading title="Model portfolio data" description="Please enter the data specific to the model portfolio." className="w-90 shrink-0 border-r border-line">
-        <div className="mt-5 flex flex-col gap-4">
-          <Field label="Model portfolio code" error={codeTaken(state) ? 'This code is already used by another model portfolio' : touched.code && !d.code.trim() && 'Required'}>
-            <Input aria-invalid={codeTaken(state) || (touched.code && !d.code.trim())} onBlur={() => setTouched((t) => ({ ...t, code: true }))} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
+    <div className="flex min-h-full flex-wrap">
+      {/* As the form design: a 392px column of 250px fields (28px high, 12px labels), divided from the benchmark by a rule.
+          A required field left empty turns red with its label, without a message. */}
+      <Section screenHeading title="Model portfolio data" description="Please enter the data specific to the model portfolio." className="min-h-full w-98 shrink-0 border-r border-line-strong pt-6">
+        <div className="mt-8 flex flex-col gap-8">
+          <Field label="Model portfolio code" invalid={touched.code && !d.code.trim()} error={codeTaken(state) && 'This code is already used by another model portfolio'}>
+            <Input className="h-7 w-62.5" aria-invalid={codeTaken(state) || (touched.code && !d.code.trim())} onBlur={() => setTouched((t) => ({ ...t, code: true }))} value={d.code} onValueChange={(v) => update((s) => { s.data.code = v })} />
           </Field>
-          <Field label="Model portfolio name" error={touched.name && !d.name.trim() && 'Required'}>
-            <Input aria-invalid={touched.name && !d.name.trim()} onBlur={() => setTouched((t) => ({ ...t, name: true }))} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
+          <Field label="Model portfolio name" invalid={touched.name && !d.name.trim()}>
+            <Input className="h-7 w-62.5" aria-invalid={touched.name && !d.name.trim()} onBlur={() => setTouched((t) => ({ ...t, name: true }))} value={d.name} onValueChange={(v) => update((s) => { s.data.name = v })} />
           </Field>
           <Field label="Currency">
-            <Select value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={PORTFOLIO_CURRENCIES.map((c) => ({ value: c, label: c }))} />
+            <Select className="h-7 w-62.5" value={d.ccy} onValueChange={(v) => update((s) => { s.data.ccy = v })} items={PORTFOLIO_CURRENCIES.map((c) => ({ value: c, label: c }))} />
           </Field>
         </div>
       </Section>
-      <Section title="Benchmark" description="Please select the benchmark associated to the model portfolio." className="min-w-0 flex-[1_1_45rem]">
+      <Section title="Benchmark" description="Please select the benchmark associated to the model portfolio." className="min-w-0 flex-[1_1_45rem] pt-6">
         <BenchmarkPicker showError={touched.code || touched.name} />
       </Section>
     </div>
@@ -42,11 +44,11 @@ function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Cus
   const items = BENCHMARKS.map((b) => ({ value: b.id, label: b.name }))
 
   return (
-    <div className="mt-5">
-      <Field label="Benchmark" error={showError && !sel && 'Required'} description={readOnly && <Inherited />} className="w-78 max-w-full">
+    <div className="mt-8">
+      <Field label="Benchmark" invalid={showError && !sel} description={readOnly && <Inherited />} className="w-62.5 max-w-full">
         {readOnly
-          ? <Input disabled value={sel?.name ?? ''} />
-          : <Select value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} placeholder="Select a benchmark…" />}
+          ? <Input className="h-7" disabled value={sel?.name ?? ''} />
+          : <Select className="h-7" value={state.data.benchmark} onValueChange={(v) => animate((s) => { s.data.benchmark = v })} items={items} />}
       </Field>
       {sel && (
         <div className="mt-6" aria-live="polite">

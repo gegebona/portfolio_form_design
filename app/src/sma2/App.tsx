@@ -1,4 +1,3 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { addTransitionType, startTransition, useEffect, useLayoutEffect, useRef, useState, ViewTransition } from 'react'
 import { Button } from './components/ui/button'
 import { TooltipProvider } from './components/ui/tag'
@@ -202,13 +201,13 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
           the view (the only part that scrolls) and the action bar run edge to edge. */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* As the client book's portfolio page: no page title, the breadcrumb carries the portfolio and its key facts. */}
-        <header className="shrink-0 px-6 pt-3.5 pb-3">
+        <header className="shrink-0 px-7 pt-3.5 pb-3">
           <h1 className="sr-only">{name}</h1>
           <nav aria-label="Breadcrumb" className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-            <a href="#sma2" className="text-link hover:text-link-hover">MP book</a>
-            <span aria-hidden className="text-fg-muted">›</span>
+            <a href="#sma2" className="text-link hover:text-link-hover">Model portfolio book</a>
+            <span aria-hidden className="text-fg-muted">&lt;</span>
             <span>{name}</span>
-            <span className="ml-2 text-fg-muted">{[state.data.code, state.data.ccy, benchmarkById(state.data.benchmark)?.name].filter(Boolean).join(' · ')}</span>
+            {!creatingFlow && <span className="ml-2 text-fg-muted">{[state.data.code, state.data.ccy, benchmarkById(state.data.benchmark)?.name].filter(Boolean).join(' · ')}</span>}
             {custom && (
               <span className="ml-2 text-xs text-fg-muted">
                 <span className="mr-1.5 rounded-xs border border-control px-1.5 text-xs/4.5 text-fg">Customized</span>
@@ -217,8 +216,9 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
             )}
           </nav>
         </header>
-        {/* Version folder tabs on the panel's top edge; the open one joins the panel below. */}
-        <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 px-6">
+        {/* Version folder tabs on the panel's top edge; the open one joins the panel below. A portfolio being created has
+            no versions yet, so the panel starts right under the breadcrumb. */}
+        {!creatingFlow && <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 px-4">
           <RTabs.Root value={creatingFlow ? 'new' : mode} onValueChange={(v) => setMode(v as 'current' | 'new')}>
             <RTabs.List aria-label="Portfolio version" className="-mb-px flex gap-1.5">
               {!creatingFlow && <VersionCard value="current" title="Current" sub={custom?.version === 0 ? 'Not published yet' : `Last updated: ${lastUpdate}`} disabled={custom?.version === 0} hint={custom?.version === 0 ? 'Not published yet: there is no current version' : undefined} />}
@@ -231,9 +231,11 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
               : mode === 'current' ? (pub ? `Read-only — Current is the last data load; the version published on ${pub} applies from the next load.` : `Read-only — last updated on ${lastUpdate}.`)
               : pub ? `Working version — changes are compared with the version published on ${pub}.` : custom ? 'Pending, not published — Current stays active until you publish.' : 'Working version — changes stay here until you publish.'}
           </div>
-        </div>
+        </div>}
+        {/* The panel: one framed box holding the tabs, the working area (Stone 50) and the action bar. */}
+        <div className="mx-4 flex min-h-0 flex-1 flex-col border border-line-strong">
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
-          <TabsList variant="step" className="border border-line bg-surface px-3">
+          <TabsList variant="step" className="border-b border-line bg-surface px-1">
             {creatingFlow
               ? <>{steps.map((s) => <Tab key={s.id} value={s.id} disabled={tabOff(s.id)} title={tabWhy(s.id)}>{s.label}</Tab>)}
                   <Tab value="reporting" disabled={tabOff('reporting')} title={tabWhy('reporting')}>Reporting</Tab></>
@@ -259,6 +261,7 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
           saveDisabled={blocked}
           note={custom ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : step === 'simulation' || !creatingFlow ? publishBlock : undefined}
         />}
+        </div>
       </div>
     </main>
   )
@@ -267,23 +270,16 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
 /** Action bar (the page's own pale tone with a top rule, so it reads as the panel's footer without a heavy band): Back + Cancel on the left, Save as draft + the forward step (the one primary) on the right. */
 function ActionBar({ back, next, onSave, saveDisabled, note }: { saveDisabled?: boolean; back?: { label: string; onClick: () => void }; next: { label: string; onClick: () => void; disabled?: boolean }; /** Omitted where nothing can be saved (the read-only Current version). */ onSave?: () => void; /** Short status next to the actions: what is still needed, or why saving is unavailable. */ note?: string }) {
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-t border-line-strong bg-shell-band px-6 py-3">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-t border-line-strong bg-surface px-1.5 py-1.5">
+      {/* As the form design: Cancel is the tertiary button on the left; Back, Save as draft and the forward step on the right. */}
       <div className="flex items-center gap-2.5">
-        {back && (
-          <Button variant="secondary" size="lg" onClick={back.onClick}>
-            <ChevronLeft className="size-3.5" strokeWidth={2} />
-            {back.label}
-          </Button>
-        )}
-        <Button variant="link" className="h-9 px-2">Cancel</Button>
+        <Button variant="tertiary" size="sm" className="w-25">Cancel</Button>
+        {back && <Button variant="secondary" size="sm" className="min-w-25" onClick={back.onClick}>{back.label}</Button>}
       </div>
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-4.5">
         {note && <span role="status" className="mr-1.5 text-xs text-fg-muted">{note}</span>}
-        {onSave && <Button variant="secondary" size="lg" disabled={saveDisabled} onClick={onSave}>Save as draft</Button>}
-        <Button variant="primary" size="lg" disabled={next.disabled} onClick={next.onClick}>
-          {next.label}
-          <ChevronRight className="size-3.5" strokeWidth={2} />
-        </Button>
+        {onSave && <Button variant="secondary" size="sm" className="min-w-25" disabled={saveDisabled} onClick={onSave}>Save as draft</Button>}
+        <Button variant="primary" size="sm" className="min-w-25" disabled={next.disabled} onClick={next.onClick}>{next.label}</Button>
       </div>
     </div>
   )
