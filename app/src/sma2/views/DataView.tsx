@@ -70,7 +70,6 @@ function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Cus
               ))}
             </tbody>
           </table>
-          </div>
           </ViewTransition>
         </div>
       )}
