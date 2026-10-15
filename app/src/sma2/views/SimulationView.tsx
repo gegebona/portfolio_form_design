@@ -18,10 +18,10 @@ import { Swatch } from './Overview'
 import { ChartBand, type Marker } from './ChartBand'
 
 type Mode = 'current' | 'new'
-type View = 'instrument' | 'block' | 'exposure'
+type View = 'instrument' | 'class' | 'block' | 'exposure'
 /** The positions grouped by asset class (editable) or by building block. Exposure is its own page tab for an existing
  *  portfolio; during creation it stays a view of Simulation. */
-const VIEWS: [View, string][] = [['instrument', 'By asset class'], ['block', 'By building block'], ['exposure', 'Exposure']]
+const VIEWS: [View, string][] = [['instrument', 'Instrument view'], ['class', 'Asset class view'], ['block', 'Building block view'], ['exposure', 'Exposure view']]
 
 export function SimulationView({ exposureOnly }: { /** The Exposure page tab of an existing portfolio: its charts only. */ exposureOnly?: boolean } = {}) {
   const { state, update } = usePortfolio()
@@ -54,7 +54,8 @@ export function SimulationView({ exposureOnly }: { /** The Exposure page tab of 
       <h2 className="sr-only">{exposureOnly ? 'Exposure' : 'Portfolio'}</h2>
       {/* The band of three panels, as on the client book's portfolio page. After a publication New is compared with the
           last published weights; before, with Current. */}
-      {!exposureOnly && <ChartBand markers={cur ? [{ label: 'Current', alloc: simAlloc(state, 'current'), shape: 'down' }] : [pub ? { label: 'Last published', alloc: simAlloc(state, 'published'), shape: 'down' } : creating ? null : { label: 'Current', alloc: simAlloc(state, 'current'), shape: 'down' }, { label: 'New', alloc: simAlloc(state, 'new'), shape: 'up' }].filter((m): m is Marker => !!m)} />}
+      {/* The Exposure view carries its own asset allocation, so the band would only repeat it there. */}
+      {!exposureOnly && view !== 'exposure' && <ChartBand markers={cur ? [{ label: 'Current', alloc: simAlloc(state, 'current'), shape: 'down' }] : [pub ? { label: 'Last published', alloc: simAlloc(state, 'published'), shape: 'down' } : creating ? null : { label: 'Current', alloc: simAlloc(state, 'current'), shape: 'down' }, { label: 'New', alloc: simAlloc(state, 'new'), shape: 'up' }].filter((m): m is Marker => !!m)} />}
       {custom?.auto && <AutoUpdate />}
 
       <div className={cn('flex min-h-0 flex-1 flex-col', !exposureOnly && 'mt-4')}>
@@ -63,7 +64,7 @@ export function SimulationView({ exposureOnly }: { /** The Exposure page tab of 
             <h3 className="pb-1.5 text-lg/6">Positions</h3>
             <Tabs value={view} onValueChange={(v) => switchTable(() => setView(v as View))}>
               <TabsList variant="sub" aria-label="Group positions">
-                {VIEWS.filter(([v]) => v !== 'exposure' || creating).map(([v, l]) => <Tab key={v} value={v}>{l}</Tab>)}
+                {VIEWS.map(([v, l]) => <Tab key={v} value={v}>{l}</Tab>)}
               </TabsList>
             </Tabs>
           </div>
@@ -82,7 +83,9 @@ export function SimulationView({ exposureOnly }: { /** The Exposure page tab of 
         {/* The scrolling container is the boundary (its picture stays clipped): the old table fades out, the new one fades in. */}
         <ViewTransition update={{ positions: 'table-swap', default: 'none' }} default="none">
         <div className="min-h-0 flex-1 overflow-auto">
-          {view === 'instrument' ? <InstrumentTable mode={mode} showZero={showZero} />
+          {/* Instrument view: every position by descending weight. Asset class view: the same rows grouped by asset class,
+              by descending weight within each class. Both keep the weights editable. */}
+          {view === 'instrument' || view === 'class' ? <InstrumentTable key={view} grouped={view === 'class'} mode={mode} showZero={showZero} />
             : view === 'exposure' ? <ExposureView mode={mode} />
             : <GroupTable key={view} mode={mode} showZero={showZero} hide="bb"
                 keyOf={(r) => (r.bb !== '—' ? r.bb : r.cls === 'Liquidity' ? 'Cash' : 'Single instruments')} />}
@@ -144,7 +147,7 @@ function redistribution(all: SimRow[], id: string, method: Method, amountIn?: nu
   return { amount, targets, add, why: '' }
 }
 
-function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) {
+function InstrumentTable({ mode, showZero, grouped }: { mode: Mode; showZero: boolean; grouped?: boolean }) {
   // The position being removed and the redistribution method picked for it (the panel opens under its row).
   // The position being removed, or whose position task is being accepted, and the redistribution method picked for it.
   const [removing, setRemoving] = useState<{ id: string; method: Method; kind?: 'remove' | 'accept' } | null>(null)
@@ -174,7 +177,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
     // Rows that need a decision first (an undecided warning while creating, or an open task), then cash (set apart visually), then every
     // other position by descending weight. The order uses the current weight so rows do not jump while a new weight
     // is being typed; new positions (no current weight) follow by new weight.
-    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a)) || Number(!!b.own || b.auto === 'added') - Number(!!a.own || a.auto === 'added')) || Number(b.cls === 'Liquidity') - Number(a.cls === 'Liquidity') || b.w - a.w || b.nw - a.nw)
+    .sort((a, b) => (cur ? 0 : Number(needsDecision(b)) - Number(needsDecision(a)) || Number(!!b.own || b.auto === 'added') - Number(!!a.own || a.auto === 'added')) || b.w - a.w || b.nw - a.nw)
   // Warnings: positions that breach a preference. "To review" still need a keep-or-remove decision; "kept" were kept on purpose.
   const toReview = cur ? 0 : rows.filter((r) => conflict(r)).length
   const keptN = cur ? 0 : rows.filter((r) => excluded(r) && r.kept).length
@@ -225,15 +228,15 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
         </tr>
       </thead>
       <tbody>
-        {GROUPS.flatMap((g) => {
-          const list = shown.filter((r) => r.cls === g)
+        {(grouped ? GROUPS : [null]).flatMap((g) => {
+          const list = g ? shown.filter((r) => r.cls === g) : shown
           if (!list.length) return []
-          const open = !closed.has(g)
+          const open = !g || !closed.has(g)
           const sum = (f: (r: SimRow) => number) => list.reduce((t, r) => t + f(r), 0)
           const gNew = sum((r) => (r.removed ? 0 : r.nw))
           const gBase = sum(base)
           const gChange = gNew - gBase
-          const head = (
+          const head = !g ? null : (
             <tr key={'g-' + g} className="*:border-b *:border-line *:bg-surface-subtle">
               <td colSpan={6} className="px-2.5 py-1.5">
                 <button type="button" aria-expanded={open} onClick={() => fold(g)} className="inline-flex cursor-pointer items-center gap-1.5 text-fg">
@@ -249,7 +252,7 @@ function InstrumentTable({ mode, showZero }: { mode: Mode; showZero: boolean }) 
               {!cur && <td />}
             </tr>
           )
-          return [head, ...(!open ? [] : list.map((r) => {
+          return [...(head ? [head] : []), ...(!open ? [] : list.map((r) => {
           const c = !cur && conflict(r)
           const flag = flagOnly(r)
           const edited = Math.abs(r.nw - base(r)) >= 0.005

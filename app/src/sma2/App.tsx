@@ -29,19 +29,6 @@ type StepId = (typeof STEPS)[number]['id']
 /** Reporting is a tab of the flow but not a step of the creation sequence, so Back / forward skip it. Exposure is a page
  *  tab of an existing portfolio (during creation it is a view inside Simulation). */
 type FlowStep = StepId | 'reporting' | 'exposure'
-/**
- * An existing portfolio opens on the client book's portfolio page structure: its page tabs start with what it holds
- * (Portfolio = the positions, Exposure), then what defines it. Simulation is called Portfolio here.
- */
-const PAGE_TABS: { id: FlowStep; label: string }[] = [
-  { id: 'simulation', label: 'Portfolio' },
-  { id: 'exposure', label: 'Exposure' },
-  { id: 'allocation', label: 'Component allocation' },
-  { id: 'components', label: 'Component selection' },
-  { id: 'preferences', label: 'Preferences' },
-  { id: 'data', label: 'Model portfolio data' },
-  { id: 'reporting', label: 'Reporting' },
-]
 /** Tabs that edit the working version: opening one switches the page to New (Current is read-only). */
 const EDITS = new Set<FlowStep>(['data', 'preferences', 'components', 'allocation'])
 type Route = FlowStep | 'book'
@@ -104,7 +91,8 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
   const { state, update } = usePortfolio()
   // A portfolio in its creation workflow keeps the step sequence; an existing one gets the page tabs.
   const creatingFlow = !!state.book.creating
-  const asked: FlowStep = askedIn === 'exposure' && creatingFlow ? 'simulation' : askedIn
+  // Exposure is a view inside Simulation (as on the other screens), never a tab of its own.
+  const asked: FlowStep = askedIn === 'exposure' ? 'simulation' : askedIn
   const mode = state.sim.mode
   const onStep = (r: FlowStep) => { if (EDITS.has(r) && mode === 'current') update((s) => { s.sim.mode = 'new' }); go(r) }
   const setMode = (m: 'current' | 'new') => { update((s) => { s.sim.mode = m }); if (m === 'current' && EDITS.has(asked)) go('simulation') }
@@ -191,7 +179,6 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
   const lastUpdate = state.sim.loadedOn || entry?.modified || BOOK_AS_OF
   const lastPublished = state.sim.publishedAt ?? (custom ? (custom.version > 0 ? custom.published : undefined) : entry?.status === 'Published' ? entry.modified : undefined)
   const pub = state.sim.published
-  const pageTabs = custom ? PAGE_TABS.filter((t) => t.id !== 'components' && t.id !== 'allocation') : PAGE_TABS
   const name = state.data.name || (custom ? 'New customized version' : 'New model portfolio')
   const tabOff = (id: FlowStep) => (id === 'reporting' ? blocked || prefsBad || reportingLocked : (blocked && id !== 'data') || afterPrefs(id) || needsComponents(id) || ((id === 'simulation' || id === 'exposure') && !allocOk))
   const tabWhy = (id: FlowStep) => (blocked && id !== 'data' ? 'Complete the model portfolio data first' : afterPrefs(id) ? 'Correct the preferences first' : id === 'reporting' && reportingLocked ? 'Available once the simulation is published' : needsComponents(id) ? 'Select at least one component first' : (id === 'simulation' || id === 'exposure') && !allocOk ? 'The allocation must total exactly 100%' : undefined)
@@ -238,10 +225,9 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
         <div className="mx-4 flex min-h-0 flex-1 flex-col border border-line-strong">
         <Tabs value={step} onValueChange={(v) => onStep(v as FlowStep)}>
           <TabsList variant="step" className="border-b border-line bg-surface px-1">
-            {creatingFlow
-              ? <>{steps.map((s) => <Tab key={s.id} value={s.id} disabled={tabOff(s.id)} title={tabWhy(s.id)}>{s.label}</Tab>)}
-                  <Tab value="reporting" disabled={tabOff('reporting')} title={tabWhy('reporting')}>Reporting</Tab></>
-              : pageTabs.map((t) => <Tab key={t.id} value={t.id} disabled={tabOff(t.id)} title={tabWhy(t.id)}>{t.label}</Tab>)}
+            {/* The same tabs, in the same order, for a new and an existing portfolio (as on the other screens). */}
+            {steps.map((s) => <Tab key={s.id} value={s.id} disabled={tabOff(s.id)} title={tabWhy(s.id)}>{s.label}</Tab>)}
+            <Tab value="reporting" disabled={tabOff('reporting')} title={tabWhy('reporting')}>Reporting</Tab>
           </TabsList>
         </Tabs>
 
@@ -257,8 +243,8 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
 
         {/* Reporting has its own action (Generate) and is not part of the Back / forward sequence. */}
         {step !== 'reporting' && <ActionBar
-          back={creatingFlow ? prev && { label: prev.label, onClick: () => onStep(prev.id) } : undefined}
-          next={creatingFlow && next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || afterPrefs(next.id) || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
+          back={prev && { label: prev.label, onClick: () => onStep(prev.id) }}
+          next={next ? { label: next.label, onClick: () => onStep(next.id), disabled: blocked || afterPrefs(next.id) || needsComponents(next.id) || (next.id === 'simulation' && !allocOk) } : { label: 'Publish', onClick: () => save(true), disabled: !!publishBlock }}
           onSave={viewingCurrent || (custom && custom.version > 0) ? undefined : () => save()}
           saveDisabled={blocked}
           note={custom ? (publishBlock ?? 'New is pending and not published. Current stays active until you publish.') : step === 'simulation' || !creatingFlow ? publishBlock : undefined}
