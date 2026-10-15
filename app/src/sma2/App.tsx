@@ -2,7 +2,6 @@ import { addTransitionType, startTransition, useEffect, useLayoutEffect, useRef,
 import { Button } from './components/ui/button'
 import { TooltipProvider } from './components/ui/tag'
 import { Tab, Tabs, TabsList } from './components/ui/tabs'
-import { Section } from './components/ui/layout'
 import { Tabs as RTabs } from 'radix-ui'
 import { Info } from 'lucide-react'
 import { BOOK_AS_OF, BOOK_USER, type BookEntry } from './data/data'
@@ -16,7 +15,6 @@ import { ComponentsView } from './views/ComponentsView'
 import { AllocationView } from './views/AllocationView'
 import { ReportingView } from './views/ReportingView'
 import { SimulationView } from './views/SimulationView'
-import { ExposureView } from './views/ExposureView'
 
 const STEPS = [
   { id: 'data', label: 'Model portfolio data' },
@@ -100,7 +98,7 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
   const missing = missingData(state)
   const blocked = missing.length > 0
   // Simulation's Current version is the published portfolio: read-only, so it can be neither saved as a draft nor published.
-  const viewingCurrent = (asked === 'simulation' || asked === 'exposure') && mode === 'current'
+  const viewingCurrent = asked === 'simulation' && mode === 'current'
   // Simulation needs a complete allocation: exactly 100%, never adjusted silently.
   const alloc = portfolioAlloc(state)
   const allocOk = near100(alloc.Equity + alloc.Bonds + alloc.Alternatives + alloc.Liquidity)
@@ -119,7 +117,7 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
   const afterPrefs = (id: string) => prefsBad && id !== 'data' && id !== 'preferences'
   const step: FlowStep = blocked ? 'data' : afterPrefs(asked) ? 'preferences' : asked === 'reporting' && reportingLocked ? 'simulation' : custom
     ? (asked === 'components' || asked === 'allocation' ? 'simulation' : asked)
-    : needsComponents(asked) ? 'components' : (asked === 'simulation' || asked === 'exposure') && !allocOk ? 'allocation' : asked
+    : needsComponents(asked) ? 'components' : asked === 'simulation' && !allocOk ? 'allocation' : asked
   useEffect(() => { if (askedIn !== step) go(step) }, [askedIn, step])
   const i = steps.findIndex((s) => s.id === step)
   const prev = steps[i - 1]
@@ -236,7 +234,7 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
           {/* Animates only when a step change tags the transition 'forward' / 'back'; other updates inside stay instant. */}
           <ViewTransition update={{ forward: 'step-forward', back: 'step-back', default: 'none' }} default="none">
             <div className="flex min-h-0 flex-1 flex-col">
-              {step === 'data' ? <DataView /> : step === 'preferences' ? <PreferencesView /> : step === 'components' ? <ComponentsView /> : step === 'allocation' ? <AllocationView /> : step === 'reporting' ? <ReportingView /> : step === 'exposure' ? <Section className="pt-4 pb-4"><ExposureView mode={mode} /></Section> : <SimulationView />}
+              {step === 'data' ? <DataView /> : step === 'preferences' ? <PreferencesView /> : step === 'components' ? <ComponentsView /> : step === 'allocation' ? <AllocationView /> : step === 'reporting' ? <ReportingView /> : <SimulationView />}
             </div>
           </ViewTransition>
         </div>
