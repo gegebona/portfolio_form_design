@@ -206,8 +206,10 @@ function Flow({ step: askedIn, onStep: go, onBook }: { step: FlowStep; onStep: (
           <nav aria-label="Breadcrumb" className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
             <a href="#sma2" className="text-link hover:text-link-hover">Model portfolio book</a>
             <span aria-hidden className="text-fg-muted">&lt;</span>
-            <span>{name}</span>
-            {!creatingFlow && <span className="ml-2 text-fg-muted">{[state.data.code, state.data.ccy, benchmarkById(state.data.benchmark)?.name].filter(Boolean).join(' · ')}</span>}
+            {/* As the form design: code, name and currency side by side once they are filled in. */}
+            {state.data.code || state.data.name
+              ? <span className="inline-flex flex-wrap gap-x-3">{state.data.code && <span>{state.data.code}</span>}{state.data.name && <span>{state.data.name}</span>}<span className="ml-1">{state.data.ccy}</span></span>
+              : <span>{name}</span>}
             {custom && (
               <span className="ml-2 text-xs text-fg-muted">
                 <span className="mr-1.5 rounded-xs border border-control px-1.5 text-xs/4.5 text-fg">Customized</span>

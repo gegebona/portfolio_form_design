@@ -53,31 +53,23 @@ function BenchmarkPicker({ showError, readOnly }: { showError?: boolean; /** Cus
       {sel && (
         <div className="mt-6" aria-live="polite">
           <ViewTransition key={sel.id} name="bench-detail" share="swap">
-          <div>
-            <h3 className="text-lg">{sel.name}</h3>
-            <div className="mt-0.5 text-xs text-fg-muted">{sel.parts.length} {sel.parts.length === 1 ? 'index' : 'indices'}</div>
-            {/* Same table pattern as the client book's small lists: grey header band with column dividers, white rows,
-                numbers right-aligned, one framed box. */}
-            <table className="mt-4 w-full max-w-155 border-collapse border border-line-strong bg-surface" aria-label="Benchmark composition">
-              <thead>
-                <tr className="bg-shell-band text-left text-xs">
-                  <th className="border-b border-line px-3 py-1.5 font-normal"><span className="block border-r border-line pr-3">Index</span></th>
-                  <th className="w-32 border-b border-line px-3 py-1.5 text-right font-normal"><span className="block border-r border-line pr-3">Weight %</span></th>
+          {/* As the form design: the benchmark's indices straight under the field, names as links, no total. */}
+          <table className="w-140 max-w-full border-collapse border border-line-strong bg-surface" aria-label={`Composition of ${sel.name}`}>
+            <thead>
+              <tr className="bg-surface-subtle text-left text-sm">
+                <th className="border-b border-line-strong px-3 py-2 font-normal">Index</th>
+                <th className="w-32 border-b border-line-strong px-3 py-2 text-right font-normal">Weight %</th>
+              </tr>
+            </thead>
+            <tbody className="text-base">
+              {sel.parts.map(([n, w]) => (
+                <tr key={n} className="hover:bg-field-focus">
+                  <td className="border-b border-line px-3 py-1.5"><span className="cursor-pointer text-link hover:underline">{n}</span></td>
+                  <td className="border-b border-line px-3 py-1.5 text-right tabular-nums">{Number.isInteger(w) ? w : w.toFixed(1)} %</td>
                 </tr>
-              </thead>
-              <tbody className="text-sm">
-                {sel.parts.map(([n, w]) => (
-                  <tr key={n}>
-                    <td className="border-b border-line px-3 py-2">{n}</td>
-                    <td className="border-b border-line px-3 py-2 pr-6 text-right tabular-nums">{w.toFixed(1)}</td>
-                  </tr>
-                ))}
-                <tr className="font-semibold">
-                  <td className="px-3 py-2">Total</td>
-                  <td className="px-3 py-2 pr-6 text-right tabular-nums">{sel.parts.reduce((t, [, w]) => t + w, 0).toFixed(1)}</td>
-                </tr>
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
           </div>
           </ViewTransition>
         </div>
